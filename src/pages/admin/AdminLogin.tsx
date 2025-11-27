@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { AtmosphericBackground } from '@/components/AtmosphericBackground';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -73,7 +72,8 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      <AtmosphericBackground />
+      {/* Optimized static background for premium feel without lag */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/10 via-background to-background z-0 pointer-events-none" />
       <div className="relative z-10 w-full max-w-md p-8">
         <div className="bg-black/60 backdrop-blur-sm border-2 border-red-600/30 p-8 rounded-lg">
           <h1 className="text-3xl font-bold text-center mb-2 text-red-500" style={{
