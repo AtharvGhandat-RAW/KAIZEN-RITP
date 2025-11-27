@@ -363,9 +363,9 @@ export default function Dashboard() {
   return (
     <ProtectedRoute>
       <AdminLayout>
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
           {/* Header with Greeting */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white flex items-center gap-3">
                 <Sparkles className="w-8 h-8 text-red-500" />
@@ -379,14 +379,14 @@ export default function Dashboard() {
                 onClick={handleRefresh}
                 variant="outline"
                 size="sm"
-                className="border-red-600/30 hover:bg-red-600/10"
+                className="border-red-600/30 hover:bg-red-600/10 backdrop-blur-sm"
                 disabled={refreshing}
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-[130px] bg-black/40 border-red-600/30">
+                <SelectTrigger className="w-[130px] bg-black/40 border-red-600/30 backdrop-blur-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -400,10 +400,10 @@ export default function Dashboard() {
 
           {/* Alerts Section */}
           {(stats.pendingPayments > 0 || queries > 0) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-6 duration-500 delay-100">
               {stats.pendingPayments > 0 && (
                 <Card
-                  className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-600/30 p-4 cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                  className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-600/30 p-4 cursor-pointer hover:scale-[1.02] transition-all duration-300 backdrop-blur-md"
                   onClick={() => navigate('/admin/registrations')}
                 >
                   <div className="flex items-center justify-between">
@@ -422,7 +422,7 @@ export default function Dashboard() {
               )}
               {queries > 0 && (
                 <Card
-                  className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-600/30 p-4 cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-600/30 p-4 cursor-pointer hover:scale-[1.02] transition-all duration-300 backdrop-blur-md"
                   onClick={() => navigate('/admin/queries')}
                 >
                   <div className="flex items-center justify-between">
@@ -443,13 +443,13 @@ export default function Dashboard() {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-8 duration-700 delay-200">
             {statCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <Card
                   key={stat.label}
-                  className={`bg-black/40 border-red-600/30 p-4 hover:border-red-500/50 transition-all duration-300 hover:scale-105 ${stat.bg} relative overflow-hidden group`}
+                  className={`bg-black/40 backdrop-blur-md border-red-600/30 p-4 hover:border-red-500/50 transition-all duration-300 hover:scale-105 ${stat.bg} relative overflow-hidden group`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -481,9 +481,9 @@ export default function Dashboard() {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             {/* Registration Trend Chart */}
-            <Card className="lg:col-span-2 bg-black/40 border-red-600/30 p-4 sm:p-6">
+            <Card className="lg:col-span-2 bg-black/40 backdrop-blur-md border-red-600/30 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-red-500" />
@@ -523,7 +523,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Payment Status Pie Chart */}
-            <Card className="bg-black/40 border-red-600/30 p-4 sm:p-6">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <PieChart className="w-5 h-5 text-red-500" />
                 <h2 className="text-lg font-bold text-white">Payment Status</h2>
@@ -562,7 +562,7 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Actions */}
-          <Card className="bg-black/40 border-red-600/30 p-4 sm:p-6">
+          <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-400">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-500" />
               Quick Actions
@@ -571,7 +571,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => navigate('/admin/registrations')}
                 variant="outline"
-                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2"
+                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2 backdrop-blur-sm"
               >
                 <UserCheck className="w-5 h-5 text-green-500" />
                 <span className="text-xs">Verify Payments</span>
@@ -579,7 +579,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => navigate('/admin/events')}
                 variant="outline"
-                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2"
+                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2 backdrop-blur-sm"
               >
                 <Calendar className="w-5 h-5 text-purple-500" />
                 <span className="text-xs">Manage Events</span>
@@ -587,7 +587,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => navigate('/admin/reports')}
                 variant="outline"
-                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2"
+                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2 backdrop-blur-sm"
               >
                 <Download className="w-5 h-5 text-blue-500" />
                 <span className="text-xs">Export Reports</span>
@@ -595,7 +595,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => navigate('/admin/queries')}
                 variant="outline"
-                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2 relative"
+                className="border-red-600/30 hover:bg-red-600/10 h-auto py-4 flex-col gap-2 relative backdrop-blur-sm"
               >
                 <Bell className="w-5 h-5 text-orange-500" />
                 <span className="text-xs">View Queries</span>
@@ -607,7 +607,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Event-wise Overview with Progress Bars */}
-          <Card className="bg-black/40 border-red-600/30 p-4 sm:p-6">
+          <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <Activity className="w-5 h-5 text-red-500" />
@@ -669,7 +669,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Recent Activity */}
-          <Card className="bg-black/40 border-red-600/30 p-4 sm:p-6">
+          <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-600">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
               <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <Activity className="w-5 h-5 text-red-500" />
@@ -678,7 +678,7 @@ export default function Dashboard() {
 
               <div className="flex gap-2 w-full sm:w-auto">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-full sm:w-[150px] bg-black/40 border-red-600/30">
+                  <SelectTrigger className="w-full sm:w-[150px] bg-black/40 border-red-600/30 backdrop-blur-sm">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -689,7 +689,7 @@ export default function Dashboard() {
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={() => navigate('/admin/registrations')} variant="outline" size="sm" className="border-red-600/30">
+                <Button onClick={() => navigate('/admin/registrations')} variant="outline" size="sm" className="border-red-600/30 backdrop-blur-sm">
                   <Eye className="w-4 h-4" />
                 </Button>
               </div>

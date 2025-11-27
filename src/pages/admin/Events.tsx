@@ -126,7 +126,9 @@ export default function Events() {
   };
 
   const copyEventLink = (eventId: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/register?event=${eventId}`);
+    const baseUrl = window.location.href.substring(0, window.location.href.indexOf('/admin'));
+    const link = `${baseUrl}/register?event=${eventId}`;
+    navigator.clipboard.writeText(link);
     toast({ title: 'Copied!', description: 'Event registration link copied to clipboard' });
   };
 
@@ -396,15 +398,6 @@ export default function Events() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => toggleFeatured(event)}
-                        className={`${event.is_featured ? 'text-yellow-500 bg-yellow-500/10' : 'text-white/50'} hover:bg-yellow-600/10`}
-                        title={event.is_featured ? 'Remove from featured' : 'Add to featured'}
-                      >
-                        {event.is_featured ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
                         onClick={() => copyEventLink(event.id)}
                         className="text-green-500 hover:bg-green-600/10"
                         title="Copy registration link"
@@ -414,7 +407,10 @@ export default function Events() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => window.open(`/register?event=${event.id}`, '_blank')}
+                        onClick={() => {
+                          const baseUrl = window.location.href.substring(0, window.location.href.indexOf('/admin'));
+                          window.open(`${baseUrl}/register?event=${event.id}`, '_blank');
+                        }}
                         className="text-cyan-500 hover:bg-cyan-600/10"
                         title="Preview registration page"
                       >

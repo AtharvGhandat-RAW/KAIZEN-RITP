@@ -215,9 +215,9 @@ export default function Registrations() {
   return (
     <ProtectedRoute requiredRoles={['super_admin', 'event_manager', 'finance']}>
       <AdminLayout>
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
                 <Users className="w-8 h-8 text-red-500" />
@@ -226,11 +226,11 @@ export default function Registrations() {
               <p className="text-white/60 mt-1">Manage and verify all event registrations</p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={fetchRegistrations} variant="outline" className="border-red-600/30 hover:bg-red-600/10">
+              <Button onClick={fetchRegistrations} variant="outline" className="border-red-600/30 hover:bg-red-600/10 backdrop-blur-sm">
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button onClick={exportToCSV} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={exportToCSV} className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20">
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
@@ -238,8 +238,8 @@ export default function Registrations() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="bg-black/40 border-red-600/30 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-8 duration-700 delay-100">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg">
                   <Users className="w-5 h-5 text-blue-500" />
@@ -250,7 +250,7 @@ export default function Registrations() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-green-600/30 p-4 cursor-pointer hover:bg-green-600/5" onClick={() => setStatusFilter('completed')}>
+            <Card className="bg-black/40 backdrop-blur-md border-green-600/30 p-4 cursor-pointer hover:bg-green-600/10 transition-all hover:scale-105" onClick={() => setStatusFilter('completed')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-green-500" />
@@ -261,7 +261,7 @@ export default function Registrations() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-yellow-600/30 p-4 cursor-pointer hover:bg-yellow-600/5" onClick={() => setStatusFilter('pending')}>
+            <Card className="bg-black/40 backdrop-blur-md border-yellow-600/30 p-4 cursor-pointer hover:bg-yellow-600/10 transition-all hover:scale-105" onClick={() => setStatusFilter('pending')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/20 rounded-lg">
                   <Clock className="w-5 h-5 text-yellow-500" />
@@ -272,7 +272,7 @@ export default function Registrations() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4 cursor-pointer hover:bg-red-600/5" onClick={() => setStatusFilter('failed')}>
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 cursor-pointer hover:bg-red-600/10 transition-all hover:scale-105" onClick={() => setStatusFilter('failed')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-red-500/20 rounded-lg">
                   <XCircle className="w-5 h-5 text-red-500" />
@@ -286,7 +286,7 @@ export default function Registrations() {
           </div>
 
           {/* Filters & Bulk Actions */}
-          <Card className="bg-black/40 border-red-600/30 p-4">
+          <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-4 animate-in fade-in slide-in-from-top-12 duration-700 delay-200">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -294,15 +294,15 @@ export default function Registrations() {
                   placeholder="Search by name, email, phone, or event..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-black/40 border-red-600/30"
+                  className="pl-10 bg-black/40 border-red-600/30 text-white focus:border-red-500 transition-all"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full lg:w-48 bg-black/40 border-red-600/30">
+                <SelectTrigger className="w-full lg:w-48 bg-black/40 border-red-600/30 text-white">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-black border-red-600/30">
+                <SelectContent className="bg-black border-red-600/30 text-white">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
@@ -313,7 +313,7 @@ export default function Registrations() {
 
             {/* Bulk Actions */}
             {selectedIds.size > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="mt-4 flex flex-wrap items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg animate-in fade-in slide-in-from-top-2">
                 <span className="text-blue-400 text-sm font-medium">
                   {selectedIds.size} selected
                 </span>
@@ -340,7 +340,7 @@ export default function Registrations() {
                     size="sm"
                     onClick={() => setSelectedIds(new Set())}
                     variant="outline"
-                    className="border-white/20"
+                    className="border-white/20 hover:bg-white/10"
                   >
                     Clear
                   </Button>
@@ -350,7 +350,7 @@ export default function Registrations() {
           </Card>
 
           {/* Registrations Table */}
-          <Card className="bg-black/40 border-red-600/30 overflow-hidden">
+          <Card className="bg-black/40 backdrop-blur-md border-red-600/30 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px]">
                 <thead className="bg-red-600/10">
@@ -373,8 +373,12 @@ export default function Registrations() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRegistrations.map((reg) => (
-                    <tr key={reg.id} className="border-t border-red-600/20 hover:bg-red-600/5 transition-colors">
+                  {filteredRegistrations.map((reg, index) => (
+                    <tr 
+                      key={reg.id} 
+                      className="border-t border-red-600/20 hover:bg-red-600/5 transition-colors"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                       <td className="px-3 py-4">
                         <Checkbox
                           checked={selectedIds.has(reg.id)}
@@ -384,7 +388,7 @@ export default function Registrations() {
                       </td>
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-red-900/20">
                             {reg.profiles?.full_name?.charAt(0) || '?'}
                           </div>
                           <div>
@@ -439,7 +443,7 @@ export default function Registrations() {
                             }`}>
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-black border-red-600/30">
+                          <SelectContent className="bg-black border-red-600/30 text-white">
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="completed">Completed</SelectItem>
                             <SelectItem value="failed">Failed</SelectItem>
@@ -490,7 +494,7 @@ export default function Registrations() {
           </Card>
 
           {filteredRegistrations.length === 0 && !loading && (
-            <Card className="bg-black/40 border-red-600/30 p-12 text-center">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/30 p-12 text-center animate-in fade-in zoom-in duration-500">
               <Users className="w-16 h-16 text-white/20 mx-auto mb-4" />
               <p className="text-white/60 text-lg">No registrations found</p>
               <p className="text-white/40 text-sm mt-1">Try adjusting your search or filters</p>
