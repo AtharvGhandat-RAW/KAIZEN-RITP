@@ -54,6 +54,13 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
 
   useEffect(() => {
     fetchEvents();
+    
+    // Check for event ID in URL
+    const params = new URLSearchParams(window.location.search);
+    const eventIdParam = params.get('event');
+    if (eventIdParam) {
+      setFormData(prev => ({ ...prev, eventId: eventIdParam }));
+    }
   }, []);
 
   const fetchEvents = async () => {

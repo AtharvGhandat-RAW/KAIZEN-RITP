@@ -23,6 +23,7 @@ const Queries = lazy(() => import("./pages/admin/Queries"));
 const Sponsors = lazy(() => import("./pages/admin/Sponsors"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
+const Register = lazy(() => import("./pages/Register"));
 
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/refund" element={<Refund />} />
+                <Route path="/register" element={<Register />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLogin />} />

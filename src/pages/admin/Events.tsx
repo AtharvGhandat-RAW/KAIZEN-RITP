@@ -152,9 +152,9 @@ export default function Events() {
   return (
     <ProtectedRoute requiredRoles={['super_admin', 'event_manager']}>
       <AdminLayout>
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
                 <Calendar className="w-8 h-8 text-red-500" />
@@ -167,7 +167,7 @@ export default function Events() {
                 setSelectedEvent(null);
                 setDialogOpen(true);
               }}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto shadow-lg shadow-red-900/20 transition-all hover:scale-105"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Event
@@ -175,8 +175,8 @@ export default function Events() {
           </div>
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Card className="bg-black/40 border-red-600/30 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 animate-in fade-in slide-in-from-top-8 duration-700 delay-100">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-500/20 rounded-lg">
                   <Calendar className="w-5 h-5 text-purple-500" />
@@ -187,7 +187,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <Clock className="w-5 h-5 text-green-500" />
@@ -198,7 +198,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg">
                   <Users className="w-5 h-5 text-blue-500" />
@@ -209,7 +209,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/20 rounded-lg">
                   <Star className="w-5 h-5 text-yellow-500" />
@@ -220,7 +220,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-cyan-500/20 rounded-lg">
                   <TrendingUp className="w-5 h-5 text-cyan-500" />
@@ -231,7 +231,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4">
+            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/20 rounded-lg">
                   <IndianRupee className="w-5 h-5 text-emerald-500" />
@@ -245,45 +245,48 @@ export default function Events() {
           </div>
 
           {/* Filters */}
-          <Card className="bg-black/40 border-red-600/30 p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
-                <Input
-                  placeholder="Search events by name or venue..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-black/40 border-red-600/30"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[150px] bg-black/40 border-red-600/30">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-black/40 border-red-600/30">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col sm:flex-row gap-4 bg-black/40 backdrop-blur-md p-4 rounded-lg border border-red-600/20 animate-in fade-in slide-in-from-top-12 duration-700 delay-200">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <Input
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-black/40 border-red-600/20 text-white focus:border-red-500 transition-all"
+              />
             </div>
-          </Card>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-black/40 border-red-600/20 text-white">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  <SelectValue placeholder="Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-black border-red-600/20 text-white">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="ongoing">Ongoing</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-black/40 border-red-600/20 text-white">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  <SelectValue placeholder="Category" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-black border-red-600/20 text-white">
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Events Grid */}
-          <div className="grid gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
             {filteredEvents.length === 0 && (
               <Card className="bg-black/40 border-red-600/30 p-12 text-center">
                 <Calendar className="w-16 h-16 text-white/20 mx-auto mb-4" />
@@ -296,12 +299,19 @@ export default function Events() {
               </Card>
             )}
 
-            {filteredEvents.map((event) => {
+            {filteredEvents.map((event, index) => {
               const capacityPercentage = (event.current_participants / event.max_participants) * 100;
               const daysUntil = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
               return (
-                <Card key={event.id} className="bg-black/40 border-red-600/30 p-4 sm:p-6 hover:border-red-500/50 transition-all duration-300 group">
+                <Card 
+                  key={event.id} 
+                  className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 sm:p-6 hover:border-red-500/50 transition-all duration-300 group hover:shadow-lg hover:shadow-red-900/20"
+                  style={{ 
+                    animationDelay: `${index * 50}ms`,
+                    willChange: 'transform, opacity'
+                  }}
+                >
                   <div className="flex flex-col lg:flex-row justify-between gap-4">
                     {/* Event Info */}
                     <div className="flex-1">
