@@ -398,27 +398,6 @@ export default function Events() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => copyEventLink(event.id)}
-                        className="text-green-500 hover:bg-green-600/10"
-                        title="Copy registration link"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const baseUrl = window.location.href.substring(0, window.location.href.indexOf('/admin'));
-                          window.open(`${baseUrl}/register?event=${event.id}`, '_blank');
-                        }}
-                        className="text-cyan-500 hover:bg-cyan-600/10"
-                        title="Preview registration page"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
                         onClick={() => {
                           setSelectedEvent(event);
                           setDialogOpen(true);

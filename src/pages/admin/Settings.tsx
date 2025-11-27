@@ -132,9 +132,9 @@ export default function Settings() {
   return (
     <ProtectedRoute requiredRoles={['super_admin']}>
       <AdminLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+        <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="p-2 bg-red-500/20 rounded-lg">
               <SettingsIcon className="w-6 h-6 text-red-500" />
             </div>
@@ -144,9 +144,9 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* System Status */}
-            <Card className="bg-black/40 border-red-600/30 p-5">
+            <Card className="bg-black/60 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                 <h2 className="text-lg font-semibold text-white">System Status</h2>
@@ -168,8 +168,46 @@ export default function Settings() {
               </div>
             </Card>
 
+            {/* Registration Control */}
+            <Card className="bg-black/60 border-red-600/30 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <h2 className="text-lg font-semibold text-white">Registration</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div>
+                    <Label className="text-white text-base">Enable Registration</Label>
+                    <p className="text-white/50 text-sm">Allow students to register for events</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {saving === 'registration_enabled' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
+                    <Switch
+                      checked={Boolean(settings.registration_enabled)}
+                      onCheckedChange={(checked) => handleSwitchChange('registration_enabled', checked)}
+                      className="data-[state=checked]:bg-green-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-white/80">Notice Banner</Label>
+                  <Textarea
+                    value={String(settings.registration_notice || '')}
+                    onChange={(e) => updateSetting('registration_notice', e.target.value)}
+                    onBlur={(e) => saveSetting('registration_notice', e.target.value)}
+                    className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
+                    rows={2}
+                    placeholder="Registration closes on Feb 20th at 11:59 PM"
+                  />
+                  <p className="text-white/40 text-xs mt-1">Leave empty to hide</p>
+                </div>
+              </div>
+            </Card>
+
             {/* Contact Information */}
-            <Card className="bg-black/40 border-red-600/30 p-5">
+            <Card className="bg-black/60 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Phone className="w-5 h-5 text-green-500" />
                 <h2 className="text-lg font-semibold text-white">Contact Information</h2>
@@ -202,7 +240,7 @@ export default function Settings() {
             </Card>
 
             {/* Social Media */}
-            <Card className="bg-black/40 border-red-600/30 p-5">
+            <Card className="bg-black/60 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Globe className="w-5 h-5 text-blue-500" />
                 <h2 className="text-lg font-semibold text-white">Social Media</h2>
@@ -242,45 +280,8 @@ export default function Settings() {
               </div>
             </Card>
 
-            {/* Registration Control */}
-            <Card className="bg-black/40 border-red-600/30 p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-lg font-semibold text-white">Registration</h2>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div>
-                    <Label className="text-white text-base">Enable Registration</Label>
-                    <p className="text-white/50 text-sm">Allow students to register for events</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {saving === 'registration_enabled' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
-                    <Switch
-                      checked={Boolean(settings.registration_enabled)}
-                      onCheckedChange={(checked) => handleSwitchChange('registration_enabled', checked)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-white/80">Notice Banner</Label>
-                  <Textarea
-                    value={String(settings.registration_notice || '')}
-                    onChange={(e) => updateSetting('registration_notice', e.target.value)}
-                    onBlur={(e) => saveSetting('registration_notice', e.target.value)}
-                    className="bg-black/40 border-white/20 mt-1"
-                    rows={2}
-                    placeholder="Registration closes on Feb 20th at 11:59 PM"
-                  />
-                  <p className="text-white/40 text-xs mt-1">Leave empty to hide</p>
-                </div>
-              </div>
-            </Card>
-
             {/* Payment */}
-            <Card className="bg-black/40 border-red-600/30 p-5">
+            <Card className="bg-black/60 border-red-600/30 p-5 xl:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard className="w-5 h-5 text-yellow-500" />
                 <h2 className="text-lg font-semibold text-white">Payment Details</h2>
@@ -303,7 +304,7 @@ export default function Settings() {
                     value={String(settings.payment_instructions || '')}
                     onChange={(e) => updateSetting('payment_instructions', e.target.value)}
                     onBlur={(e) => saveSetting('payment_instructions', e.target.value)}
-                    className="bg-black/40 border-white/20 mt-1"
+                    className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
                     rows={3}
                     placeholder="1. Pay using UPI&#10;2. Screenshot payment&#10;3. Upload during registration"
                   />
@@ -319,18 +320,19 @@ export default function Settings() {
                     <Switch
                       checked={settings.payment_screenshot_required !== false}
                       onCheckedChange={(checked) => handleSwitchChange('payment_screenshot_required', checked)}
+                      className="data-[state=checked]:bg-green-600"
                     />
                   </div>
                 </div>
               </div>
             </Card>
+          </div>
 
-            {/* Quick Info */}
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <p className="text-green-400 text-sm text-center">
-                ✓ All changes are saved automatically when you click outside a field
-              </p>
-            </div>
+          {/* Quick Info */}
+          <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <p className="text-green-400 text-sm text-center">
+              ✓ All changes are saved automatically when you click outside a field
+            </p>
           </div>
         </div>
       </AdminLayout>

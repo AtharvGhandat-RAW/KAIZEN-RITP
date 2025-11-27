@@ -324,64 +324,67 @@ export default function Reports() {
   return (
     <ProtectedRoute>
       <AdminLayout>
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Reports & Analytics</h1>
-            <p className="text-foreground/60 mt-1 text-sm sm:text-base">Generate comprehensive reports for events, registrations, and payments</p>
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+              <FileText className="w-8 h-8 text-red-500" />
+              Reports & Analytics
+            </h1>
+            <p className="text-white/60 mt-1 text-sm sm:text-base">Generate comprehensive reports for events, registrations, and payments</p>
           </div>
 
           {/* Stats Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
+            <Card className="bg-black/60 border-red-600/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
-                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-medium text-white">Total Registrations</CardTitle>
+                <Users className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
+                <div className="text-2xl font-bold text-white">{stats.totalRegistrations}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-black/60 border-red-600/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{stats.totalRevenue}</div>
+                <div className="text-2xl font-bold text-white">₹{stats.totalRevenue}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-black/60 border-red-600/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-medium text-white">Payment Status</CardTitle>
+                <TrendingUp className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-green-600 font-semibold">{stats.completedPayments} Completed</span>
+                  <span className="text-green-400 font-semibold">{stats.completedPayments} Completed</span>
                   {' / '}
-                  <span className="text-yellow-600 font-semibold">{stats.pendingPayments} Pending</span>
+                  <span className="text-yellow-400 font-semibold">{stats.pendingPayments} Pending</span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Filter */}
-          <Card>
+          <Card className="bg-black/60 border-red-600/30">
             <CardHeader>
-              <CardTitle>Filter Reports</CardTitle>
-              <CardDescription>Select an event to generate specific reports</CardDescription>
+              <CardTitle className="text-white">Filter Reports</CardTitle>
+              <CardDescription className="text-white/60">Select an event to generate specific reports</CardDescription>
             </CardHeader>
             <CardContent>
               <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                <SelectTrigger className="w-full sm:w-[300px]">
+                <SelectTrigger className="w-full sm:w-[300px] bg-black/50 border-white/10 text-white">
                   <SelectValue placeholder="Select event" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Events</SelectItem>
+                <SelectContent className="bg-black/90 border-red-600/30 text-white">
+                  <SelectItem value="all" className="focus:bg-red-600/20 focus:text-white">All Events</SelectItem>
                   {events.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
+                    <SelectItem key={event.id} value={event.id} className="focus:bg-red-600/20 focus:text-white">
                       {event.name}
                     </SelectItem>
                   ))}
@@ -392,13 +395,13 @@ export default function Reports() {
 
           {/* Report Types */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card>
+            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <CardTitle>Registration Report</CardTitle>
+                  <FileText className="h-5 w-5 text-red-500" />
+                  <CardTitle className="text-white">Registration Report</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-white/60">
                   Complete student details with registration information
                 </CardDescription>
               </CardHeader>
@@ -406,7 +409,7 @@ export default function Reports() {
                 <Button
                   onClick={exportRegistrationsReport}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export Registrations
@@ -414,13 +417,13 @@ export default function Reports() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <CardTitle>Payment Report</CardTitle>
+                  <DollarSign className="h-5 w-5 text-red-500" />
+                  <CardTitle className="text-white">Payment Report</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-white/60">
                   Payment status and transaction details
                 </CardDescription>
               </CardHeader>
@@ -428,7 +431,7 @@ export default function Reports() {
                 <Button
                   onClick={exportPaymentReport}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export Payments
@@ -436,13 +439,13 @@ export default function Reports() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <CardTitle>Event Summary</CardTitle>
+                  <Calendar className="h-5 w-5 text-red-500" />
+                  <CardTitle className="text-white">Event Summary</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-white/60">
                   Overview of all events with statistics
                 </CardDescription>
               </CardHeader>
@@ -450,7 +453,7 @@ export default function Reports() {
                 <Button
                   onClick={exportEventSummaryReport}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export Summary
@@ -458,13 +461,13 @@ export default function Reports() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <CardTitle>Attendance Sheet</CardTitle>
+                  <Users className="h-5 w-5 text-red-500" />
+                  <CardTitle className="text-white">Attendance Sheet</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-white/60">
                   Printable attendance sheet for events
                 </CardDescription>
               </CardHeader>
@@ -472,7 +475,7 @@ export default function Reports() {
                 <Button
                   onClick={exportAttendanceSheet}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export Attendance

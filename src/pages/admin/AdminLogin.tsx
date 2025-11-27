@@ -71,41 +71,50 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Optimized static background for premium feel without lag */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/10 via-background to-background z-0 pointer-events-none" />
-      <div className="relative z-10 w-full max-w-md p-8">
-        <div className="bg-black/60 backdrop-blur-sm border-2 border-red-600/30 p-8 rounded-lg">
-          <h1 className="text-3xl font-bold text-center mb-2 text-red-500" style={{
-            textShadow: '0 0 20px rgba(255, 69, 0, 0.5)'
-          }}>
-            KAIZEN ADMIN
-          </h1>
-          <p className="text-center text-white/70 mb-8">Admin Portal Access</p>
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black z-0 pointer-events-none" />
+      
+      {/* Animated background elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-900/10 rounded-full blur-[100px] animate-pulse delay-1000" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-black/40 backdrop-blur-md border border-red-600/30 p-8 rounded-xl shadow-2xl shadow-red-900/20">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-2 tracking-wider" style={{
+              textShadow: '0 0 30px rgba(220, 38, 38, 0.5)'
+            }}>
+              KAIZEN
+            </h1>
+            <p className="text-red-500 font-medium tracking-[0.2em] text-sm uppercase">Admin Portal</p>
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <Label htmlFor="email" className="text-white/90">Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white/80">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-2 bg-black/40 border-red-600/30 text-white focus:border-red-500"
+                className="bg-black/50 border-white/10 text-white focus:border-red-500 focus:ring-red-500/20 transition-all"
                 placeholder="admin@kaizen.rit.edu"
               />
             </div>
 
-            <div>
-              <Label htmlFor="password" className="text-white/90">Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white/80">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-2 bg-black/40 border-red-600/30 text-white focus:border-red-500"
+                className="bg-black/50 border-white/10 text-white focus:border-red-500 focus:ring-red-500/20 transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -113,19 +122,23 @@ export default function AdminLogin() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-6 shadow-lg shadow-red-900/20 transition-all hover:scale-[1.02]"
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing In...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Authenticating...
                 </>
               ) : (
-                'Sign In'
+                'Access Dashboard'
               )}
             </Button>
           </form>
         </div>
+        
+        <p className="text-center text-white/30 text-xs mt-8">
+          Authorized Personnel Only • KAIZEN 2025
+        </p>
       </div>
     </div>
   );

@@ -20,7 +20,6 @@ const Events = lazy(() => import("./pages/admin/Events"));
 const Registrations = lazy(() => import("./pages/admin/Registrations"));
 const RegistrationDetails = lazy(() => import("./pages/admin/RegistrationDetails"));
 const Queries = lazy(() => import("./pages/admin/Queries"));
-const Sponsors = lazy(() => import("./pages/admin/Sponsors"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
 const Register = lazy(() => import("./pages/Register"));
@@ -83,7 +82,6 @@ const App = () => (
                 <Route path="/admin/registrations" element={<Registrations />} />
                 <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
                 <Route path="/admin/queries" element={<Queries />} />
-                <Route path="/admin/sponsors" element={<Sponsors />} />
                 <Route path="/admin/reports" element={<Reports />} />
                 <Route path="/admin/settings" element={<Settings />} />
 

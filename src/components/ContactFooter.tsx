@@ -93,7 +93,6 @@ export function ContactFooter() {
     { name: 'Events', link: '#events' },
     { name: 'Schedule', link: '#' },
     { name: 'Registration', link: '#registration' },
-    { name: 'Sponsors', link: '#' },
     { name: 'Contact', link: '#contact' }
   ];
 

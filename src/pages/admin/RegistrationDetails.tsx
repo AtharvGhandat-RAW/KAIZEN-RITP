@@ -115,9 +115,9 @@ export default function RegistrationDetails() {
   return (
     <ProtectedRoute requiredRoles={['super_admin', 'event_manager', 'finance']}>
       <AdminLayout>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 print:mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 print:mb-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -126,16 +126,14 @@ export default function RegistrationDetails() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <h1 className="text-2xl md:text-3xl font-bold text-red-500" style={{
-                textShadow: '0 0 20px rgba(255, 69, 0, 0.5)'
-              }}>
+              <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
                 Registration Details
               </h1>
             </div>
             <div className="flex gap-2 print:hidden">
               <Button
                 onClick={handlePrintPDF}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20"
               >
                 <FileDown className="w-4 h-4 mr-2" />
                 Generate PDF
@@ -143,7 +141,7 @@ export default function RegistrationDetails() {
               {registration.payment_proof_url && (
                 <Button
                   onClick={() => window.open(registration.payment_proof_url!, '_blank')}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Proof
@@ -153,11 +151,11 @@ export default function RegistrationDetails() {
           </div>
 
           {/* Content */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
             {/* Payment Proof - First */}
-            <div className="bg-purple-600/5 border border-purple-600/20 rounded-lg p-6">
+            <div className="bg-black/40 backdrop-blur-md border border-red-600/30 rounded-xl p-6">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-lg">
-                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></span>
                 Payment Proof Screenshot
               </h3>
               {registration.payment_proof_url ? (
@@ -186,9 +184,9 @@ export default function RegistrationDetails() {
             {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Student Information */}
-              <div className="bg-red-600/5 border border-red-600/20 rounded-lg p-6 print:break-inside-avoid">
+              <div className="bg-black/40 backdrop-blur-md border border-red-600/30 rounded-xl p-6 print:break-inside-avoid">
                 <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-lg">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
                   Student Information
                 </h3>
                 <div className="space-y-4">
@@ -222,9 +220,9 @@ export default function RegistrationDetails() {
               </div>
 
               {/* Event Information */}
-              <div className="bg-blue-600/5 border border-blue-600/20 rounded-lg p-6 print:break-inside-avoid">
+              <div className="bg-black/40 backdrop-blur-md border border-red-600/30 rounded-xl p-6 print:break-inside-avoid">
                 <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-lg">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
                   Event Details
                 </h3>
                 <div className="space-y-4">
@@ -251,9 +249,9 @@ export default function RegistrationDetails() {
             </div>
 
             {/* Payment Information */}
-            <div className="bg-green-600/5 border border-green-600/20 rounded-lg p-6 print:break-inside-avoid">
+            <div className="bg-black/40 backdrop-blur-md border border-red-600/30 rounded-xl p-6 print:break-inside-avoid">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-lg">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
                 Payment Information
               </h3>
               <div className="space-y-4">
@@ -275,10 +273,10 @@ export default function RegistrationDetails() {
                       }`}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-red-600/30">
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="failed">Failed</SelectItem>
+                    <SelectContent className="bg-black border-red-600/30 text-white">
+                      <SelectItem value="pending" className="focus:bg-red-600/20 focus:text-white">Pending</SelectItem>
+                      <SelectItem value="completed" className="focus:bg-red-600/20 focus:text-white">Completed</SelectItem>
+                      <SelectItem value="failed" className="focus:bg-red-600/20 focus:text-white">Failed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
