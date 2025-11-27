@@ -86,10 +86,10 @@
     ],
     "rewrites": [
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api/|_next/|static/|assets/|.*\\..*).*)",
             "destination": "/index.html"
         }
     ],
-    "cleanUrls": true,
+    "cleanUrls": false,
     "trailingSlash": false
 }
