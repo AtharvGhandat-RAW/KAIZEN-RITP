@@ -1,4 +1,5 @@
 import React, { memo, useMemo } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Memoized particle component for better performance
 const Particle = memo(({ style }: { style: React.CSSProperties }) => (
@@ -7,8 +8,10 @@ const Particle = memo(({ style }: { style: React.CSSProperties }) => (
 Particle.displayName = 'Particle';
 
 export const AtmosphericBackground = memo(function AtmosphericBackground() {
-  // Pre-calculate particles only once
-  const particles = useMemo(() => [...Array(15)].map((_, i) => {
+  const isMobile = useIsMobile();
+  
+  // Pre-calculate particles only once - reduce count on mobile
+  const particles = useMemo(() => [...Array(isMobile ? 5 : 15)].map((_, i) => {
     const xPos = Math.random() * 100;
     const yPos = Math.random() * 100;
     const size = 1 + Math.random() * 2;
@@ -34,8 +37,8 @@ export const AtmosphericBackground = memo(function AtmosphericBackground() {
     };
   }), []);
 
-  // Pre-calculate embers only once
-  const embers = useMemo(() => [...Array(10)].map((_, i) => {
+  // Pre-calculate embers only once - reduce count on mobile
+  const embers = useMemo(() => [...Array(isMobile ? 3 : 10)].map((_, i) => {
     const xPos = (i * 10) % 100;
     const yPos = 20 + (i * 6) % 60;
     const size = 1.5 + (i * 0.2);

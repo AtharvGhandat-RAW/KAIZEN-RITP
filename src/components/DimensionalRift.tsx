@@ -1,6 +1,12 @@
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function DimensionalRift() {
+  const isMobile = useIsMobile();
+
+  // Don't render heavy rift on mobile
+  if (isMobile) return null;
+
   return (
     <div className="fixed right-[8%] top-1/2 -translate-y-1/2 w-[450px] h-[850px] pointer-events-none z-5">
       

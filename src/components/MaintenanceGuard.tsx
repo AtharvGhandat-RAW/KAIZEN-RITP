@@ -63,11 +63,13 @@ export const MaintenanceGuard = ({ children }: { children: React.ReactNode }) =>
         }
     };
 
-    // While checking, we can just render children (or a loader, but children is better for perceived performance)
-    // If we default to false, the site loads, then might snap to maintenance.
-    // If we default to null, we can show a loader.
+    // While checking, show a full-screen loader to prevent flicker
     if (isMaintenanceMode === null) {
-        return <>{children}</>; // Optimistic rendering: assume live until proven otherwise to avoid flicker
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
+            </div>
+        );
     }
 
     // If maintenance mode is on, and it's NOT an admin route, show maintenance page
