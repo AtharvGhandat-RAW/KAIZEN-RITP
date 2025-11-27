@@ -3,7 +3,6 @@ import { StrangerThingsIntro } from '@/components/StrangerThingsIntro';
 import { SEOHead } from '@/components/SEOHead';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
-import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { deferWork } from '@/lib/preload';
 
 // Lazy load background effects with lower priority - with error handling
@@ -261,9 +260,6 @@ const Index = () => {
               <ContactFooter />
             </Suspense>
           </div>
-
-          {/* Floating WhatsApp Button */}
-          <WhatsAppButton />
         </div>
 
         {/* Modal components - only render when active */}
