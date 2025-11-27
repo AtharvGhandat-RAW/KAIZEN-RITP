@@ -156,7 +156,7 @@ export default function Events() {
       <AdminLayout>
         <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
                 <Calendar className="w-8 h-8 text-red-500" />
@@ -177,8 +177,8 @@ export default function Events() {
           </div>
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 animate-in fade-in slide-in-from-top-8 duration-700 delay-100">
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-500/20 rounded-lg">
                   <Calendar className="w-5 h-5 text-purple-500" />
@@ -189,7 +189,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <Clock className="w-5 h-5 text-green-500" />
@@ -200,7 +200,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg">
                   <Users className="w-5 h-5 text-blue-500" />
@@ -211,7 +211,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/20 rounded-lg">
                   <Star className="w-5 h-5 text-yellow-500" />
@@ -222,7 +222,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-cyan-500/20 rounded-lg">
                   <TrendingUp className="w-5 h-5 text-cyan-500" />
@@ -233,7 +233,7 @@ export default function Events() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
+            <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/20 rounded-lg">
                   <IndianRupee className="w-5 h-5 text-emerald-500" />
@@ -247,7 +247,7 @@ export default function Events() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 bg-black/40 backdrop-blur-md p-4 rounded-lg border border-red-600/20 animate-in fade-in slide-in-from-top-12 duration-700 delay-200">
+          <div className="flex flex-col sm:flex-row gap-4 bg-black/60 p-4 rounded-lg border border-red-600/20">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
               <Input
@@ -288,9 +288,9 @@ export default function Events() {
           </div>
 
           {/* Events Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredEvents.length === 0 && (
-              <Card className="bg-black/40 border-red-600/30 p-12 text-center">
+              <Card className="bg-black/60 border-red-600/30 p-12 text-center">
                 <Calendar className="w-16 h-16 text-white/20 mx-auto mb-4" />
                 <p className="text-white/60 text-lg">No events found</p>
                 <p className="text-white/40 text-sm mt-1">
@@ -308,11 +308,7 @@ export default function Events() {
               return (
                 <Card 
                   key={event.id} 
-                  className="bg-black/40 backdrop-blur-md border-red-600/20 p-4 sm:p-6 hover:border-red-500/50 transition-all duration-300 group hover:shadow-lg hover:shadow-red-900/20"
-                  style={{ 
-                    animationDelay: `${index * 50}ms`,
-                    willChange: 'transform, opacity'
-                  }}
+                  className="bg-black/60 border-red-600/20 p-4 sm:p-6 hover:border-red-500/50 transition-colors group"
                 >
                   <div className="flex flex-col lg:flex-row justify-between gap-4">
                     {/* Event Info */}
