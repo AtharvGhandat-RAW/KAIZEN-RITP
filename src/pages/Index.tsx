@@ -224,38 +224,38 @@ const Index = () => {
             <EventCountdown />
           </Suspense>
 
-          {/* Below-the-fold sections - content-visibility auto */}
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+          {/* Below-the-fold sections */}
+          <div>
             <Suspense fallback={<SectionSkeleton />}>
               <FeaturedEvents onViewAll={handleShowExploreEvents} />
             </Suspense>
           </div>
 
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+          <div>
             <Suspense fallback={<SectionSkeleton />}>
               <AboutSection />
             </Suspense>
           </div>
 
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 250px' }}>
+          <div>
             <Suspense fallback={<SectionSkeleton height="h-64" />}>
               <RegistrationCTA onOpen={handleShowRegistration} />
             </Suspense>
           </div>
 
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
+          <div>
             <Suspense fallback={<SectionSkeleton />}>
               <FAQSection />
             </Suspense>
           </div>
 
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+          <div>
             <Suspense fallback={<SectionSkeleton />}>
               <ContactForm />
             </Suspense>
           </div>
 
-          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 250px' }}>
+          <div>
             <Suspense fallback={<SectionSkeleton height="h-64" />}>
               <ContactFooter />
             </Suspense>
