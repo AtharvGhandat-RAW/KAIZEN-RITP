@@ -24,6 +24,8 @@ const Sponsors = lazy(() => import("./pages/admin/Sponsors"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
 
+import { MaintenanceGuard } from "@/components/MaintenanceGuard";
+
 // Optimized QueryClient with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,26 +67,28 @@ const App = () => (
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/refund" element={<Refund />} />
+            <MaintenanceGuard>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/refund" element={<Refund />} />
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<Dashboard />} />
-              <Route path="/admin/events" element={<Events />} />
-              <Route path="/admin/registrations" element={<Registrations />} />
-              <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
-              <Route path="/admin/queries" element={<Queries />} />
-              <Route path="/admin/sponsors" element={<Sponsors />} />
-              <Route path="/admin/reports" element={<Reports />} />
-              <Route path="/admin/settings" element={<Settings />} />
+                {/* Admin Routes */}
+                <Route path="/admin" element={<AdminLogin />} />
+                <Route path="/admin/dashboard" element={<Dashboard />} />
+                <Route path="/admin/events" element={<Events />} />
+                <Route path="/admin/registrations" element={<Registrations />} />
+                <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
+                <Route path="/admin/queries" element={<Queries />} />
+                <Route path="/admin/sponsors" element={<Sponsors />} />
+                <Route path="/admin/reports" element={<Reports />} />
+                <Route path="/admin/settings" element={<Settings />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </MaintenanceGuard>
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>

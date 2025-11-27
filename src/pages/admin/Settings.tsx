@@ -21,7 +21,8 @@ import {
   Settings as SettingsIcon,
   CheckCircle2,
   Globe,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 
 type SettingValue = string | boolean | number | null;
@@ -144,6 +145,29 @@ export default function Settings() {
           </div>
 
           <div className="space-y-6">
+            {/* System Status */}
+            <Card className="bg-black/40 border-red-600/30 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-lg font-semibold text-white">System Status</h2>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-red-950/20 rounded-lg border border-red-500/20">
+                <div className="space-y-1">
+                  <Label className="text-white font-medium">Maintenance Mode</Label>
+                  <p className="text-white/50 text-sm">
+                    Enable to show "Under Maintenance" page to all visitors. 
+                    Admins can still access the dashboard.
+                  </p>
+                </div>
+                <Switch
+                  checked={Boolean(settings['maintenance_mode'])}
+                  onCheckedChange={(checked) => handleSwitchChange('maintenance_mode', checked)}
+                  className="data-[state=checked]:bg-red-600"
+                />
+              </div>
+            </Card>
+
             {/* Contact Information */}
             <Card className="bg-black/40 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">
