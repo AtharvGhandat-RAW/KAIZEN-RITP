@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CRITICAL: Define globals before any module loads -->
+  <script>
+    // Polyfill for CommonJS/Node.js globals
+    window.global = window.global || window;
+    window.exports = window.exports || {};
+    window.module = window.module || { exports: {} };
+  </script>
+
+  <title>KAIZEN Tech Fest 2024 - Stranger Things Edition | RIT</title>
+  <meta name="description"
+    content="KAIZEN Tech Fest - The Official Tech Festival of RIT. Experience the Stranger Things Edition with cutting-edge technology events, competitions, and innovation." />
+  <meta name="author" content="RIT - KAIZEN Team" />
+  <meta name="keywords"
+    content="KAIZEN, Tech Fest, RIT, Technology Festival, Stranger Things, Tech Events, Innovation, College Fest, Technical Festival" />
+
+  <!-- Performance: DNS Prefetch for CDNs and external resources -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://unpkg.com" />
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+
+  <!-- Performance: Preconnect for critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="KAIZEN Tech Fest 2024 - Stranger Things Edition | RIT" />
+  <meta property="og:description"
+    content="Experience the ultimate tech festival with a cinematic Stranger Things theme. Join us for innovation, competitions, and cutting-edge technology." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="KAIZEN Tech Fest" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="KAIZEN Tech Fest 2024 - Stranger Things Edition" />
+  <meta name="twitter:description"
+    content="The Official Tech Festival of RIT with a cinematic Stranger Things theme." />
+
+  <!-- Performance: Theme color for browser chrome -->
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="KAIZEN" />
+
+  <!-- Performance: Preload critical fonts with font-display swap -->
+  <!-- Performance: Preload critical fonts with font-display swap -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" as="style"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet" />
+  </noscript>
+
+  <!-- Critical inline styles for above-the-fold content -->
+  <style>
+    /* Critical CSS for initial render */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box
+    }
+
+    html {
+      line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+      font-family: system-ui, -apple-system, sans-serif
+    }
+
+    body {
+      margin: 0;
+      background: #000;
+      color: #f5f5f5;
+      min-height: 100vh
+    }
+
+    #root {
+      min-height: 100vh
+    }
+
+    /* Initial loading state */
+    .initial-loader {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999
+    }
+
+    .loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(220, 38, 38, .2);
+      border-top-color: #dc2626;
+      border-radius: 50%;
+      animation: spin 1s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+  </style>
+
+  <!-- Resource hints for Supabase -->
+  <link rel="dns-prefetch" href="https://supabase.co" />
+  <link rel="preconnect" href="https://supabase.co" crossorigin />
+</head>
+
+<body>
+  <!-- Initial loading indicator (removed by React) -->
+  <div id="root">
+    <div class="initial-loader" id="initial-loader">
+      <div class="loader-spinner"></div>
+    </div>
+  </div>
+
+  <!-- Remove loader once app mounts -->
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      var loader = document.getElementById('initial-loader');
+      if (loader) {
+        setTimeout(function () {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.3s';
+          setTimeout(function () { loader.remove(); }, 300);
+        }, 100);
+      }
+    });
+  </script>
+
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

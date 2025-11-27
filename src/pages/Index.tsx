@@ -1,0 +1,301 @@
+import { useState, lazy, Suspense, useEffect, useCallback, memo } from 'react';
+import { StrangerThingsIntro } from '@/components/StrangerThingsIntro';
+import { SEOHead } from '@/components/SEOHead';
+import { Navbar } from '@/components/Navbar';
+import { HeroSection } from '@/components/HeroSection';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { deferWork } from '@/lib/preload';
+
+// Lazy load background effects with lower priority - with error handling
+const AtmosphericBackground = lazy(() =>
+  import('@/components/AtmosphericBackground')
+    .then(m => ({ default: m.AtmosphericBackground }))
+    .catch(() => ({ default: () => null }))
+);
+const DimensionalRift = lazy(() =>
+  import('@/components/DimensionalRift')
+    .then(m => ({ default: m.DimensionalRift }))
+    .catch(() => ({ default: () => null }))
+);
+
+// Lazy load above-the-fold but non-critical components
+const EventCountdown = lazy(() =>
+  import('@/components/EventCountdown')
+    .then(m => ({ default: m.EventCountdown }))
+    .catch(() => ({ default: () => null }))
+);
+
+// Lazy load below-the-fold components
+const FeaturedEvents = lazy(() =>
+  import('@/components/FeaturedEvents')
+    .then(m => ({ default: m.FeaturedEvents }))
+    .catch(() => ({ default: () => null }))
+);
+const AboutSection = lazy(() =>
+  import('@/components/AboutSection')
+    .then(m => ({ default: m.AboutSection }))
+    .catch(() => ({ default: () => null }))
+);
+const RegistrationCTA = lazy(() =>
+  import('@/components/RegistrationCTA')
+    .then(m => ({ default: m.RegistrationCTA }))
+    .catch(() => ({ default: () => null }))
+);
+const ContactForm = lazy(() =>
+  import('@/components/ContactForm')
+    .then(m => ({ default: m.ContactForm }))
+    .catch(() => ({ default: () => null }))
+);
+const FAQSection = lazy(() =>
+  import('@/components/FAQSection')
+    .then(m => ({ default: m.FAQSection }))
+    .catch(() => ({ default: () => null }))
+);
+const ContactFooter = lazy(() =>
+  import('@/components/ContactFooter')
+    .then(m => ({ default: m.ContactFooter }))
+    .catch(() => ({ default: () => null }))
+);
+
+// Lazy load heavy modal components - only when needed
+const RegistrationPage = lazy(() =>
+  import('@/components/RegistrationPage')
+    .then(m => ({ default: m.RegistrationPage }))
+    .catch(() => ({ default: () => null }))
+);
+const ExploreEventsPage = lazy(() =>
+  import('@/components/ExploreEventsPage')
+    .then(m => ({ default: m.ExploreEventsPage }))
+    .catch(() => ({ default: () => null }))
+);
+const UpsideDown = lazy(() =>
+  import('@/components/UpsideDown')
+    .then(m => ({ default: m.UpsideDown }))
+    .catch(() => ({ default: () => null }))
+);
+const RegistrationStatusChecker = lazy(() =>
+  import('@/components/RegistrationStatusChecker')
+    .then(m => ({ default: m.RegistrationStatusChecker }))
+    .catch(() => ({ default: () => null }))
+);
+
+// Minimal skeleton loaders
+const SectionSkeleton = memo(({ height = 'h-96' }: { height?: string }) => (
+  <div className={`w-full ${height} bg-gradient-to-b from-transparent to-red-950/5`} />
+));
+SectionSkeleton.displayName = 'SectionSkeleton';
+
+// Modal loader
+const ModalLoader = memo(() => (
+  <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div className="w-10 h-10 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
+  </div>
+));
+ModalLoader.displayName = 'ModalLoader';
+
+const Index = () => {
+  // Check localStorage to skip intro if already seen
+  const hasSeenIntro = typeof window !== 'undefined' && localStorage.getItem('kaizenIntroSeen') === 'true';
+
+  const [showIntro, setShowIntro] = useState(!hasSeenIntro);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showMainContent, setShowMainContent] = useState(hasSeenIntro);
+  const [triggerHeroAnimation, setTriggerHeroAnimation] = useState(hasSeenIntro);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [showExploreEvents, setShowExploreEvents] = useState(false);
+  const [showUpsideDown, setShowUpsideDown] = useState(false);
+  const [showStatusChecker, setShowStatusChecker] = useState(false);
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+
+  // Preload heavy components while intro is playing
+  useEffect(() => {
+    // Start loading background immediately
+    setBackgroundLoaded(true);
+
+    // Preload other chunks
+    const preloadChunks = async () => {
+      try {
+        await Promise.all([
+          import('@/components/AtmosphericBackground'),
+          import('@/components/DimensionalRift'),
+          import('@/components/EventCountdown'),
+          import('@/components/FeaturedEvents'),
+        ]);
+      } catch (e) {
+        console.error("Preload failed", e);
+      }
+    };
+
+    // Start preloading after a short delay to let the intro start smoothly
+    const timer = setTimeout(() => {
+      preloadChunks();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Control body overflow when modals are open
+  useEffect(() => {
+    if (showIntro || showRegistration || showExploreEvents || showUpsideDown || showStatusChecker) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showIntro, showRegistration, showExploreEvents, showUpsideDown, showStatusChecker]);
+
+  // Memoized handlers
+  const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
+  const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
+  const handleShowExploreEvents = useCallback(() => setShowExploreEvents(true), []);
+  const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
+  const handleShowUpsideDown = useCallback(() => setShowUpsideDown(true), []);
+  const handleCloseUpsideDown = useCallback(() => setShowUpsideDown(false), []);
+  const handleShowStatusChecker = useCallback(() => setShowStatusChecker(true), []);
+  const handleCloseStatusChecker = useCallback(() => setShowStatusChecker(false), []);
+
+  const handleExploreToRegister = useCallback(() => {
+    setShowExploreEvents(false);
+    setShowRegistration(true);
+  }, []);
+
+  return (
+    <>
+      {/* Intro with professional transition */}
+      {showIntro && (
+        <StrangerThingsIntro onComplete={() => {
+          // Mark intro as seen
+          localStorage.setItem('kaizenIntroSeen', 'true');
+
+          // Start transition sequence
+          setIsTransitioning(true);
+
+          // Step 1: Show main content (but still transparent from CSS)
+          setShowMainContent(true);
+
+          // Step 2: Hide intro after content starts appearing
+          setTimeout(() => {
+            setShowIntro(false);
+          }, 800);
+
+          // Step 3: Trigger hero animations after intro is fully gone
+          setTimeout(() => {
+            setTriggerHeroAnimation(true);
+            setIsTransitioning(false);
+          }, 1000);
+        }} />
+      )}
+
+      {/* Main content with fade-in transition */}
+      <div
+        className="relative w-full min-h-screen bg-black transition-opacity duration-700 ease-out"
+        style={{
+          backgroundColor: '#000',
+          opacity: showMainContent ? 1 : 0,
+          visibility: showMainContent ? 'visible' : 'hidden'
+        }}
+      >
+        <SEOHead
+          title="Kaizen 2025 - Technical & Cultural Fest | Register Now"
+          description="Join Kaizen 2025, the premier technical and cultural festival. Register for exciting events, competitions, workshops, and win amazing prizes. Don't miss out!"
+          keywords="kaizen 2025, technical fest, cultural fest, college events, student competitions, tech workshops, innovation, prizes"
+        />
+
+        {/* Background effects - deferred loading */}
+        {backgroundLoaded && showMainContent && (
+          <Suspense fallback={null}>
+            <AtmosphericBackground />
+            <DimensionalRift />
+          </Suspense>
+        )}
+
+        <div className="relative z-10">
+          {/* Critical above-the-fold content - no lazy loading */}
+          <Navbar onRegisterClick={handleShowRegistration} onCheckStatusClick={handleShowStatusChecker} />
+          <HeroSection
+            onEnterUpsideDown={handleShowUpsideDown}
+            onExploreEvents={handleShowExploreEvents}
+            animateIn={triggerHeroAnimation}
+          />
+
+          {/* Above-the-fold but non-critical */}
+          <Suspense fallback={<SectionSkeleton height="h-32" />}>
+            <EventCountdown />
+          </Suspense>
+
+          {/* Below-the-fold sections - content-visibility auto */}
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+            <Suspense fallback={<SectionSkeleton />}>
+              <FeaturedEvents onViewAll={handleShowExploreEvents} />
+            </Suspense>
+          </div>
+
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+            <Suspense fallback={<SectionSkeleton />}>
+              <AboutSection />
+            </Suspense>
+          </div>
+
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 250px' }}>
+            <Suspense fallback={<SectionSkeleton height="h-64" />}>
+              <RegistrationCTA onOpen={handleShowRegistration} />
+            </Suspense>
+          </div>
+
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
+            <Suspense fallback={<SectionSkeleton />}>
+              <FAQSection />
+            </Suspense>
+          </div>
+
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
+            <Suspense fallback={<SectionSkeleton />}>
+              <ContactForm />
+            </Suspense>
+          </div>
+
+          <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 250px' }}>
+            <Suspense fallback={<SectionSkeleton height="h-64" />}>
+              <ContactFooter />
+            </Suspense>
+          </div>
+
+          {/* Floating WhatsApp Button */}
+          <WhatsAppButton />
+        </div>
+
+        {/* Modal components - only render when active */}
+        {showRegistration && (
+          <Suspense fallback={<ModalLoader />}>
+            <RegistrationPage onClose={handleCloseRegistration} />
+          </Suspense>
+        )}
+
+        {showExploreEvents && (
+          <Suspense fallback={<ModalLoader />}>
+            <ExploreEventsPage
+              onClose={handleCloseExploreEvents}
+              onRegister={handleExploreToRegister}
+            />
+          </Suspense>
+        )}
+
+        {showUpsideDown && (
+          <Suspense fallback={<ModalLoader />}>
+            <UpsideDown onClose={handleCloseUpsideDown} />
+          </Suspense>
+        )}
+
+        {showStatusChecker && (
+          <Suspense fallback={<ModalLoader />}>
+            <RegistrationStatusChecker onClose={handleCloseStatusChecker} />
+          </Suspense>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default Index;

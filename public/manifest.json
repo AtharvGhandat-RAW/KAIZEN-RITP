@@ -1,0 +1,67 @@
+{
+    "name": "KAIZEN Tech Fest 2024 - Stranger Things Edition",
+    "short_name": "KAIZEN",
+    "description": "The Official Tech Festival of RIT - Experience the Stranger Things Edition with cutting-edge technology events, competitions, hackathons, and workshops.",
+    "start_url": "/",
+    "id": "/",
+    "display": "standalone",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "browser"
+    ],
+    "background_color": "#000000",
+    "theme_color": "#dc2626",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "en-IN",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "48x48",
+            "type": "image/x-icon"
+        },
+        {
+            "src": "/kaizen-logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/kaizen-logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "categories": [
+        "events",
+        "technology",
+        "education",
+        "entertainment"
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Events",
+            "short_name": "Events",
+            "description": "View all KAIZEN events",
+            "url": "/#events",
+            "icons": []
+        },
+        {
+            "name": "Register",
+            "short_name": "Register",
+            "description": "Register for events",
+            "url": "/#register",
+            "icons": []
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    }
+}
