@@ -37,7 +37,6 @@ const SettingInput = memo(({
   hint,
   value,
   saving,
-  onChange,
   onBlur
 }: {
   settingKey: string;
@@ -48,7 +47,6 @@ const SettingInput = memo(({
   hint?: string;
   value: string;
   saving: string | null;
-  onChange: (key: string, value: string) => void;
   onBlur: (key: string, value: string) => void;
 }) => (
   <div>
@@ -59,9 +57,8 @@ const SettingInput = memo(({
     <Input
       type={type}
       defaultValue={value}
-      onChange={(e) => onChange(settingKey, e.target.value)}
       onBlur={(e) => onBlur(settingKey, e.target.value)}
-      className="bg-black/40 border-white/20 mt-1 focus:border-green-500"
+      className="bg-black/40 border-white/20 mt-1 focus:border-green-500 transition-colors duration-200"
       placeholder={placeholder}
     />
     {hint && <p className="text-white/40 text-xs mt-1">{hint}</p>}
@@ -95,18 +92,25 @@ export default function Settings() {
   }, [saving]);
 
   const fetchSettings = async () => {
-    const { data } = await supabase.from('settings').select('*');
-    if (data) {
-      const settingsMap: Record<string, SettingValue> = {};
-      data.forEach((s: { key: string; value: string }) => {
-        try {
-          settingsMap[s.key] = JSON.parse(String(s.value));
-        } catch {
-          settingsMap[s.key] = s.value;
-        }
-      });
-      setSettings(settingsMap);
-      setSettingsLoaded(true);
+    try {
+      const { data, error } = await supabase.from('settings').select('*');
+      if (error) throw error;
+      
+      if (data) {
+        const settingsMap: Record<string, SettingValue> = {};
+        data.forEach((s: { key: string; value: string }) => {
+          try {
+            settingsMap[s.key] = JSON.parse(String(s.value));
+          } catch {
+            settingsMap[s.key] = s.value;
+          }
+        });
+        setSettings(settingsMap);
+        setSettingsLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' });
     }
   };
 
@@ -114,36 +118,33 @@ export default function Settings() {
   const saveSetting = useCallback(async (key: string, value: SettingValue) => {
     setSaving(key);
     try {
-      const { data: existing } = await supabase
-        .from('settings')
-        .select('key')
-        .eq('key', key)
-        .single();
-
-      if (existing) {
-        await supabase.from('settings').update({ value: JSON.stringify(value) }).eq('key', key);
-      } else {
-        await supabase.from('settings').insert({ key, value: JSON.stringify(value), category: 'general', description: '' });
-      }
-
-      // Update local state without triggering re-render that closes keyboard
+      // Optimistic update
       setSettings(prev => ({ ...prev, [key]: value }));
+
+      // Use upsert for atomic insert/update - much faster
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ 
+          key, 
+          value: JSON.stringify(value),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
       toast({ title: '✓ Saved', description: `${key.replace(/_/g, ' ')} updated` });
     } catch (error) {
+      console.error('Save error:', error);
       toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });
+      // Revert on error (optional, but good practice)
+      fetchSettings();
     } finally {
       setSaving(null);
     }
   }, [toast]);
 
-  const updateSetting = useCallback((key: string, value: SettingValue) => {
-    // Don't update state on every keystroke - only track for blur save
-    // This prevents re-renders that close the keyboard
-  }, []);
-
   // For switches - save immediately
   const handleSwitchChange = useCallback((key: string, value: boolean) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
     saveSetting(key, value);
   }, [saveSetting]);
 
@@ -151,11 +152,6 @@ export default function Settings() {
   const handleInputBlur = useCallback((key: string, value: string) => {
     saveSetting(key, value);
   }, [saveSetting]);
-
-  // Handler for input change - no state update to prevent re-render
-  const handleInputChange = useCallback((key: string, value: string) => {
-    // Intentionally empty - we use defaultValue and save on blur
-  }, []);
 
   return (
     <ProtectedRoute requiredRoles={['super_admin']}>
@@ -179,17 +175,21 @@ export default function Settings() {
                 <Clock className="w-5 h-5 text-blue-500" />
                 <h2 className="text-lg font-semibold text-white">Event Countdown</h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <Label className="text-white/80">Event Date & Time</Label>
-                  <Input
-                    type="datetime-local"
-                    key={settingsLoaded ? 'loaded-countdown' : 'loading-countdown'}
-                    defaultValue={String(settings['countdown_target'] || '').replace(/"/g, '')}
-                    onBlur={(e) => saveSetting('countdown_target', e.target.value)}
-                    className="bg-black/40 border-white/20 mt-1 focus:border-blue-500"
-                  />
+                  {settingsLoaded ? (
+                    <Input
+                      type="datetime-local"
+                      key="loaded-countdown"
+                      defaultValue={String(settings['countdown_target'] || '').replace(/"/g, '')}
+                      onBlur={(e) => saveSetting('countdown_target', e.target.value)}
+                      className="bg-black/40 border-white/20 mt-1 focus:border-blue-500"
+                    />
+                  ) : (
+                    <div className="h-10 w-full bg-white/5 animate-pulse rounded mt-1" />
+                  )}
                   <p className="text-white/40 text-xs mt-1">This countdown is shown on the homepage</p>
                 </div>
               </div>
@@ -201,20 +201,24 @@ export default function Settings() {
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                 <h2 className="text-lg font-semibold text-white">System Status</h2>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-red-950/20 rounded-lg border border-red-500/20">
                 <div className="space-y-1">
                   <Label className="text-white font-medium">Maintenance Mode</Label>
                   <p className="text-white/50 text-sm">
-                    Enable to show "Under Maintenance" page to all visitors. 
+                    Enable to show "Under Maintenance" page to all visitors.
                     Admins can still access the dashboard.
                   </p>
                 </div>
-                <Switch
-                  checked={Boolean(settings['maintenance_mode'])}
-                  onCheckedChange={(checked) => handleSwitchChange('maintenance_mode', checked)}
-                  className="data-[state=checked]:bg-red-600"
-                />
+                {settingsLoaded ? (
+                  <Switch
+                    checked={Boolean(settings['maintenance_mode'])}
+                    onCheckedChange={(checked) => handleSwitchChange('maintenance_mode', checked)}
+                    className="data-[state=checked]:bg-red-600"
+                  />
+                ) : (
+                  <div className="h-6 w-11 bg-white/5 animate-pulse rounded-full" />
+                )}
               </div>
             </Card>
 
@@ -233,24 +237,32 @@ export default function Settings() {
                   </div>
                   <div className="flex items-center gap-2">
                     {saving === 'registration_enabled' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
-                    <Switch
-                      checked={Boolean(settings.registration_enabled)}
-                      onCheckedChange={(checked) => handleSwitchChange('registration_enabled', checked)}
-                      className="data-[state=checked]:bg-green-600"
-                    />
+                    {settingsLoaded ? (
+                      <Switch
+                        checked={Boolean(settings.registration_enabled)}
+                        onCheckedChange={(checked) => handleSwitchChange('registration_enabled', checked)}
+                        className="data-[state=checked]:bg-green-600"
+                      />
+                    ) : (
+                      <div className="h-6 w-11 bg-white/5 animate-pulse rounded-full" />
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <Label className="text-white/80">Notice Banner</Label>
-                  <Textarea
-                    key={settingsLoaded ? 'loaded' : 'loading'}
-                    defaultValue={String(settings.registration_notice || '')}
-                    onBlur={(e) => saveSetting('registration_notice', e.target.value)}
-                    className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
-                    rows={2}
-                    placeholder="Registration closes on Feb 20th at 11:59 PM"
-                  />
+                  {settingsLoaded ? (
+                    <Textarea
+                      key="loaded-notice"
+                      defaultValue={String(settings.registration_notice || '')}
+                      onBlur={(e) => saveSetting('registration_notice', e.target.value)}
+                      className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
+                      rows={2}
+                      placeholder="Registration closes on Feb 20th at 11:59 PM"
+                    />
+                  ) : (
+                    <div className="h-20 w-full bg-white/5 animate-pulse rounded mt-1" />
+                  )}
                   <p className="text-white/40 text-xs mt-1">Leave empty to hide</p>
                 </div>
               </div>
@@ -264,7 +276,7 @@ export default function Settings() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {settingsLoaded && (
+                {settingsLoaded ? (
                   <>
                     <SettingInput
                       settingKey="contact_email"
@@ -274,7 +286,6 @@ export default function Settings() {
                       icon={Mail}
                       value={String(settings['contact_email'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <SettingInput
@@ -285,7 +296,6 @@ export default function Settings() {
                       hint="Used for WhatsApp support button"
                       value={String(settings['contact_phone'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <div className="md:col-span-2">
@@ -296,10 +306,15 @@ export default function Settings() {
                         icon={MapPin}
                         value={String(settings['contact_address'] || '')}
                         saving={saving}
-                        onChange={handleInputChange}
                         onBlur={handleInputBlur}
                       />
                     </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded md:col-span-2" />
                   </>
                 )}
               </div>
@@ -313,7 +328,7 @@ export default function Settings() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {settingsLoaded && (
+                {settingsLoaded ? (
                   <>
                     <SettingInput
                       settingKey="social_instagram"
@@ -322,7 +337,6 @@ export default function Settings() {
                       icon={Instagram}
                       value={String(settings['social_instagram'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <SettingInput
@@ -332,7 +346,6 @@ export default function Settings() {
                       icon={Facebook}
                       value={String(settings['social_facebook'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <SettingInput
@@ -342,7 +355,6 @@ export default function Settings() {
                       icon={Twitter}
                       value={String(settings['social_twitter'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <SettingInput
@@ -352,7 +364,6 @@ export default function Settings() {
                       icon={Linkedin}
                       value={String(settings['social_linkedin'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
                     <SettingInput
@@ -362,9 +373,16 @@ export default function Settings() {
                       icon={Youtube}
                       value={String(settings['social_youtube'] || '')}
                       saving={saving}
-                      onChange={handleInputChange}
                       onBlur={handleInputBlur}
                     />
+                  </>
+                ) : (
+                  <>
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
+                    <div className="h-16 w-full bg-white/5 animate-pulse rounded" />
                   </>
                 )}
               </div>
