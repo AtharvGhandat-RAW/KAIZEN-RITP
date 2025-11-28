@@ -21,8 +21,8 @@ export function EventCountdown() {
 
       if (data?.value) {
         // Remove quotes if present and parse
-        const cleanValue = typeof data.value === 'string' 
-          ? data.value.replace(/"/g, '') 
+        const cleanValue = typeof data.value === 'string'
+          ? data.value.replace(/"/g, '')
           : String(data.value);
         setCountdownTarget(cleanValue);
       }
@@ -32,9 +32,9 @@ export function EventCountdown() {
 
     const channel = supabase
       .channel('countdown-settings')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
         table: 'settings',
         filter: 'key=eq.countdown_target'
       }, (payload) => {
@@ -81,7 +81,7 @@ export function EventCountdown() {
   return (
     <section className="relative py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 lg:px-12 mt-8 sm:mt-12 md:mt-16 w-full max-w-[1440px] mx-auto">
       <div className="text-center mb-8 sm:mb-10">
-        <div className="flex items-center justify-center gap-2 mb-[12px] mt-[13px] mr-[0px] ml-[0px]">
+        <div className="flex items-center justify-center gap-2 my-3">
           <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
           <h2 className="text-2xl sm:text-3xl md:text-4xl text-white/90">
             Event Starts In
@@ -108,7 +108,7 @@ export function EventCountdown() {
             <div className="relative bg-black/40 backdrop-blur-sm border border-red-600/30 p-4 sm:p-6 md:p-8 hover:border-red-600/60 transition-all duration-300 hover:scale-105">
               {/* Glow effect on hover */}
               <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/5 transition-all duration-300" />
-              
+
               <div className="relative z-10">
                 <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-2" style={{
                   textShadow: '0 0 20px rgba(255, 69, 0, 0.5)'

@@ -277,7 +277,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         {isPastPhase('finalReveal') && (
           <div className={`final-reveal stage-${revealStage}`}>
             <div className="stranger-things-container">
-              
+
               <div className="st-content-block">
                 {/* Top Bar */}
                 <div className="st-bar st-bar-top" />
@@ -286,11 +286,11 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
                 <div className="st-title-wrapper">
                   <h1 className="st-title-main">
                     {'KAIZEN'.split('').map((letter, i) => (
-                      <span 
-                        key={i} 
+                      <span
+                        key={i}
                         className="st-letter"
-                        style={{ 
-                          animationDelay: `${i * 0.1}s` 
+                        style={{
+                          animationDelay: `${i * 0.1}s`
                         }}
                       >
                         {letter}
@@ -303,11 +303,11 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
                 <div className="st-subtitle-wrapper">
                   <h2 className="st-title-sub">
                     {'RITP'.split('').map((letter, i) => (
-                      <span 
-                        key={i} 
+                      <span
+                        key={i}
                         className="st-letter-sub"
-                        style={{ 
-                          animationDelay: `${0.8 + (i * 0.05)}s` 
+                        style={{
+                          animationDelay: `${0.8 + (i * 0.05)}s`
                         }}
                       >
                         {letter}
@@ -315,7 +315,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
                     ))}
                   </h2>
                 </div>
-                
+
                 {/* Bottom Bar */}
                 <div className="st-bar st-bar-bottom" />
               </div>

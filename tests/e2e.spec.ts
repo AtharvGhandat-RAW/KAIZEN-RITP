@@ -5,13 +5,12 @@ test.describe('KAIZEN Website - E2E Tests', () => {
     // Helper to skip intro
     async function skipIntro(page: import('@playwright/test').Page) {
         await page.goto('/');
+        // Set localStorage to skip intro
+        await page.evaluate(() => {
+            localStorage.setItem('kaizenIntroSeen', 'true');
+        });
+        await page.reload();
         await page.waitForLoadState('domcontentloaded');
-        await page.waitForTimeout(1500);
-
-        const skipButton = page.locator('button:has-text("Skip")').first();
-        if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await skipButton.click();
-        }
         await page.waitForTimeout(500);
     }
 
@@ -135,20 +134,20 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Registration modal opens and closes', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             // Try to find and click register button
             const registerButtons = page.locator('button:has-text("Register"), a:has-text("Register")');
             const count = await registerButtons.count();
-            
+
             if (count > 0) {
                 await registerButtons.first().click();
                 await page.waitForTimeout(1000);
-                
+
                 // Check if modal/dialog opened
                 const modal = page.locator('[role="dialog"], .modal, [data-modal]').first();
                 if (await modal.isVisible({ timeout: 3000 }).catch(() => false)) {
                     await expect(modal).toBeVisible();
-                    
+
                     // Try to close modal
                     const closeButton = page.locator('button[aria-label*="close"], button:has(svg)').first();
                     if (await closeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -162,7 +161,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Explore Events modal opens', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             const exploreButton = page.locator('button:has-text("Explore"), a:has-text("Explore"), button:has-text("View All")').first();
             if (await exploreButton.isVisible({ timeout: 5000 }).catch(() => false)) {
                 await exploreButton.click();
@@ -175,7 +174,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Registration Status Checker modal opens', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             const statusButton = page.locator('button:has-text("Status"), button:has-text("Check Status")').first();
             if (await statusButton.isVisible({ timeout: 3000 }).catch(() => false)) {
                 await statusButton.click();
@@ -191,13 +190,13 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Registration form fields are present', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             // Open registration modal
             const registerButton = page.locator('button:has-text("Register")').first();
             if (await registerButton.isVisible({ timeout: 3000 }).catch(() => false)) {
                 await registerButton.click();
                 await page.waitForTimeout(1500);
-                
+
                 // Check for form fields
                 const nameField = page.locator('input[type="text"], input[name*="name"], input[placeholder*="name" i]').first();
                 if (await nameField.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -209,20 +208,22 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Registration form validation works', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             const registerButton = page.locator('button:has-text("Register")').first();
             if (await registerButton.isVisible({ timeout: 3000 }).catch(() => false)) {
                 await registerButton.click();
                 await page.waitForTimeout(1500);
-                
+
                 // Try to submit empty form
-                const submitButton = page.locator('button[type="submit"], button:has-text("Submit"), button:has-text("Register")').first();
+                // Use a more specific selector for the modal submit button
+                const submitButton = page.locator('.fixed.inset-0 button[type="submit"]').first();
                 if (await submitButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-                    await submitButton.click();
-                    await page.waitForTimeout(1000);
-                    // Form should show validation errors
-                    const body = page.locator('body');
-                    await expect(body).toBeVisible();
+                    // The button should be disabled initially because declaration is not checked
+                    await expect(submitButton).toBeDisabled();
+
+                    // Check the declaration to enable the button (if that's the only blocker)
+                    // But since we want to test validation of other fields, we can just assert it's disabled
+                    // which proves that client-side validation state is active.
                 }
             }
         });
@@ -244,7 +245,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
             await waitForMainContent(page);
             await page.evaluate(() => window.scrollTo(0, 400));
             await page.waitForTimeout(2000);
-            
+
             const eventCard = page.locator('[class*="card"], [class*="event"]').first();
             if (await eventCard.isVisible({ timeout: 3000 }).catch(() => false)) {
                 await expect(eventCard).toBeVisible();
@@ -259,7 +260,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
             await waitForMainContent(page);
             await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.8));
             await page.waitForTimeout(2000);
-            
+
             const contactSection = page.locator('text=Get In Touch, text=Contact').first();
             if (await contactSection.isVisible({ timeout: 5000 }).catch(() => false)) {
                 await expect(contactSection).toBeVisible();
@@ -271,7 +272,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
             await waitForMainContent(page);
             await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.8));
             await page.waitForTimeout(2000);
-            
+
             const inputFields = page.locator('input, textarea');
             const count = await inputFields.count();
             if (count > 0) {
@@ -313,7 +314,7 @@ test.describe('KAIZEN Website - E2E Tests', () => {
             await page.goto('/admin');
             await page.waitForLoadState('domcontentloaded');
             await page.waitForTimeout(1000);
-            
+
             const loginForm = page.locator('form, input[type="email"], input[type="password"]').first();
             if (await loginForm.isVisible({ timeout: 3000 }).catch(() => false)) {
                 await expect(loginForm).toBeVisible();
@@ -382,13 +383,13 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Lazy loaded components appear on scroll', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             // Scroll through page
             await page.evaluate(() => window.scrollTo(0, 500));
             await page.waitForTimeout(1000);
             await page.evaluate(() => window.scrollTo(0, 1000));
             await page.waitForTimeout(1000);
-            
+
             const body = page.locator('body');
             await expect(body).toBeVisible();
         });
@@ -427,21 +428,21 @@ test.describe('KAIZEN Website - E2E Tests', () => {
         test('Complete user journey: Home -> Explore -> Register', async ({ page }) => {
             await skipIntro(page);
             await waitForMainContent(page);
-            
+
             // Navigate to explore events
             const exploreButton = page.locator('button:has-text("Explore"), a:has-text("Explore")').first();
             if (await exploreButton.isVisible({ timeout: 5000 }).catch(() => false)) {
                 await exploreButton.click();
                 await page.waitForTimeout(1500);
-                
+
                 // Try to find register button in modal
-                const registerInModal = page.locator('button:has-text("Register")').first();
+                const registerInModal = page.locator('.fixed.inset-0 button:has-text("Register")').first();
                 if (await registerInModal.isVisible({ timeout: 3000 }).catch(() => false)) {
                     await registerInModal.click();
                     await page.waitForTimeout(1000);
                 }
             }
-            
+
             const body = page.locator('body');
             await expect(body).toBeVisible();
         });
@@ -450,11 +451,11 @@ test.describe('KAIZEN Website - E2E Tests', () => {
             await page.goto('/terms');
             await page.waitForLoadState('domcontentloaded');
             await expect(page.locator('body')).toBeVisible();
-            
+
             await page.goto('/privacy');
             await page.waitForLoadState('domcontentloaded');
             await expect(page.locator('body')).toBeVisible();
-            
+
             await page.goto('/refund');
             await page.waitForLoadState('domcontentloaded');
             await expect(page.locator('body')).toBeVisible();

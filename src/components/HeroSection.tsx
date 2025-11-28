@@ -17,7 +17,7 @@ export const HeroSection = memo(function HeroSection({ onEnterUpsideDown, onExpl
         <h1
           className="kaizen-title mb-6 sm:mb-8 tracking-wider relative"
           style={{
-            fontFamily: '"Benguiat", "ITC Benguiat", "Times New Roman", serif',
+            fontFamily: '"Benguiat", "ITC Benguiat", "Libre Baskerville", "Merriweather", "Times New Roman", serif',
             lineHeight: '1',
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
