@@ -201,7 +201,7 @@ export default function Reports() {
 
       if (data && data.length > 0) {
         const csvData = data.map(reg => ({
-          'Registration ID': reg.id || '',
+          'Ref ID': reg.id || '',
           'Student Name': reg.profiles?.full_name || '',
           'Email': reg.profiles?.email || '',
           'Phone': reg.profiles?.phone || '',
@@ -214,7 +214,7 @@ export default function Reports() {
           'Registration Type': reg.registration_type || '',
           'Payment Status': reg.payment_status || '',
           'Payment Proof URL': reg.payment_proof_url || 'Not uploaded',
-          'Registration Fee': reg.events?.registration_fee || 0,
+          'Registration Fee': reg.events?.registration_fee ? `₹${reg.events.registration_fee}` : '₹0',
           'Registered On': new Date(reg.created_at).toLocaleDateString(),
         }));
 
@@ -254,9 +254,9 @@ export default function Reports() {
           'Email': reg.profiles?.email || '',
           'Phone': reg.profiles?.phone || '',
           'Event Name': reg.events?.name || '',
-          'Registration Fee': reg.events?.registration_fee || 0,
+          'Registration Fee': reg.events?.registration_fee ? `₹${reg.events.registration_fee}` : '₹0',
           'Payment Status': reg.payment_status || '',
-          'Payment ID': reg.payment_id || 'N/A',
+          'Transaction Ref': reg.payment_id || 'N/A',
           'Registration Date': new Date(reg.created_at).toLocaleDateString(),
         }));
 
@@ -291,11 +291,11 @@ export default function Reports() {
           'Event Type': event.event_type || '',
           'Event Date': new Date(event.event_date).toLocaleDateString(),
           'Venue': event.venue || '',
-          'Registration Fee': event.registration_fee || 0,
+          'Registration Fee': event.registration_fee ? `₹${event.registration_fee}` : '₹0',
           'Total Registrations': event.registrations?.length || 0,
           'Completed Payments': event.registrations?.filter(r => r.payment_status === 'completed').length || 0,
           'Pending Payments': event.registrations?.filter(r => r.payment_status === 'pending').length || 0,
-          'Revenue': (event.registrations?.filter(r => r.payment_status === 'completed').length || 0) * (event.registration_fee || 0),
+          'Revenue': `₹${(event.registrations?.filter(r => r.payment_status === 'completed').length || 0) * (event.registration_fee || 0)}`,
           'Status': event.status || '',
         }));
 
@@ -317,7 +317,7 @@ export default function Reports() {
     try {
       let query = supabase
         .from('registrations')
-        .select('*, events(name, event_date, venue), profiles(full_name, phone, college)')
+        .select('*, events(name, event_date, venue), profiles(full_name, phone, college, year, branch)')
         .eq('payment_status', 'completed');
 
       if (selectedEvent !== 'all') {
@@ -331,15 +331,21 @@ export default function Reports() {
       }
 
       if (data && data.length > 0) {
-        const csvData = data.map((reg, index) => ({
+        // Sort by student name
+        const sortedData = data.sort((a, b) => {
+          const nameA = a.profiles?.full_name || '';
+          const nameB = b.profiles?.full_name || '';
+          return nameA.localeCompare(nameB);
+        });
+
+        const csvData = sortedData.map((reg, index) => ({
           'S.No': index + 1,
           'Student Name': reg.profiles?.full_name || '',
-          'Phone': reg.profiles?.phone || '',
           'College': reg.profiles?.college || '',
+          'Year': reg.profiles?.year || '',
+          'Branch': reg.profiles?.branch || '',
+          'Phone': reg.profiles?.phone || '',
           'Event Name': reg.events?.name || '',
-          'Event Date': reg.events?.event_date ? new Date(reg.events.event_date).toLocaleDateString() : '',
-          'Venue': reg.events?.venue || '',
-          'Attendance': '',
           'Signature': '',
         }));
 
