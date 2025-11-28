@@ -260,19 +260,6 @@ All colors MUST be HSL.
     }
   }
 
-  /* Hide scrollbar for Upside Down component */
-  .upside-down-scroll {
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE and Edge */
-  }
-
-  .upside-down-scroll::-webkit-scrollbar {
-    display: none;
-    /* Chrome, Safari, Opera */
-  }
-
   /* Responsive utilities */
   @media (max-width: 640px) {
     :root {

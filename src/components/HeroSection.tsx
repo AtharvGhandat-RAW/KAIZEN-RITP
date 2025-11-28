@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-export const HeroSection = memo(function HeroSection({ onEnterUpsideDown, onExploreEvents, animateIn = true }: { onEnterUpsideDown?: () => void; onExploreEvents?: () => void; animateIn?: boolean }) {
+export const HeroSection = memo(function HeroSection({ onExploreEvents, animateIn = true }: { onExploreEvents?: () => void; animateIn?: boolean }) {
   const title = "KAIZEN";
   const [shouldAnimate, setShouldAnimate] = React.useState(animateIn);
 
@@ -89,30 +89,6 @@ export const HeroSection = memo(function HeroSection({ onEnterUpsideDown, onExpl
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{
                 boxShadow: 'inset 0 0 20px rgba(255, 69, 0, 0.3), 0 0 20px rgba(255, 69, 0, 0.2)'
-              }}
-            />
-          </button>
-
-          <button
-            className="group relative px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 border-2 border-red-600 text-red-500 transition-all duration-300 overflow-hidden w-full sm:w-auto"
-            style={{
-              fontSize: '14px',
-              letterSpacing: '0.05em',
-              textShadow: '0 0 10px rgba(255, 69, 0, 0.5)'
-            }}
-            onClick={onEnterUpsideDown}
-          >
-            <span className="relative z-10 group-hover:text-red-400 transition-colors duration-300 text-center">
-              Enter the Upside Down
-            </span>
-            <div
-              className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/15 transition-all duration-300"
-            />
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{
-                boxShadow: 'inset 0 0 25px rgba(255, 69, 0, 0.4), 0 0 25px rgba(255, 69, 0, 0.3)',
-                animation: 'dangerPulse 2s ease-in-out infinite'
               }}
             />
           </button>

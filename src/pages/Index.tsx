@@ -67,11 +67,6 @@ const ExploreEventsPage = lazy(() =>
     .then(m => ({ default: m.ExploreEventsPage }))
     .catch(() => ({ default: () => null }))
 );
-const UpsideDown = lazy(() =>
-  import('@/components/UpsideDown')
-    .then(m => ({ default: m.UpsideDown }))
-    .catch(() => ({ default: () => null }))
-);
 const RegistrationStatusChecker = lazy(() =>
   import('@/components/RegistrationStatusChecker')
     .then(m => ({ default: m.RegistrationStatusChecker }))
@@ -102,7 +97,6 @@ const Index = () => {
   const [triggerHeroAnimation, setTriggerHeroAnimation] = useState(hasSeenIntro);
   const [showRegistration, setShowRegistration] = useState(false);
   const [showExploreEvents, setShowExploreEvents] = useState(false);
-  const [showUpsideDown, setShowUpsideDown] = useState(false);
   const [showStatusChecker, setShowStatusChecker] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
@@ -135,7 +129,7 @@ const Index = () => {
 
   // Control body overflow when modals are open
   useEffect(() => {
-    if (showIntro || showRegistration || showExploreEvents || showUpsideDown || showStatusChecker) {
+    if (showIntro || showRegistration || showExploreEvents || showStatusChecker) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -143,15 +137,13 @@ const Index = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showIntro, showRegistration, showExploreEvents, showUpsideDown, showStatusChecker]);
+  }, [showIntro, showRegistration, showExploreEvents, showStatusChecker]);
 
   // Memoized handlers
   const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
   const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
   const handleShowExploreEvents = useCallback(() => setShowExploreEvents(true), []);
   const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
-  const handleShowUpsideDown = useCallback(() => setShowUpsideDown(true), []);
-  const handleCloseUpsideDown = useCallback(() => setShowUpsideDown(false), []);
   const handleShowStatusChecker = useCallback(() => setShowStatusChecker(true), []);
   const handleCloseStatusChecker = useCallback(() => setShowStatusChecker(false), []);
 
@@ -216,7 +208,6 @@ const Index = () => {
           {/* Critical above-the-fold content - no lazy loading */}
           <Navbar onRegisterClick={handleShowRegistration} onCheckStatusClick={handleShowStatusChecker} />
           <HeroSection
-            onEnterUpsideDown={handleShowUpsideDown}
             onExploreEvents={handleShowExploreEvents}
             animateIn={triggerHeroAnimation}
           />
@@ -277,12 +268,6 @@ const Index = () => {
               onClose={handleCloseExploreEvents}
               onRegister={handleExploreToRegister}
             />
-          </Suspense>
-        )}
-
-        {showUpsideDown && (
-          <Suspense fallback={<ModalLoader />}>
-            <UpsideDown onClose={handleCloseUpsideDown} />
           </Suspense>
         )}
 
