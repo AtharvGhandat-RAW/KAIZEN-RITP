@@ -21,9 +21,9 @@ html {
 /* Improve touch responsiveness on mobile */
 @media (pointer: coarse) {
 
-  button,
+  button:not([role="switch"]),
   a,
-  input,
+  input:not([type="checkbox"]),
   select,
   textarea {
     min-height: 44px;
