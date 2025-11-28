@@ -96,6 +96,53 @@ body {
   position: relative;
 }
 
+/* ========================================
+   ADMIN PANEL SCROLL PERFORMANCE
+   ======================================== */
+
+/* Disable expensive effects during scroll for admin pages */
+.admin-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Optimize backdrop-blur - disable on mobile for performance */
+@media (pointer: coarse), (max-width: 768px) {
+  .backdrop-blur-md,
+  .backdrop-blur-sm,
+  .backdrop-blur {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Disable hover scale effects on touch devices */
+@media (pointer: coarse) {
+  .hover\:scale-105:hover,
+  .hover\:scale-\[1\.02\]:hover,
+  .hover\:scale-110:hover {
+    transform: none !important;
+  }
+  
+  /* Reduce animation complexity on mobile */
+  .animate-pulse {
+    animation: none !important;
+  }
+  
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
+/* GPU acceleration for smooth scrolling containers */
+main, 
+[class*="overflow-y-auto"],
+[class*="overflow-auto"] {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
 /* Hardware acceleration for animations - apply selectively */
 .animate-pulse,
 .animate-spin,

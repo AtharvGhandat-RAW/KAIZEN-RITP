@@ -15,6 +15,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <main 
         className={`min-h-screen pt-20 lg:pt-0 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'} px-4 sm:px-6 lg:px-8 py-6 overflow-x-hidden transition-[margin] duration-300 relative z-10`}
+        style={{ 
+          transform: 'translateZ(0)',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
+        }}
       >
         {children}
       </main>
