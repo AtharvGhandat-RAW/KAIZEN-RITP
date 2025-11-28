@@ -137,17 +137,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
       ref={containerRef}
       className={`intro-container ${isExiting ? 'exiting' : ''}`}
     >
-      {/* Film Grain - CSS only */}
-      <div className="film-grain" />
 
-      {/* Glitch Effect Overlay */}
-      <div className={`glitch-container ${glitchActive ? 'active' : ''}`}>
-        <div className="glitch-slice glitch-slice-1" />
-        <div className="glitch-slice glitch-slice-2" />
-        <div className="glitch-slice glitch-slice-3" />
-        <div className="glitch-scanlines" />
-        <div className="glitch-noise" />
-      </div>
 
       {/* Lightning Flash */}
       {lightningFlash && <div className="lightning-flash" />}
@@ -283,73 +273,71 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           </div>
         )}
 
-        {/* Scene 10: Final Reveal - Stranger Things Style */}
+        {/* Scene 10: Final Reveal - Stranger Things Style (Clean & Professional) */}
         {isPastPhase('finalReveal') && (
           <div className={`final-reveal stage-${revealStage}`}>
             <div className="stranger-things-container">
               
-              {/* KAIZEN - The Main Title */}
-              <div className="st-title-wrapper">
-                <h1 className="st-title-main">
-                  {'KAIZEN'.split('').map((letter, i) => (
-                    <span 
-                      key={i} 
-                      className={`st-letter st-letter-${i}`}
-                      style={{ 
-                        animationDelay: `${i * 0.1}s` 
-                      }}
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </h1>
-              </div>
+              <div className="st-content-block">
+                {/* Top Bar */}
+                <div className="st-bar st-bar-top" />
 
-              {/* RITP - The Subtitle */}
-              <div className="st-subtitle-wrapper">
-                <h2 className="st-title-sub">
-                  {'RITP'.split('').map((letter, i) => (
-                    <span 
-                      key={i} 
-                      className="st-letter-sub"
-                      style={{ 
-                        animationDelay: `${2 + (i * 0.1)}s` 
-                      }}
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </h2>
-              </div>
+                {/* KAIZEN - The Main Title */}
+                <div className="st-title-wrapper">
+                  <h1 className="st-title-main">
+                    {'KAIZEN'.split('').map((letter, i) => (
+                      <span 
+                        key={i} 
+                        className="st-letter"
+                        style={{ 
+                          animationDelay: `${i * 0.1}s` 
+                        }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
+                  </h1>
+                </div>
 
-              {/* Top Bar */}
-              <div className="st-bar st-bar-top" />
-              
-              {/* Bottom Bar (optional, usually ST has lines forming letters, but we'll use bars for style) */}
-              <div className="st-bar st-bar-bottom" />
+                {/* RITP - The Subtitle */}
+                <div className="st-subtitle-wrapper">
+                  <h2 className="st-title-sub">
+                    {'RITP'.split('').map((letter, i) => (
+                      <span 
+                        key={i} 
+                        className="st-letter-sub"
+                        style={{ 
+                          animationDelay: `${0.8 + (i * 0.05)}s` 
+                        }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
+                  </h2>
+                </div>
+                
+                {/* Bottom Bar */}
+                <div className="st-bar st-bar-bottom" />
+              </div>
 
               {/* Glow/Fog behind */}
               <div className="st-glow-bg" />
             </div>
           </div>
-        )}
-
-        {/* Scene 11: Enter Button */}
+        )}        {/* Scene 11: Enter Button */}
         {phase === 'enterButton' && (
           <div className="cta-section">
             <button onClick={handleEnter} className="cta-btn primary">
               <span className="cta-glow" />
-              <span className="cta-text">Enter the Upside Down</span>
-              <ChevronRight className="cta-arrow" />
+              <span className="cta-text">ENTER</span>
               <span className="cta-corner tl" />
               <span className="cta-corner tr" />
               <span className="cta-corner bl" />
               <span className="cta-corner br" />
             </button>
 
-            <button onClick={handleSkip} className="cta-btn secondary">
-              <span className="cta-text">Skip Intro</span>
-              <X className="cta-icon-sm" />
+            <button onClick={handleSkip} className="cta-link">
+              Skip Intro
             </button>
           </div>
         )}
@@ -378,89 +366,23 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           filter: blur(10px);
         }
 
-        /* === FILM GRAIN - Lightweight === */
+        /* === FILM GRAIN - Disabled for cleaner look === */
         .film-grain {
-          position: absolute;
-          inset: 0;
-          opacity: 0.035;
-          pointer-events: none;
-          z-index: 5;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          display: none;
         }
 
-        /* === GLITCH EFFECT - Proper Horror Glitch === */
+        /* === GLITCH EFFECT - Disabled for cleaner look === */
         .glitch-container {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 90;
-          opacity: 0;
-          transition: opacity 0.05s;
+          display: none;
         }
 
-        .glitch-container.active {
-          opacity: 1;
         }
 
-        .glitch-slice {
-          position: absolute;
-          left: 0;
-          right: 0;
-          height: 8px;
-          background: linear-gradient(90deg, 
-            transparent 0%,
-            rgba(255, 0, 0, 0.8) 20%,
-            rgba(255, 0, 0, 0.4) 40%,
-            transparent 50%,
-            rgba(255, 0, 0, 0.6) 70%,
-            transparent 100%
-          );
-          transform: translateX(0);
-          animation: glitch-slide 0.15s steps(2) infinite;
+        /* === GLITCH EFFECT - Disabled for cleaner look === */
+        .glitch-container {
+          display: none;
         }
 
-        .glitch-slice-1 { top: 15%; animation-delay: 0s; }
-        .glitch-slice-2 { top: 45%; animation-delay: 0.05s; height: 12px; }
-        .glitch-slice-3 { top: 75%; animation-delay: 0.1s; }
-
-        .glitch-scanlines {
-          position: absolute;
-          inset: 0;
-          background: repeating-linear-gradient(
-            0deg,
-            transparent 0px,
-            transparent 2px,
-            rgba(255, 0, 0, 0.03) 2px,
-            rgba(255, 0, 0, 0.03) 4px
-          );
-          animation: scanline-shift 0.1s steps(3) infinite;
-        }
-
-        .glitch-noise {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at 30% 50%, rgba(255, 0, 0, 0.15) 0%, transparent 50%),
-                      radial-gradient(ellipse at 70% 50%, rgba(200, 0, 0, 0.1) 0%, transparent 50%);
-          animation: noise-flicker 0.1s steps(4) infinite;
-        }
-
-        @keyframes glitch-slide {
-          0% { transform: translateX(-100%); opacity: 0; }
-          50% { transform: translateX(100%); opacity: 1; }
-          100% { transform: translateX(200%); opacity: 0; }
-        }
-
-        @keyframes scanline-shift {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 4px; }
-        }
-
-        @keyframes noise-flicker {
-          0%, 100% { opacity: 0.3; }
-          25% { opacity: 0.8; }
-          50% { opacity: 0.2; }
-          75% { opacity: 0.6; }
-        }
 
         /* === LIGHTNING FLASH === */
         .lightning-flash {
@@ -767,34 +689,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           50% { opacity: 1; }
         }
 
-        /* === PORTAL === */
-        .portal {
-          position: relative;
-          width: 350px;
-          height: 350px;
-          animation: portalIn 1.5s ease-out;
-        }
 
-        .portal-ring {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          border: 2px solid rgba(255, 26, 26, 0.4);
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          animation: ringPulse 2.5s ease-out infinite;
-        }
-
-        .ring-1 { width: 100px; height: 70px; }
-        .ring-2 { width: 180px; height: 120px; animation-delay: 0.4s; }
-        .ring-3 { width: 260px; height: 180px; animation-delay: 0.8s; }
-
-        .portal-core {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 60px;
-          height: 40px;
         /* === PRE-REVEAL SUSPENSE === */
         .pre-reveal-suspense {
           position: absolute;
@@ -825,6 +720,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           justify-content: center;
           width: 100%;
           height: 100%;
+          pointer-events: none;
         }
 
         .stranger-things-container {
@@ -838,11 +734,21 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           perspective: 1000px;
         }
 
+        .st-content-block {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 0;
+          margin-bottom: 10vh; /* Space for button */
+        }
+
         /* KAIZEN Title */
         .st-title-wrapper {
           position: relative;
           z-index: 10;
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
         }
 
         .st-title-main {
@@ -853,35 +759,31 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         }
 
         .st-letter {
-          font-family: 'Cinzel', serif; /* Closest to Benguiat we have loaded */
-          font-size: clamp(4rem, 15vw, 12rem);
+          font-family: 'Cinzel', serif;
+          font-size: clamp(3rem, 12vw, 10rem);
           font-weight: 900;
           color: transparent;
-          -webkit-text-stroke: 2px #ed1c24; /* Stranger Things Red */
+          -webkit-text-stroke: 2px #ed1c24;
           text-stroke: 2px #ed1c24;
           display: inline-block;
           position: relative;
+          will-change: transform, opacity;
           
-          /* Initial State for Animation */
+          /* Initial State */
           opacity: 0;
           transform: scale(3);
           
           animation: stLetterReveal 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
-        /* Individual letter adjustments for that "uneven" look if needed, 
-           but uniform drift is the signature */
-        
         @keyframes stLetterReveal {
           0% {
             opacity: 0;
             transform: scale(3);
-            margin: 0 2vw; /* Simulate letter-spacing with margin for flex items */
-            filter: blur(10px);
+            margin: 0 2vw;
           }
           20% {
             opacity: 1;
-            filter: blur(0px);
           }
           100% {
             opacity: 1;
@@ -896,7 +798,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         .st-subtitle-wrapper {
           position: relative;
           z-index: 10;
-          margin-top: -1vw;
+          margin-top: 0.5rem;
         }
 
         .st-title-sub {
@@ -907,14 +809,16 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
 
         .st-letter-sub {
           font-family: 'Cinzel', serif;
-          font-size: clamp(1.5rem, 5vw, 4rem);
+          font-size: clamp(1.2rem, 4vw, 3rem); /* Increased size */
           font-weight: 700;
-          color: #ed1c24; /* Solid red for subtitle usually, or outlined */
+          color: #ed1c24;
           -webkit-text-stroke: 1px #ed1c24;
           display: inline-block;
+          will-change: transform, opacity;
+          letter-spacing: 0.5em;
           
           opacity: 0;
-          transform: scale(2);
+          transform: scale(1.5);
           
           animation: stSubtitleReveal 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
@@ -922,13 +826,13 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         @keyframes stSubtitleReveal {
           0% {
             opacity: 0;
-            transform: scale(2);
-            margin: 0 2vw;
+            transform: scale(1.5);
+            letter-spacing: 1em;
           }
           100% {
             opacity: 1;
             transform: scale(1);
-            margin: 0 0.2vw;
+            letter-spacing: 0.5em;
             text-shadow: 0 0 10px rgba(237, 28, 36, 0.6);
           }
         }
@@ -936,30 +840,30 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         /* Bars */
         .st-bar {
           position: absolute;
-          left: 0;
-          right: 0;
-          height: clamp(2px, 0.5vw, 6px);
+          left: 50%;
+          width: 140%; /* Fixed width relative to container */
+          height: 2px;
           background: #ed1c24;
           box-shadow: 0 0 15px rgba(237, 28, 36, 0.8);
           opacity: 0;
+          transform: translateX(-50%) scaleX(0); /* Center and start scaled down */
           animation: stBarSlide 3s ease-out forwards 1s;
         }
 
         .st-bar-top {
-          top: 25%;
-          transform: translateX(-100%);
+          top: 0;
         }
 
         .st-bar-bottom {
-          bottom: 25%;
-          transform: translateX(100%);
+          bottom: 0;
         }
 
         @keyframes stBarSlide {
-          0% { opacity: 0; transform: scaleX(0); }
+          0% { opacity: 0; transform: translateX(-50%) scaleX(0); }
           10% { opacity: 1; }
-          100% { opacity: 0.6; transform: scaleX(1); }
+          100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
         }
+
 
         /* Glow Background */
         .st-glow-bg {
@@ -969,17 +873,32 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           z-index: 1;
           opacity: 0;
           animation: stBgPulse 4s ease-in-out infinite;
+          will-change: opacity, transform;
         }
 
         @keyframes stBgPulse {
           0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.1); }
+          50% { opacity: 0.6; transform: scale(1.05); }
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
-          .st-bar-top { top: 30%; }
-          .st-bar-bottom { bottom: 30%; }
+          .st-content-block {
+            padding: 1.5rem 0;
+          }
+          
+          .st-letter {
+             filter: none !important;
+             text-shadow: 0 0 5px rgba(237, 28, 36, 0.5);
+          }
+          
+          .st-letter-sub {
+             text-shadow: 0 0 5px rgba(237, 28, 36, 0.5);
+          }
+          
+          .st-bar {
+             box-shadow: 0 0 5px rgba(237, 28, 36, 0.5);
+          }
         }
 
         @keyframes revealIn {
@@ -990,20 +909,103 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         /* === CTA SECTION === */
         .cta-section {
           position: absolute;
-          bottom: 10%;
+          bottom: 18%; /* Moved up slightly */
           left: 50%;
           transform: translateX(-50%);
           display: flex;
           flex-direction: column;
           gap: 1rem;
           align-items: center;
-          animation: ctaIn 0.8s ease-out;
-          z-index: 60;
+          animation: ctaIn 1s ease-out 3s backwards;
+          z-index: 100;
           pointer-events: auto;
-          width: 90%;
-          max-width: 380px;
-          padding: 0 1rem;
+          width: auto;
         }
+
+        .cta-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.8rem 3rem;
+          background: transparent;
+          border: 1px solid rgba(237, 28, 36, 0.5);
+          color: #fff;
+          font-family: 'Cinzel', serif;
+          font-size: 1rem;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          overflow: hidden;
+        }
+
+        .cta-btn:hover {
+          background: rgba(237, 28, 36, 0.1);
+          border-color: #ed1c24;
+          box-shadow: 0 0 20px rgba(237, 28, 36, 0.3);
+          transform: translateY(-2px);
+        }
+
+        .cta-glow {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at center, rgba(237, 28, 36, 0.4) 0%, transparent 70%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .cta-btn:hover .cta-glow {
+          opacity: 1;
+        }
+
+        .cta-text {
+          position: relative;
+          z-index: 1;
+          text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .cta-corner {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          border-color: #ed1c24;
+          transition: all 0.3s ease;
+        }
+
+        .cta-btn:hover .cta-corner {
+          width: 10px;
+          height: 10px;
+        }
+
+        .cta-corner.tl { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+        .cta-corner.tr { top: -1px; right: -1px; border-top: 1px solid; border-right: 1px solid; }
+        .cta-corner.bl { bottom: -1px; left: -1px; border-bottom: 1px solid; border-left: 1px solid; }
+        .cta-corner.br { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+
+        .cta-link {
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.4);
+          font-family: 'Raleway', sans-serif;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: color 0.3s ease;
+        }
+
+        .cta-link:hover {
+          color: rgba(255, 255, 255, 0.8);
+          text-decoration: underline;
+        }
+
+        @keyframes ctaIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
 
         .cta-btn {
           position: relative;

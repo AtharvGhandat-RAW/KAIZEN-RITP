@@ -9,7 +9,7 @@ Particle.displayName = 'Particle';
 
 export const AtmosphericBackground = memo(function AtmosphericBackground() {
   const isMobile = useIsMobile();
-  
+
   // Pre-calculate particles only once - reduce count on mobile
   const particles = useMemo(() => [...Array(15)].map((_, i) => {
     const xPos = Math.random() * 100;
