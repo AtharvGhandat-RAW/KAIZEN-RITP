@@ -8,7 +8,8 @@ import {
   LogOut,
   Menu,
   FileText,
-  X
+  X,
+  CalendarClock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth, AdminRole } from '@/hooks/useAdminAuth';
@@ -41,7 +42,7 @@ export function AdminSidebar({ collapsed, setCollapsed }: AdminSidebarProps) {
   const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard', roles: ['super_admin', 'event_manager', 'finance', 'viewer'] },
     { icon: Calendar, label: 'Events', path: '/admin/events', roles: ['super_admin', 'event_manager'] },
-    { icon: Calendar, label: 'Schedule', path: '/admin/schedule', roles: ['super_admin', 'event_manager'] },
+    { icon: CalendarClock, label: 'Schedule Builder', path: '/admin/schedule-builder', roles: ['super_admin', 'event_manager'] },
     { icon: Users, label: 'Registrations', path: '/admin/registrations', roles: ['super_admin', 'event_manager', 'finance'] },
     { icon: MessageSquare, label: 'Queries', path: '/admin/queries', roles: ['super_admin', 'event_manager'] },
     { icon: FileText, label: 'Reports', path: '/admin/reports', roles: ['super_admin', 'event_manager', 'finance'] },

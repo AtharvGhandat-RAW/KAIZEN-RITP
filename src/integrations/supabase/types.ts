@@ -164,6 +164,54 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_items: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          start_time: string
+          end_time: string | null
+          day_number: number
+          item_type: string
+          venue: string | null
+          speakers: string[] | null
+          is_highlighted: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          start_time: string
+          end_time?: string | null
+          day_number?: number
+          item_type?: string
+          venue?: string | null
+          speakers?: string[] | null
+          is_highlighted?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          start_time?: string
+          end_time?: string | null
+          day_number?: number
+          item_type?: string
+          venue?: string | null
+          speakers?: string[] | null
+          is_highlighted?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       registrations: {
         Row: {
           created_at: string
