@@ -27,11 +27,6 @@ const EventCountdown = lazy(() =>
 );
 
 // Lazy load below-the-fold components
-const FeaturedEvents = lazy(() =>
-  import('@/components/FeaturedEvents')
-    .then(m => ({ default: m.FeaturedEvents }))
-    .catch(() => ({ default: () => null }))
-);
 const AboutSection = lazy(() =>
   import('@/components/AboutSection')
     .then(m => ({ default: m.AboutSection }))
@@ -127,7 +122,6 @@ const Index = () => {
           import('@/components/AtmosphericBackground'),
           import('@/components/DimensionalRift'),
           import('@/components/EventCountdown'),
-          import('@/components/FeaturedEvents'),
         ]);
       } catch (e) {
         console.error("Preload failed", e);
@@ -245,12 +239,6 @@ const Index = () => {
           </Suspense>
 
           {/* Below-the-fold sections */}
-          <div>
-            <Suspense fallback={<SectionSkeleton />}>
-              <FeaturedEvents onViewAll={handleShowExploreEvents} onEventClick={handleShowEventDetails} />
-            </Suspense>
-          </div>
-
           <div>
             <Suspense fallback={<SectionSkeleton />}>
               <AboutSection onDiscoverMore={handleShowExploreEvents} />
