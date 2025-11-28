@@ -201,7 +201,6 @@ export default function Reports() {
 
       if (data && data.length > 0) {
         const csvData = data.map(reg => ({
-          'Ref ID': reg.id || '',
           'Student Name': reg.profiles?.full_name || '',
           'Email': reg.profiles?.email || '',
           'Phone': reg.profiles?.phone || '',
@@ -213,7 +212,6 @@ export default function Reports() {
           'Team Name': reg.teams?.name || 'Individual',
           'Registration Type': reg.registration_type || '',
           'Payment Status': reg.payment_status || '',
-          'Payment Proof URL': reg.payment_proof_url || 'Not uploaded',
           'Registration Fee': reg.events?.registration_fee ? `₹${reg.events.registration_fee}` : '₹0',
           'Registered On': new Date(reg.created_at).toLocaleDateString(),
         }));
