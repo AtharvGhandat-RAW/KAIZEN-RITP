@@ -127,6 +127,26 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     if (eventIdParam) {
       setFormData(prev => ({ ...prev, eventId: eventIdParam }));
     }
+
+    // Real-time subscription for events
+    const channel = supabase
+      .channel('public:events')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'events',
+        },
+        () => {
+          fetchEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchEvents, fetchRegistrationSettings]);
 
   const selectedEvent = events.find(e => e.id === formData.eventId);

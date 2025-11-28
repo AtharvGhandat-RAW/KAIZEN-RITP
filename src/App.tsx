@@ -22,6 +22,7 @@ const RegistrationDetails = lazy(() => import("./pages/admin/RegistrationDetails
 const Queries = lazy(() => import("./pages/admin/Queries"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
+const Schedule = lazy(() => import("./pages/admin/Schedule"));
 const Register = lazy(() => import("./pages/Register"));
 
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
                 <Route path="/admin/queries" element={<Queries />} />
                 <Route path="/admin/reports" element={<Reports />} />
+                <Route path="/admin/schedule" element={<Schedule />} />
                 <Route path="/admin/settings" element={<Settings />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
