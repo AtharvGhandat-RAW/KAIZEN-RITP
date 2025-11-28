@@ -13,11 +13,7 @@ const AtmosphericBackground = lazy(() =>
     .then(m => ({ default: m.AtmosphericBackground }))
     .catch(() => ({ default: () => null }))
 );
-const DimensionalRift = lazy(() =>
-  import('@/components/DimensionalRift')
-    .then(m => ({ default: m.DimensionalRift }))
-    .catch(() => ({ default: () => null }))
-);
+// DimensionalRift removed - too heavy, causing performance issues
 
 // Lazy load above-the-fold but non-critical components
 const EventCountdown = lazy(() =>
@@ -110,31 +106,32 @@ const Index = () => {
   const [showSchedule, setShowSchedule] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
-  // Preload heavy components while intro is playing
+  // Preload heavy components - start immediately for returning users
   useEffect(() => {
-    // Start loading background immediately
     setBackgroundLoaded(true);
 
-    // Preload other chunks
-    const preloadChunks = async () => {
-      try {
-        await Promise.all([
-          import('@/components/AtmosphericBackground'),
-          import('@/components/DimensionalRift'),
-          import('@/components/EventCountdown'),
-        ]);
-      } catch (e) {
-        console.error("Preload failed", e);
-      }
-    };
-
-    // Start preloading after a short delay to let the intro start smoothly
+    // For returning users (no intro), load immediately
+    // For new users, wait briefly for intro to start
+    const delay = hasSeenIntro ? 0 : 500;
+    
     const timer = setTimeout(() => {
-      preloadChunks();
-    }, 3000);
+      // Use requestIdleCallback for non-critical preloading
+      const preload = () => {
+        Promise.all([
+          import('@/components/AtmosphericBackground'),
+          import('@/components/EventCountdown'),
+        ]).catch(() => {});
+      };
+      
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(preload);
+      } else {
+        setTimeout(preload, 100);
+      }
+    }, delay);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [hasSeenIntro]);
   // Control body overflow when modals are open
   useEffect(() => {
     if (showIntro || showRegistration || showExploreEvents || showStatusChecker || showSchedule || showEventDetails) {
@@ -224,7 +221,6 @@ const Index = () => {
         {backgroundLoaded && showMainContent && (
           <Suspense fallback={null}>
             <AtmosphericBackground />
-            <DimensionalRift />
           </Suspense>
         )}
 

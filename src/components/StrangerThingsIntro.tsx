@@ -24,38 +24,38 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
   const [revealStage, setRevealStage] = useState(0); // 0-5 for staggered reveal
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Scene timeline configuration (in milliseconds)
+  // Scene timeline configuration (in milliseconds) - OPTIMIZED: Reduced from 34s to 18s
   const sceneTimeline = useMemo(() => ({
-    darkAwakening: { start: 0, duration: 2000 },
-    festCoordinators: { start: 2000, duration: 4000 },
-    operationsUnit: { start: 6000, duration: 3000 },
-    managementUnit: { start: 9000, duration: 3000 },
-    digitalMediaUnit: { start: 12000, duration: 3000 },
-    techProductionUnit: { start: 15000, duration: 3000 },
-    partnershipUnit: { start: 18000, duration: 3000 },
-    ambienceDesignUnit: { start: 21000, duration: 3000 },
-    preReveal: { start: 24000, duration: 3000 }, // Replaced portal with dark suspense
-    finalReveal: { start: 27000, duration: 5000 },
-    enterButton: { start: 32000, duration: 2000 }
+    darkAwakening: { start: 0, duration: 1200 },
+    festCoordinators: { start: 1200, duration: 2000 },
+    operationsUnit: { start: 3200, duration: 1800 },
+    managementUnit: { start: 5000, duration: 1800 },
+    digitalMediaUnit: { start: 6800, duration: 1800 },
+    techProductionUnit: { start: 8600, duration: 1800 },
+    partnershipUnit: { start: 10400, duration: 1800 },
+    ambienceDesignUnit: { start: 12200, duration: 1800 },
+    preReveal: { start: 14000, duration: 1500 },
+    finalReveal: { start: 15500, duration: 2500 },
+    enterButton: { start: 18000, duration: 1500 }
   }), []);
 
   // Trigger glitch effects with proper visual distortion
   const triggerGlitch = useCallback(() => {
     setGlitchActive(true);
-    setTimeout(() => setGlitchActive(false), 200);
+    setTimeout(() => setGlitchActive(false), 150);
   }, []);
 
   // Trigger lightning flash effect
   const triggerLightning = useCallback(() => {
     setLightningFlash(true);
-    setTimeout(() => setLightningFlash(false), 150);
+    setTimeout(() => setLightningFlash(false), 100);
   }, []);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    // Show skip button after 1 second
-    timers.push(setTimeout(() => setShowSkip(true), 1000));
+    // Show skip button immediately
+    timers.push(setTimeout(() => setShowSkip(true), 500));
 
     // Scene transitions based on timeline
     const phases: ScenePhase[] = [
@@ -70,24 +70,22 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
       }
     });
 
-    // Staggered reveal stages for final reveal
-    timers.push(setTimeout(() => setRevealStage(1), 27200)); // Start reveal
-    timers.push(setTimeout(() => setRevealStage(2), 27600)); // Letters appear
-    timers.push(setTimeout(() => setRevealStage(3), 28200)); // RITP appears
-    timers.push(setTimeout(() => setRevealStage(4), 28800)); // Subtitle
-    timers.push(setTimeout(() => setRevealStage(5), 29500)); // Full glow
+    // Staggered reveal stages for final reveal - faster
+    timers.push(setTimeout(() => setRevealStage(1), 15600));
+    timers.push(setTimeout(() => setRevealStage(2), 15900));
+    timers.push(setTimeout(() => setRevealStage(3), 16300));
+    timers.push(setTimeout(() => setRevealStage(4), 16700));
+    timers.push(setTimeout(() => setRevealStage(5), 17100));
 
-    // Random glitch effects - less frequent but more impactful
-    const glitchIntervals = [3500, 7000, 11000, 15500, 19000, 23000, 26500, 29000];
+    // Reduced glitch effects - only 3 for performance
+    const glitchIntervals = [3000, 8000, 14000];
     glitchIntervals.forEach(time => {
       timers.push(setTimeout(triggerGlitch, time));
     });
 
-    // Lightning flashes during portal and final reveal
-    timers.push(setTimeout(triggerLightning, 24800));
-    timers.push(setTimeout(triggerLightning, 25500));
-    timers.push(setTimeout(triggerLightning, 27000));
-    timers.push(setTimeout(triggerLightning, 28500));
+    // Lightning flashes - reduced to 2
+    timers.push(setTimeout(triggerLightning, 14500));
+    timers.push(setTimeout(triggerLightning, 16000));
 
     return () => timers.forEach(timer => clearTimeout(timer));
   }, [sceneTimeline, triggerGlitch, triggerLightning]);
