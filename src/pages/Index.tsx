@@ -189,11 +189,13 @@ const Index = () => {
 
       {/* Main content with fade-in transition */}
       <div
-        className="relative w-full min-h-screen bg-black transition-opacity duration-700 ease-out"
+        className="relative w-full min-h-screen bg-black transition-all duration-1000 ease-out"
         style={{
           backgroundColor: '#000',
           opacity: showMainContent ? 1 : 0,
-          visibility: showMainContent ? 'visible' : 'hidden'
+          visibility: showMainContent ? 'visible' : 'hidden',
+          transform: showMainContent ? 'scale(1)' : 'scale(0.92)',
+          filter: showMainContent ? 'blur(0px)' : 'blur(10px)'
         }}
       >
         <SEOHead

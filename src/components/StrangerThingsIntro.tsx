@@ -11,7 +11,7 @@ type ScenePhase =
   | 'techProductionUnit' // Scene 6: 15-18s
   | 'partnershipUnit'    // Scene 7: 18-21s
   | 'ambienceDesignUnit' // Scene 8: 21-24s
-  | 'portalEmerges'      // Scene 9: 24-27s
+  | 'preReveal'          // Scene 9: 24-27s (Darkness/Suspense)
   | 'finalReveal'        // Scene 10: 27-32s
   | 'enterButton';       // Scene 11: 32-34s
 
@@ -34,7 +34,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
     techProductionUnit: { start: 15000, duration: 3000 },
     partnershipUnit: { start: 18000, duration: 3000 },
     ambienceDesignUnit: { start: 21000, duration: 3000 },
-    portalEmerges: { start: 24000, duration: 3000 },
+    preReveal: { start: 24000, duration: 3000 }, // Replaced portal with dark suspense
     finalReveal: { start: 27000, duration: 5000 },
     enterButton: { start: 32000, duration: 2000 }
   }), []);
@@ -61,7 +61,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
     const phases: ScenePhase[] = [
       'darkAwakening', 'festCoordinators', 'operationsUnit', 'managementUnit',
       'digitalMediaUnit', 'techProductionUnit', 'partnershipUnit', 'ambienceDesignUnit',
-      'portalEmerges', 'finalReveal', 'enterButton'
+      'preReveal', 'finalReveal', 'enterButton'
     ];
 
     phases.forEach((p, index) => {
@@ -107,7 +107,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
     const phases: ScenePhase[] = [
       'darkAwakening', 'festCoordinators', 'operationsUnit', 'managementUnit',
       'digitalMediaUnit', 'techProductionUnit', 'partnershipUnit', 'ambienceDesignUnit',
-      'portalEmerges', 'finalReveal', 'enterButton'
+      'preReveal', 'finalReveal', 'enterButton'
     ];
     return phases.indexOf(phase) >= phases.indexOf(checkPhase);
   }, [phase]);
@@ -157,7 +157,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         <div className="base-gradient" />
         <div className="fog-layer fog-1" />
         <div className="fog-layer fog-2" />
-        <div className={`ambient-glow ${isPastPhase('portalEmerges') ? 'intense' : ''}`} />
+        <div className={`ambient-glow ${isPastPhase('preReveal') ? 'intense' : ''}`} />
 
         {/* Particles */}
         <div className="particles">
@@ -275,64 +275,46 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           </div>
         )}
 
-        {/* Scene 9: Portal */}
-        {isPastPhase('portalEmerges') && !isPastPhase('finalReveal') && (
-          <div className="portal">
-            <div className="portal-ring ring-1" />
-            <div className="portal-ring ring-2" />
-            <div className="portal-ring ring-3" />
-            <div className="portal-core" />
-            <div className="portal-glow" />
+        {/* Scene 9: Pre-Reveal Suspense (Darkness before the storm) */}
+        {isPastPhase('preReveal') && !isPastPhase('finalReveal') && (
+          <div className="pre-reveal-suspense">
+            {/* Just darkness and subtle energy building up */}
+            <div className="suspense-glow" />
           </div>
         )}
 
-        {/* Scene 10: Final Reveal - Professional Horror Style */}
+        {/* Scene 10: Final Reveal - Stranger Things Style */}
         {isPastPhase('finalReveal') && (
           <div className={`final-reveal stage-${revealStage}`}>
-            {/* Crackling energy background */}
-            <div className="energy-field">
-              <div className="energy-bolt bolt-1" />
-              <div className="energy-bolt bolt-2" />
-              <div className="energy-bolt bolt-3" />
-            </div>
-
-            {/* Main title container */}
-            <div className="title-container">
-              {/* KAIZEN text with horror reveal */}
-              <div className="kaizen-wrapper">
-                <h1 className="kaizen-title">
+            <div className="stranger-things-container">
+              
+              {/* KAIZEN - The Main Title */}
+              <div className="st-title-wrapper">
+                <h1 className="st-title-main">
                   {'KAIZEN'.split('').map((letter, i) => (
-                    <span
-                      key={i}
-                      className="kaizen-letter"
-                      style={{ animationDelay: `${i * 0.12}s` }}
+                    <span 
+                      key={i} 
+                      className={`st-letter st-letter-${i}`}
+                      style={{ 
+                        animationDelay: `${i * 0.1}s` 
+                      }}
                     >
                       {letter}
                     </span>
                   ))}
                 </h1>
-                {/* Glow layer */}
-                <div className="kaizen-glow" aria-hidden="true">
-                  {'KAIZEN'.split('').map((letter, i) => (
-                    <span
-                      key={i}
-                      className="glow-letter"
-                      style={{ animationDelay: `${i * 0.12}s` }}
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              {/* RITP subtitle */}
-              <div className="ritp-wrapper">
-                <h2 className="ritp-title">
+              {/* RITP - The Subtitle */}
+              <div className="st-subtitle-wrapper">
+                <h2 className="st-title-sub">
                   {'RITP'.split('').map((letter, i) => (
-                    <span
-                      key={i}
-                      className="ritp-letter"
-                      style={{ animationDelay: `${0.8 + i * 0.1}s` }}
+                    <span 
+                      key={i} 
+                      className="st-letter-sub"
+                      style={{ 
+                        animationDelay: `${2 + (i * 0.1)}s` 
+                      }}
                     >
                       {letter}
                     </span>
@@ -340,19 +322,14 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
                 </h2>
               </div>
 
-              {/* Tagline */}
-              <div className="tagline-wrapper">
-                <div className="tagline-line left" />
-                <span className="tagline-text">FEAR THE UNKNOWN</span>
-                <div className="tagline-line right" />
-              </div>
-            </div>
+              {/* Top Bar */}
+              <div className="st-bar st-bar-top" />
+              
+              {/* Bottom Bar (optional, usually ST has lines forming letters, but we'll use bars for style) */}
+              <div className="st-bar st-bar-bottom" />
 
-            {/* Blood drip effect */}
-            <div className="blood-drips">
-              <div className="drip drip-1" />
-              <div className="drip drip-2" />
-              <div className="drip drip-3" />
+              {/* Glow/Fog behind */}
+              <div className="st-glow-bg" />
             </div>
           </div>
         )}
@@ -396,8 +373,9 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
 
         .intro-container.exiting {
           opacity: 0;
-          transform: scale(1.02);
+          transform: scale(2); /* Zoom through effect */
           pointer-events: none;
+          filter: blur(10px);
         }
 
         /* === FILM GRAIN - Lightweight === */
@@ -817,282 +795,191 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           left: 50%;
           width: 60px;
           height: 40px;
-          background: radial-gradient(ellipse, rgba(255, 26, 26, 0.6) 0%, transparent 70%);
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          animation: corePulse 1.5s ease-in-out infinite;
-        }
-
-        .portal-glow {
+        /* === PRE-REVEAL SUSPENSE === */
+        .pre-reveal-suspense {
           position: absolute;
-          inset: -50%;
-          background: radial-gradient(ellipse at center, rgba(150, 0, 0, 0.25) 0%, transparent 60%);
-          filter: blur(40px);
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        @keyframes portalIn {
-          from { opacity: 0; transform: scale(0); }
-          to { opacity: 1; transform: scale(1); }
+        .suspense-glow {
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle at center, rgba(0,0,0,0) 0%, #000 100%);
+          animation: suspensePulse 0.5s ease-in-out infinite alternate;
         }
 
-        @keyframes ringPulse {
-          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
-          50% { opacity: 0.8; }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+        @keyframes suspensePulse {
+          from { opacity: 0.3; }
+          to { opacity: 0.7; }
         }
 
-        @keyframes corePulse {
-          0%, 100% { box-shadow: 0 0 30px rgba(255, 26, 26, 0.5); }
-          50% { box-shadow: 0 0 60px rgba(255, 26, 26, 0.9); }
-        }
-
-        /* === FINAL REVEAL - PROFESSIONAL HORROR === */
+        /* === FINAL REVEAL - STRANGER THINGS STYLE === */
         .final-reveal {
           position: relative;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          animation: revealIn 1.5s ease-out;
+          width: 100%;
+          height: 100%;
         }
 
-        /* Energy Field */
-        .energy-field {
-          position: absolute;
-          inset: -100px;
-          pointer-events: none;
-        }
-
-        .energy-bolt {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 2px;
-          background: linear-gradient(to bottom, 
-            transparent 0%, 
-            rgba(255, 40, 40, 0.9) 20%, 
-            rgba(255, 80, 80, 0.5) 50%,
-            rgba(255, 40, 40, 0.9) 80%, 
-            transparent 100%
-          );
-          height: 150px;
-          opacity: 0;
-          filter: blur(1px);
-        }
-
-        .stage-2 .energy-bolt { opacity: 0.7; animation: boltFlicker 0.2s steps(3) infinite; }
-
-        .bolt-1 { transform: translate(-80px, -75px) rotate(-20deg); }
-        .bolt-2 { transform: translate(80px, -75px) rotate(20deg); animation-delay: 0.1s; }
-        .bolt-3 { transform: translate(0, 80px) rotate(0deg); height: 100px; animation-delay: 0.15s; }
-
-        @keyframes boltFlicker {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.9; }
-        }
-
-        /* Title Container */
-        .title-container {
+        .stranger-things-container {
           position: relative;
-          z-index: 2;
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          perspective: 1000px;
         }
 
         /* KAIZEN Title */
-        .kaizen-wrapper {
+        .st-title-wrapper {
           position: relative;
+          z-index: 10;
+          margin-bottom: 1rem;
         }
 
-        .kaizen-title {
+        .st-title-main {
           display: flex;
-          gap: clamp(0.1rem, 0.5vw, 0.5rem);
+          justify-content: center;
           margin: 0;
+          line-height: 1;
         }
 
-        .kaizen-letter {
-          font-size: clamp(3rem, 12vw, 9rem);
+        .st-letter {
+          font-family: 'Cinzel', serif; /* Closest to Benguiat we have loaded */
+          font-size: clamp(4rem, 15vw, 12rem);
           font-weight: 900;
           color: transparent;
-          -webkit-text-stroke: 2px #ff0000;
-          text-stroke: 2px #ff0000;
+          -webkit-text-stroke: 2px #ed1c24; /* Stranger Things Red */
+          text-stroke: 2px #ed1c24;
           display: inline-block;
+          position: relative;
+          
+          /* Initial State for Animation */
           opacity: 0;
-          transform: translateY(30px);
-          animation: horrorLetterReveal 0.8s ease-out forwards;
-          text-shadow: 
-            0 0 30px rgba(255, 0, 0, 0.8),
-            0 0 60px rgba(255, 0, 0, 0.4);
+          transform: scale(3);
+          
+          animation: stLetterReveal 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
-        @keyframes horrorLetterReveal {
+        /* Individual letter adjustments for that "uneven" look if needed, 
+           but uniform drift is the signature */
+        
+        @keyframes stLetterReveal {
           0% {
             opacity: 0;
-            transform: translateY(40px) scaleY(0.3);
+            transform: scale(3);
+            margin: 0 2vw; /* Simulate letter-spacing with margin for flex items */
             filter: blur(10px);
-            text-shadow: 0 0 0 transparent;
           }
-          50% {
-            opacity: 0.7;
-            transform: translateY(-5px) scaleY(1.1);
-            filter: blur(2px);
-            text-shadow: 
-              0 0 50px rgba(255, 0, 0, 1),
-              0 0 100px rgba(255, 0, 0, 0.8);
+          20% {
+            opacity: 1;
+            filter: blur(0px);
           }
           100% {
             opacity: 1;
-            transform: translateY(0) scaleY(1);
-            filter: blur(0);
-            text-shadow: 
-              0 0 30px rgba(255, 0, 0, 0.8),
-              0 0 60px rgba(255, 0, 0, 0.4);
+            transform: scale(1);
+            margin: 0 0.1vw;
+            -webkit-text-stroke: 2px #ed1c24;
+            text-shadow: 0 0 15px rgba(237, 28, 36, 0.5);
           }
-        }
-
-        /* Glow layer behind letters */
-        .kaizen-glow {
-          position: absolute;
-          top: 0;
-          left: 0;
-          display: flex;
-          gap: clamp(0.1rem, 0.5vw, 0.5rem);
-          z-index: -1;
-        }
-
-        .glow-letter {
-          font-size: clamp(3rem, 12vw, 9rem);
-          font-weight: 900;
-          color: #ff0000;
-          filter: blur(25px);
-          opacity: 0;
-          animation: glowReveal 1s ease-out 0.3s forwards;
-        }
-
-        .stage-5 .kaizen-letter {
-          animation: horrorLetterReveal 0.8s ease-out forwards,
-                     subtleFlicker 4s ease-in-out infinite 1.5s;
-        }
-
-        @keyframes subtleFlicker {
-          0%, 100% {
-            text-shadow: 
-              0 0 30px rgba(255, 0, 0, 0.8),
-              0 0 60px rgba(255, 0, 0, 0.4);
-          }
-          50% {
-            text-shadow: 
-              0 0 40px rgba(255, 0, 0, 1),
-              0 0 80px rgba(255, 0, 0, 0.6);
-          }
-        }
-
-        @keyframes glowReveal {
-          to { opacity: 0.5; }
         }
 
         /* RITP Subtitle */
-        .ritp-wrapper {
-          margin-top: -0.5rem;
+        .st-subtitle-wrapper {
+          position: relative;
+          z-index: 10;
+          margin-top: -1vw;
         }
 
-        .ritp-title {
+        .st-title-sub {
           display: flex;
-          gap: 0.3em;
+          justify-content: center;
           margin: 0;
         }
 
-        .ritp-letter {
-          font-size: clamp(1.2rem, 4vw, 2.8rem);
+        .st-letter-sub {
+          font-family: 'Cinzel', serif;
+          font-size: clamp(1.5rem, 5vw, 4rem);
           font-weight: 700;
-          letter-spacing: 0.4em;
-          color: transparent;
-          -webkit-text-stroke: 1.5px #cc0000;
-          text-stroke: 1.5px #cc0000;
+          color: #ed1c24; /* Solid red for subtitle usually, or outlined */
+          -webkit-text-stroke: 1px #ed1c24;
+          display: inline-block;
+          
           opacity: 0;
-          transform: translateY(15px);
-          animation: ritpReveal 0.5s ease-out forwards;
-          text-shadow: 0 0 20px rgba(200, 0, 0, 0.5);
+          transform: scale(2);
+          
+          animation: stSubtitleReveal 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
-        @keyframes ritpReveal {
+        @keyframes stSubtitleReveal {
           0% {
             opacity: 0;
-            transform: translateY(20px);
-            filter: blur(5px);
+            transform: scale(2);
+            margin: 0 2vw;
           }
           100% {
             opacity: 1;
-            transform: translateY(0);
-            filter: blur(0);
+            transform: scale(1);
+            margin: 0 0.2vw;
+            text-shadow: 0 0 10px rgba(237, 28, 36, 0.6);
           }
         }
 
-        /* Tagline */
-        .tagline-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-top: 1.5rem;
-          opacity: 0;
-          animation: taglineIn 1s ease-out 1.2s forwards;
-        }
-
-        .tagline-line {
-          width: 50px;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, #ff1a1a, transparent);
-          box-shadow: 0 0 15px rgba(255, 26, 26, 0.7);
-        }
-
-        .tagline-text {
-          font-size: clamp(0.7rem, 1.8vw, 1.1rem);
-          font-weight: 600;
-          letter-spacing: 0.25em;
-          color: rgba(255, 255, 255, 0.9);
-          text-shadow: 0 0 20px rgba(255, 26, 26, 0.6);
-          white-space: nowrap;
-        }
-
-        @keyframes taglineIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Blood Drips - Horror Effect */
-        .blood-drips {
+        /* Bars */
+        .st-bar {
           position: absolute;
-          top: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 80%;
-          display: flex;
-          justify-content: center;
-          gap: 20%;
-          pointer-events: none;
-        }
-
-        .drip {
-          width: 3px;
-          height: 0;
-          background: linear-gradient(to bottom, #ff1a1a, #800000, transparent);
-          border-radius: 0 0 2px 2px;
+          left: 0;
+          right: 0;
+          height: clamp(2px, 0.5vw, 6px);
+          background: #ed1c24;
+          box-shadow: 0 0 15px rgba(237, 28, 36, 0.8);
           opacity: 0;
+          animation: stBarSlide 3s ease-out forwards 1s;
         }
 
-        .stage-4 .drip {
-          animation: dripDown 2s ease-in forwards;
+        .st-bar-top {
+          top: 25%;
+          transform: translateX(-100%);
         }
 
-        .drip-1 { animation-delay: 0.2s; }
-        .drip-2 { animation-delay: 0.5s; }
-        .drip-3 { animation-delay: 0.8s; }
+        .st-bar-bottom {
+          bottom: 25%;
+          transform: translateX(100%);
+        }
 
-        @keyframes dripDown {
-          0% { height: 0; opacity: 0; }
-          10% { opacity: 0.8; }
-          100% { height: 60px; opacity: 0; }
+        @keyframes stBarSlide {
+          0% { opacity: 0; transform: scaleX(0); }
+          10% { opacity: 1; }
+          100% { opacity: 0.6; transform: scaleX(1); }
+        }
+
+        /* Glow Background */
+        .st-glow-bg {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at center, rgba(237, 28, 36, 0.15) 0%, transparent 60%);
+          z-index: 1;
+          opacity: 0;
+          animation: stBgPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes stBgPulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .st-bar-top { top: 30%; }
+          .st-bar-bottom { bottom: 30%; }
         }
 
         @keyframes revealIn {
@@ -1238,15 +1125,6 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         }
 
         @media (min-width: 768px) {
-          .portal {
-            width: 450px;
-            height: 450px;
-          }
-
-          .ring-1 { width: 140px; height: 100px; }
-          .ring-2 { width: 240px; height: 170px; }
-          .ring-3 { width: 340px; height: 240px; }
-
           .tagline-line {
             width: 80px;
           }
