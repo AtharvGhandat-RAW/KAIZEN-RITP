@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
@@ -27,9 +27,53 @@ import {
 
 type SettingValue = string | boolean | number | null;
 
+// Memoized input component - OUTSIDE the main component to prevent re-creation
+const SettingInput = memo(({
+  settingKey,
+  label,
+  placeholder,
+  type = 'text',
+  icon: Icon,
+  hint,
+  value,
+  saving,
+  onChange,
+  onBlur
+}: {
+  settingKey: string;
+  label: string;
+  placeholder: string;
+  type?: string;
+  icon?: React.ElementType;
+  hint?: string;
+  value: string;
+  saving: string | null;
+  onChange: (key: string, value: string) => void;
+  onBlur: (key: string, value: string) => void;
+}) => (
+  <div>
+    <Label className="text-white/80 flex items-center gap-2">
+      {Icon && <Icon className="w-4 h-4" />} {label}
+      {saving === settingKey && <Loader2 className="w-3 h-3 animate-spin text-green-500" />}
+    </Label>
+    <Input
+      type={type}
+      defaultValue={value}
+      onChange={(e) => onChange(settingKey, e.target.value)}
+      onBlur={(e) => onBlur(settingKey, e.target.value)}
+      className="bg-black/40 border-white/20 mt-1 focus:border-green-500"
+      placeholder={placeholder}
+    />
+    {hint && <p className="text-white/40 text-xs mt-1">{hint}</p>}
+  </div>
+));
+
+SettingInput.displayName = 'SettingInput';
+
 export default function Settings() {
   const [settings, setSettings] = useState<Record<string, SettingValue>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,14 +82,17 @@ export default function Settings() {
     const channel = supabase
       .channel('settings-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-        fetchSettings();
+        // Don't refetch if user is actively editing - prevents keyboard close
+        if (!saving) {
+          fetchSettings();
+        }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [saving]);
 
   const fetchSettings = async () => {
     const { data } = await supabase.from('settings').select('*');
@@ -59,11 +106,12 @@ export default function Settings() {
         }
       });
       setSettings(settingsMap);
+      setSettingsLoaded(true);
     }
   };
 
   // Real-time save on blur
-  const saveSetting = async (key: string, value: SettingValue) => {
+  const saveSetting = useCallback(async (key: string, value: SettingValue) => {
     setSaving(key);
     try {
       const { data: existing } = await supabase
@@ -78,56 +126,36 @@ export default function Settings() {
         await supabase.from('settings').insert({ key, value: JSON.stringify(value), category: 'general', description: '' });
       }
 
+      // Update local state without triggering re-render that closes keyboard
+      setSettings(prev => ({ ...prev, [key]: value }));
       toast({ title: '✓ Saved', description: `${key.replace(/_/g, ' ')} updated` });
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });
     } finally {
       setSaving(null);
     }
-  };
+  }, [toast]);
 
-  const updateSetting = (key: string, value: SettingValue) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  const updateSetting = useCallback((key: string, value: SettingValue) => {
+    // Don't update state on every keystroke - only track for blur save
+    // This prevents re-renders that close the keyboard
+  }, []);
 
   // For switches - save immediately
-  const handleSwitchChange = (key: string, value: boolean) => {
-    updateSetting(key, value);
+  const handleSwitchChange = useCallback((key: string, value: boolean) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
     saveSetting(key, value);
-  };
+  }, [saveSetting]);
 
-  // Input field with auto-save on blur
-  const SettingInput = ({
-    settingKey,
-    label,
-    placeholder,
-    type = 'text',
-    icon: Icon,
-    hint
-  }: {
-    settingKey: string;
-    label: string;
-    placeholder: string;
-    type?: string;
-    icon?: React.ElementType;
-    hint?: string;
-  }) => (
-    <div>
-      <Label className="text-white/80 flex items-center gap-2">
-        {Icon && <Icon className="w-4 h-4" />} {label}
-        {saving === settingKey && <Loader2 className="w-3 h-3 animate-spin text-green-500" />}
-      </Label>
-      <Input
-        type={type}
-        value={String(settings[settingKey] || '')}
-        onChange={(e) => updateSetting(settingKey, e.target.value)}
-        onBlur={(e) => saveSetting(settingKey, e.target.value)}
-        className="bg-black/40 border-white/20 mt-1 focus:border-green-500"
-        placeholder={placeholder}
-      />
-      {hint && <p className="text-white/40 text-xs mt-1">{hint}</p>}
-    </div>
-  );
+  // Handler for input blur - save the value
+  const handleInputBlur = useCallback((key: string, value: string) => {
+    saveSetting(key, value);
+  }, [saveSetting]);
+
+  // Handler for input change - no state update to prevent re-render
+  const handleInputChange = useCallback((key: string, value: string) => {
+    // Intentionally empty - we use defaultValue and save on blur
+  }, []);
 
   return (
     <ProtectedRoute requiredRoles={['super_admin']}>
@@ -194,8 +222,8 @@ export default function Settings() {
                 <div>
                   <Label className="text-white/80">Notice Banner</Label>
                   <Textarea
-                    value={String(settings.registration_notice || '')}
-                    onChange={(e) => updateSetting('registration_notice', e.target.value)}
+                    key={settingsLoaded ? 'loaded' : 'loading'}
+                    defaultValue={String(settings.registration_notice || '')}
                     onBlur={(e) => saveSetting('registration_notice', e.target.value)}
                     className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
                     rows={2}
@@ -214,28 +242,44 @@ export default function Settings() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SettingInput
-                  settingKey="contact_email"
-                  label="Email"
-                  placeholder="info@kaizen.edu"
-                  type="email"
-                  icon={Mail}
-                />
-                <SettingInput
-                  settingKey="contact_phone"
-                  label="Phone / WhatsApp"
-                  placeholder="+91 98765 43210"
-                  icon={Phone}
-                  hint="Used for WhatsApp support button"
-                />
-                <div className="md:col-span-2">
-                  <SettingInput
-                    settingKey="contact_address"
-                    label="Address"
-                    placeholder="College Campus, City, State"
-                    icon={MapPin}
-                  />
-                </div>
+                {settingsLoaded && (
+                  <>
+                    <SettingInput
+                      settingKey="contact_email"
+                      label="Email"
+                      placeholder="info@kaizen.edu"
+                      type="email"
+                      icon={Mail}
+                      value={String(settings['contact_email'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="contact_phone"
+                      label="Phone / WhatsApp"
+                      placeholder="+91 98765 43210"
+                      icon={Phone}
+                      hint="Used for WhatsApp support button"
+                      value={String(settings['contact_phone'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <div className="md:col-span-2">
+                      <SettingInput
+                        settingKey="contact_address"
+                        label="Address"
+                        placeholder="College Campus, City, State"
+                        icon={MapPin}
+                        value={String(settings['contact_address'] || '')}
+                        saving={saving}
+                        onChange={handleInputChange}
+                        onBlur={handleInputBlur}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
 
@@ -247,36 +291,60 @@ export default function Settings() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SettingInput
-                  settingKey="social_instagram"
-                  label="Instagram"
-                  placeholder="https://instagram.com/kaizen2025"
-                  icon={Instagram}
-                />
-                <SettingInput
-                  settingKey="social_facebook"
-                  label="Facebook"
-                  placeholder="https://facebook.com/kaizen2025"
-                  icon={Facebook}
-                />
-                <SettingInput
-                  settingKey="social_twitter"
-                  label="Twitter / X"
-                  placeholder="https://twitter.com/kaizen2025"
-                  icon={Twitter}
-                />
-                <SettingInput
-                  settingKey="social_linkedin"
-                  label="LinkedIn"
-                  placeholder="https://linkedin.com/company/kaizen"
-                  icon={Linkedin}
-                />
-                <SettingInput
-                  settingKey="social_youtube"
-                  label="YouTube"
-                  placeholder="https://youtube.com/@kaizen2025"
-                  icon={Youtube}
-                />
+                {settingsLoaded && (
+                  <>
+                    <SettingInput
+                      settingKey="social_instagram"
+                      label="Instagram"
+                      placeholder="https://instagram.com/kaizen2025"
+                      icon={Instagram}
+                      value={String(settings['social_instagram'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="social_facebook"
+                      label="Facebook"
+                      placeholder="https://facebook.com/kaizen2025"
+                      icon={Facebook}
+                      value={String(settings['social_facebook'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="social_twitter"
+                      label="Twitter / X"
+                      placeholder="https://twitter.com/kaizen2025"
+                      icon={Twitter}
+                      value={String(settings['social_twitter'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="social_linkedin"
+                      label="LinkedIn"
+                      placeholder="https://linkedin.com/company/kaizen"
+                      icon={Linkedin}
+                      value={String(settings['social_linkedin'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="social_youtube"
+                      label="YouTube"
+                      placeholder="https://youtube.com/@kaizen2025"
+                      icon={Youtube}
+                      value={String(settings['social_youtube'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                  </>
+                )}
               </div>
             </Card>
 
@@ -288,21 +356,33 @@ export default function Settings() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SettingInput
-                  settingKey="payment_upi_id"
-                  label="UPI ID"
-                  placeholder="kaizen@ybl"
-                />
-                <SettingInput
-                  settingKey="payment_account_name"
-                  label="Account Name"
-                  placeholder="KAIZEN 2025"
-                />
+                {settingsLoaded && (
+                  <>
+                    <SettingInput
+                      settingKey="payment_upi_id"
+                      label="UPI ID"
+                      placeholder="kaizen@ybl"
+                      value={String(settings['payment_upi_id'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                    <SettingInput
+                      settingKey="payment_account_name"
+                      label="Account Name"
+                      placeholder="KAIZEN 2025"
+                      value={String(settings['payment_account_name'] || '')}
+                      saving={saving}
+                      onChange={handleInputChange}
+                      onBlur={handleInputBlur}
+                    />
+                  </>
+                )}
                 <div className="md:col-span-2">
                   <Label className="text-white/80">Payment Instructions</Label>
                   <Textarea
-                    value={String(settings.payment_instructions || '')}
-                    onChange={(e) => updateSetting('payment_instructions', e.target.value)}
+                    key={settingsLoaded ? 'loaded' : 'loading'}
+                    defaultValue={String(settings.payment_instructions || '')}
                     onBlur={(e) => saveSetting('payment_instructions', e.target.value)}
                     className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
                     rows={3}
