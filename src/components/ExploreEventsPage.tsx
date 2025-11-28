@@ -8,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 interface ExploreEventsPageProps {
   onClose: () => void;
   onRegister: (eventId?: string) => void;
-  initialEventId?: string;
 }
 
 interface Event {
@@ -26,7 +25,7 @@ interface Event {
   image_url: string;
 }
 
-export function ExploreEventsPage({ onClose, onRegister, initialEventId }: ExploreEventsPageProps) {
+export function ExploreEventsPage({ onClose, onRegister }: ExploreEventsPageProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +44,6 @@ export function ExploreEventsPage({ onClose, onRegister, initialEventId }: Explo
 
       if (error) throw error;
       setEvents(data || []);
-      
-      // If initialEventId is provided, find the event and set search query
-      if (initialEventId && data) {
-        const event = data.find(e => e.id === initialEventId);
-        if (event) {
-          setSearchQuery(event.name);
-        }
-      }
     } catch (err: unknown) {
       console.error('Error fetching events:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load events. Please try again.';

@@ -79,6 +79,11 @@ const ScheduleModal = lazy(() =>
     .then(m => ({ default: m.ScheduleModal }))
     .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Schedule. Please refresh.</div> }))
 );
+const EventDetailsModal = lazy(() =>
+  import('@/components/EventDetailsModal')
+    .then(m => ({ default: m.EventDetailsModal }))
+    .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Event Details. Please refresh.</div> }))
+);
 
 // Minimal skeleton loaders
 const SectionSkeleton = memo(({ height = 'h-96' }: { height?: string }) => (
@@ -104,6 +109,7 @@ const Index = () => {
   const [triggerHeroAnimation, setTriggerHeroAnimation] = useState(hasSeenIntro);
   const [showRegistration, setShowRegistration] = useState(false);
   const [showExploreEvents, setShowExploreEvents] = useState(false);
+  const [showEventDetails, setShowEventDetails] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined);
   const [showStatusChecker, setShowStatusChecker] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -137,7 +143,7 @@ const Index = () => {
   }, []);
   // Control body overflow when modals are open
   useEffect(() => {
-    if (showIntro || showRegistration || showExploreEvents || showStatusChecker || showSchedule) {
+    if (showIntro || showRegistration || showExploreEvents || showStatusChecker || showSchedule || showEventDetails) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -145,23 +151,23 @@ const Index = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showIntro, showRegistration, showExploreEvents, showStatusChecker, showSchedule]);
+  }, [showIntro, showRegistration, showExploreEvents, showStatusChecker, showSchedule, showEventDetails]);
 
   // Memoized handlers
   const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
   const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
-  const handleShowExploreEvents = useCallback((eventId?: string) => {
-    if (typeof eventId === 'string') {
-      setSelectedEventId(eventId);
-    } else {
-      setSelectedEventId(undefined);
-    }
-    setShowExploreEvents(true);
+  const handleShowExploreEvents = useCallback(() => setShowExploreEvents(true), []);
+  const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
+  
+  const handleShowEventDetails = useCallback((eventId: string) => {
+    setSelectedEventId(eventId);
+    setShowEventDetails(true);
   }, []);
-  const handleCloseExploreEvents = useCallback(() => {
-    setShowExploreEvents(false);
+  const handleCloseEventDetails = useCallback(() => {
+    setShowEventDetails(false);
     setSelectedEventId(undefined);
   }, []);
+
   const handleShowStatusChecker = useCallback(() => setShowStatusChecker(true), []);
   const handleCloseStatusChecker = useCallback(() => setShowStatusChecker(false), []);
   const handleShowSchedule = useCallback(() => setShowSchedule(true), []);
@@ -169,6 +175,7 @@ const Index = () => {
 
   const handleExploreToRegister = useCallback(() => {
     setShowExploreEvents(false);
+    setShowEventDetails(false);
     setShowRegistration(true);
   }, []);
 
@@ -240,7 +247,7 @@ const Index = () => {
           {/* Below-the-fold sections */}
           <div>
             <Suspense fallback={<SectionSkeleton />}>
-              <FeaturedEvents onViewAll={() => handleShowExploreEvents()} onEventClick={handleShowExploreEvents} />
+              <FeaturedEvents onViewAll={handleShowExploreEvents} onEventClick={handleShowEventDetails} />
             </Suspense>
           </div>
 
@@ -290,7 +297,18 @@ const Index = () => {
               <ExploreEventsPage
                 onClose={handleCloseExploreEvents}
                 onRegister={handleExploreToRegister}
-                initialEventId={selectedEventId}
+              />
+            </ErrorBoundary>
+          </Suspense>
+        )}
+
+        {showEventDetails && selectedEventId && (
+          <Suspense fallback={<ModalLoader />}>
+            <ErrorBoundary>
+              <EventDetailsModal
+                eventId={selectedEventId}
+                onClose={handleCloseEventDetails}
+                onRegister={handleExploreToRegister}
               />
             </ErrorBoundary>
           </Suspense>
