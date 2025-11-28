@@ -6,7 +6,7 @@ import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Download, FileDown } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 interface Registration {
   id: string;
@@ -92,10 +92,6 @@ export default function RegistrationDetails() {
     }
   };
 
-  const handlePrintPDF = () => {
-    window.print();
-  };
-
   if (loading) {
     return (
       <ProtectedRoute requiredRoles={['super_admin', 'event_manager', 'finance']}>
@@ -129,24 +125,6 @@ export default function RegistrationDetails() {
               <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
                 Registration Details
               </h1>
-            </div>
-            <div className="flex gap-2 print:hidden">
-              <Button
-                onClick={handlePrintPDF}
-                className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20"
-              >
-                <FileDown className="w-4 h-4 mr-2" />
-                Generate PDF
-              </Button>
-              {registration.payment_proof_url && (
-                <Button
-                  onClick={() => window.open(registration.payment_proof_url!, '_blank')}
-                  className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Proof
-                </Button>
-              )}
             </div>
           </div>
 
