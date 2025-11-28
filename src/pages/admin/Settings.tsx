@@ -69,6 +69,7 @@ SettingInput.displayName = 'SettingInput';
 
 export default function Settings() {
   const [settings, setSettings] = useState<Record<string, SettingValue>>({});
+  const [categories, setCategories] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const { toast } = useToast();
@@ -98,14 +99,17 @@ export default function Settings() {
 
       if (data) {
         const settingsMap: Record<string, SettingValue> = {};
-        data.forEach((s: { key: string; value: string }) => {
+        const categoryMap: Record<string, string> = {};
+        data.forEach((s: { key: string; value: string; category: string }) => {
           try {
             settingsMap[s.key] = JSON.parse(String(s.value));
           } catch {
             settingsMap[s.key] = s.value;
           }
+          categoryMap[s.key] = s.category;
         });
         setSettings(settingsMap);
+        setCategories(categoryMap);
         setSettingsLoaded(true);
       }
     } catch (error) {
@@ -127,6 +131,7 @@ export default function Settings() {
         .upsert({
           key,
           value: JSON.stringify(value),
+          category: categories[key] || 'system',
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
 

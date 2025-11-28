@@ -155,13 +155,13 @@ test.describe('Admin Panel Tests', () => {
         // Check if table is populated - use exact match to avoid strict mode violation
         await expect(page.getByText('Student 1', { exact: true })).toBeVisible();
 
-    // Check pagination controls
-    const prevBtn = page.locator('button:has-text("Previous")');
-    const nextBtn = page.locator('button:has-text("Next")');
-    
-    await expect(prevBtn).toBeVisible();
-    await expect(nextBtn).toBeVisible();
-  });    test('Queries page loads', async ({ page }) => {
+        // Check pagination controls
+        const prevBtn = page.locator('button:has-text("Previous")');
+        const nextBtn = page.locator('button:has-text("Next")');
+
+        await expect(prevBtn).toBeVisible();
+        await expect(nextBtn).toBeVisible();
+    }); test('Queries page loads', async ({ page }) => {
         await page.goto('/admin/queries');
         await expect(page).toHaveURL(/\/admin\/queries/);
         await expect(page.locator('h1')).toContainText('Contact Queries');
