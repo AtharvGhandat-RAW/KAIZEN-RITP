@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, Calendar, MapPin, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RegistrationCTAProps {
   onOpen: () => void;
+  onViewSchedule?: () => void;
 }
 
-export function RegistrationCTA({ onOpen }: RegistrationCTAProps) {
+export function RegistrationCTA({ onOpen, onViewSchedule }: RegistrationCTAProps) {
+  const [eventDate, setEventDate] = useState('Coming Soon');
+
+  useEffect(() => {
+    const fetchEventDate = async () => {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'event_date')
+        .maybeSingle();
+
+      if (data?.value) {
+        setEventDate(String(data.value).replace(/"/g, ''));
+      }
+    };
+
+    fetchEventDate();
+  }, []);
+
   return (
     <section id="registration" className="relative py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-[1440px] mx-auto">
       {/* Main CTA Card */}
@@ -48,7 +68,7 @@ export function RegistrationCTA({ onOpen }: RegistrationCTAProps) {
             {/* Event Info Cards */}
             <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
               {[
-                { icon: Calendar, label: 'Date', value: 'Coming Soon' },
+                { icon: Calendar, label: 'Date', value: eventDate },
                 { icon: MapPin, label: 'Venue', value: 'RIT Campus' },
                 { icon: Mail, label: 'Contact', value: 'info@kaizen.com' }
               ].map((info, index) => {
@@ -87,7 +107,10 @@ export function RegistrationCTA({ onOpen }: RegistrationCTAProps) {
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-700 group-hover:scale-110 transition-transform duration-300" />
               </button>
 
-              <button className="group relative px-8 sm:px-10 md:px-12 py-3 sm:py-4 border-2 border-red-600 text-white hover:bg-red-600/10 transition-all duration-300 w-full sm:w-auto">
+              <button 
+                onClick={onViewSchedule}
+                className="group relative px-8 sm:px-10 md:px-12 py-3 sm:py-4 border-2 border-red-600 text-white hover:bg-red-600/10 transition-all duration-300 w-full sm:w-auto"
+              >
                 <span className="relative z-10 text-sm sm:text-base md:text-lg">
                   View Schedule
                 </span>

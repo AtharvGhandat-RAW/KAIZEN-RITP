@@ -5,6 +5,8 @@ import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { deferWork } from '@/lib/preload';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 // Lazy load background effects with lower priority - with error handling
 const AtmosphericBackground = lazy(() =>
   import('@/components/AtmosphericBackground')
@@ -72,6 +74,11 @@ const RegistrationStatusChecker = lazy(() =>
     .then(m => ({ default: m.RegistrationStatusChecker }))
     .catch(() => ({ default: () => null }))
 );
+const ScheduleModal = lazy(() =>
+  import('@/components/ScheduleModal')
+    .then(m => ({ default: m.ScheduleModal }))
+    .catch(() => ({ default: () => null }))
+);
 
 // Minimal skeleton loaders
 const SectionSkeleton = memo(({ height = 'h-96' }: { height?: string }) => (
@@ -98,6 +105,7 @@ const Index = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showExploreEvents, setShowExploreEvents] = useState(false);
   const [showStatusChecker, setShowStatusChecker] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
   // Preload heavy components while intro is playing
@@ -126,10 +134,9 @@ const Index = () => {
 
     return () => clearTimeout(timer);
   }, []);
-
   // Control body overflow when modals are open
   useEffect(() => {
-    if (showIntro || showRegistration || showExploreEvents || showStatusChecker) {
+    if (showIntro || showRegistration || showExploreEvents || showStatusChecker || showSchedule) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -137,7 +144,7 @@ const Index = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showIntro, showRegistration, showExploreEvents, showStatusChecker]);
+  }, [showIntro, showRegistration, showExploreEvents, showStatusChecker, showSchedule]);
 
   // Memoized handlers
   const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
@@ -146,6 +153,8 @@ const Index = () => {
   const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
   const handleShowStatusChecker = useCallback(() => setShowStatusChecker(true), []);
   const handleCloseStatusChecker = useCallback(() => setShowStatusChecker(false), []);
+  const handleShowSchedule = useCallback(() => setShowSchedule(true), []);
+  const handleCloseSchedule = useCallback(() => setShowSchedule(false), []);
 
   const handleExploreToRegister = useCallback(() => {
     setShowExploreEvents(false);
@@ -226,13 +235,13 @@ const Index = () => {
 
           <div>
             <Suspense fallback={<SectionSkeleton />}>
-              <AboutSection />
+              <AboutSection onDiscoverMore={handleShowExploreEvents} />
             </Suspense>
           </div>
 
           <div>
             <Suspense fallback={<SectionSkeleton height="h-64" />}>
-              <RegistrationCTA onOpen={handleShowRegistration} />
+              <RegistrationCTA onOpen={handleShowRegistration} onViewSchedule={handleShowSchedule} />
             </Suspense>
           </div>
 
@@ -258,7 +267,9 @@ const Index = () => {
         {/* Modal components - only render when active */}
         {showRegistration && (
           <Suspense fallback={<ModalLoader />}>
-            <RegistrationPage onClose={handleCloseRegistration} />
+            <ErrorBoundary>
+              <RegistrationPage onClose={handleCloseRegistration} />
+            </ErrorBoundary>
           </Suspense>
         )}
 
@@ -274,6 +285,12 @@ const Index = () => {
         {showStatusChecker && (
           <Suspense fallback={<ModalLoader />}>
             <RegistrationStatusChecker onClose={handleCloseStatusChecker} />
+          </Suspense>
+        )}
+
+        {showSchedule && (
+          <Suspense fallback={<ModalLoader />}>
+            <ScheduleModal onClose={handleCloseSchedule} />
           </Suspense>
         )}
       </div>

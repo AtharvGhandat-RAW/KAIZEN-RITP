@@ -197,6 +197,23 @@ export default function Settings() {
                   )}
                   <p className="text-white/40 text-xs mt-1">This countdown is shown on the homepage</p>
                 </div>
+
+                <div>
+                  <Label className="text-white/80">Event Date (Display Text)</Label>
+                  {settingsLoaded ? (
+                    <Input
+                      type="text"
+                      key="loaded-event-date"
+                      defaultValue={String(settings['event_date'] || '').replace(/"/g, '')}
+                      onBlur={(e) => saveSetting('event_date', e.target.value)}
+                      className="bg-black/40 border-white/20 mt-1 focus:border-blue-500"
+                      placeholder="e.g. March 15-16, 2025"
+                    />
+                  ) : (
+                    <div className="h-10 w-full bg-white/5 animate-pulse rounded mt-1" />
+                  )}
+                  <p className="text-white/40 text-xs mt-1">This text is shown on the registration card</p>
+                </div>
               </div>
             </Card>
 

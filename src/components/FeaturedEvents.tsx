@@ -147,7 +147,13 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: Featur
                     </p>
 
                     {/* Learn More Link */}
-                    <div className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-300">
+                    <div 
+                      className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewAll?.();
+                      }}
+                    >
                       <span className="text-sm sm:text-base">Learn More</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300" />
                     </div>
