@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   Globe,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 
 type SettingValue = string | boolean | number | null;
@@ -172,6 +173,28 @@ export default function Settings() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Event Countdown */}
+            <Card className="bg-black/60 border-red-600/30 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <h2 className="text-lg font-semibold text-white">Event Countdown</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-white/80">Event Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    key={settingsLoaded ? 'loaded-countdown' : 'loading-countdown'}
+                    defaultValue={String(settings['countdown_target'] || '').replace(/"/g, '')}
+                    onBlur={(e) => saveSetting('countdown_target', e.target.value)}
+                    className="bg-black/40 border-white/20 mt-1 focus:border-blue-500"
+                  />
+                  <p className="text-white/40 text-xs mt-1">This countdown is shown on the homepage</p>
+                </div>
+              </div>
+            </Card>
+
             {/* System Status */}
             <Card className="bg-black/60 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">

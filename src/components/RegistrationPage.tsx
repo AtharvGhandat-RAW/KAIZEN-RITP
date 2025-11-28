@@ -33,12 +33,21 @@ interface Event {
   upi_qr_url?: string;
 }
 
+interface RegistrationSettings {
+  registration_enabled: boolean;
+  registration_notice: string;
+}
+
 export function RegistrationPage({ onClose }: RegistrationPageProps) {
   const [loading, setLoading] = useState(false);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [registrationSettings, setRegistrationSettings] = useState<RegistrationSettings>({
+    registration_enabled: true,
+    registration_notice: ''
+  });
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -54,6 +63,7 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
 
   useEffect(() => {
     fetchEvents();
+    fetchRegistrationSettings();
     
     // Check for event ID in URL
     const params = new URLSearchParams(window.location.search);
@@ -62,6 +72,28 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
       setFormData(prev => ({ ...prev, eventId: eventIdParam }));
     }
   }, []);
+
+  const fetchRegistrationSettings = async () => {
+    const { data } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['registration_enabled', 'registration_notice']);
+    
+    if (data) {
+      const settingsMap: Record<string, any> = {};
+      data.forEach((s: { key: string; value: string }) => {
+        try {
+          settingsMap[s.key] = JSON.parse(String(s.value));
+        } catch {
+          settingsMap[s.key] = s.value;
+        }
+      });
+      setRegistrationSettings({
+        registration_enabled: settingsMap.registration_enabled !== false,
+        registration_notice: String(settingsMap.registration_notice || '').replace(/"/g, '')
+      });
+    }
+  };
 
   const fetchEvents = async () => {
     setLoadingEvents(true);
@@ -279,43 +311,73 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-red-500 text-center px-2" style={{
-                textShadow: '0 0 20px rgba(255, 0, 0, 0.5)',
-                fontFamily: 'serif'
-              }}>
-                ENTER THE DARKNESS
-              </h2>
-              <p className="text-red-400/60 mb-4 sm:mb-6 text-center italic text-sm sm:text-base px-2">Your registration... your fate sealed</p>
+              {/* Registration Notice Banner */}
+              {registrationSettings.registration_notice && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-400 text-sm text-center">
+                    ⚠️ {registrationSettings.registration_notice}
+                  </p>
+                </div>
+              )}
 
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-                {loadingEvents ? (
-                  <div className="text-center py-8 sm:py-12 space-y-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto" />
-                    <p className="text-red-500 text-base sm:text-lg">Loading events...</p>
-                  </div>
-                ) : events.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 space-y-4 px-2">
-                    <p className="text-red-500 text-lg sm:text-xl">No Events Available</p>
-                    <p className="text-red-400/60 text-sm sm:text-base">Check back later</p>
-                    <Button type="button" onClick={onClose} className="bg-red-900 hover:bg-red-800 text-white w-full sm:w-auto">
-                      Close
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label className="text-red-400">Select Event *</Label>
-                      <Select value={formData.eventId} onValueChange={(value) => handleChange('eventId', value)}>
-                        <SelectTrigger className="bg-black/60 border-red-900/50 text-white">
-                          <SelectValue placeholder="Choose an event" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-black border-red-900/50">
-                          {events.map((event) => (
-                            <SelectItem key={event.id} value={event.id} className="text-white">
-                              {event.name} - {event.category} (₹{event.registration_fee})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+              {/* Registration Disabled Message */}
+              {!registrationSettings.registration_enabled ? (
+                <div className="text-center py-8 sm:py-12 space-y-4 px-2">
+                  <div className="text-5xl mb-4">🚫</div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-red-500 mb-4">
+                    REGISTRATION CLOSED
+                  </h2>
+                  <p className="text-red-400/60 text-sm sm:text-base mb-6">
+                    Registration is currently not available. Please check back later.
+                  </p>
+                  {registrationSettings.registration_notice && (
+                    <p className="text-yellow-400 text-sm italic">
+                      {registrationSettings.registration_notice}
+                    </p>
+                  )}
+                  <Button type="button" onClick={onClose} className="bg-red-900 hover:bg-red-800 text-white mt-4">
+                    Close
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-red-500 text-center px-2" style={{
+                    textShadow: '0 0 20px rgba(255, 0, 0, 0.5)',
+                    fontFamily: 'serif'
+                  }}>
+                    ENTER THE DARKNESS
+                  </h2>
+                  <p className="text-red-400/60 mb-4 sm:mb-6 text-center italic text-sm sm:text-base px-2">Your registration... your fate sealed</p>
+
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                    {loadingEvents ? (
+                      <div className="text-center py-8 sm:py-12 space-y-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto" />
+                        <p className="text-red-500 text-base sm:text-lg">Loading events...</p>
+                      </div>
+                    ) : events.length === 0 ? (
+                      <div className="text-center py-8 sm:py-12 space-y-4 px-2">
+                        <p className="text-red-500 text-lg sm:text-xl">No Events Available</p>
+                        <p className="text-red-400/60 text-sm sm:text-base">Check back later</p>
+                        <Button type="button" onClick={onClose} className="bg-red-900 hover:bg-red-800 text-white w-full sm:w-auto">
+                          Close
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-red-400">Select Event *</Label>
+                          <Select value={formData.eventId} onValueChange={(value) => handleChange('eventId', value)}>
+                            <SelectTrigger className="bg-black/60 border-red-900/50 text-white">
+                              <SelectValue placeholder="Choose an event" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-black border-red-900/50">
+                              {events.map((event) => (
+                                <SelectItem key={event.id} value={event.id} className="text-white">
+                                  {event.name} - {event.category} (₹{event.registration_fee})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                       </Select>
                     </div>
 
@@ -484,6 +546,8 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
                   </>
                 )}
               </form>
+                </>
+              )}
             </>
           )}
         </div>
