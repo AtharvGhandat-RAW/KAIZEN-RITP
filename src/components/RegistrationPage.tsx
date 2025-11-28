@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, AlertCircle, CheckCircle2, Upload, Loader2, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, AlertCircle, CheckCircle2, Upload, Loader2, Skull, Flame, Ghost, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,7 +149,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     };
   }, [fetchEvents, fetchRegistrationSettings]);
 
-  const selectedEvent = events.find(e => e.id === formData.eventId);
+  const selectedEvent = useMemo(() => events.find(e => e.id === formData.eventId), [events, formData.eventId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,15 +304,18 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-300">
       <div className="relative w-full max-w-4xl h-full max-h-[90vh] flex flex-col bg-gradient-to-br from-zinc-900 via-black to-zinc-950 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 backdrop-blur-xl sticky top-0 z-10 shrink-0">
+        {/* Header - Horror Theme */}
+        <div className="flex items-center justify-between p-6 border-b border-red-900/30 bg-gradient-to-r from-black via-red-950/20 to-black backdrop-blur-xl sticky top-0 z-10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
-              <Sparkles className="w-5 h-5 text-red-500" />
+            <div className="p-2.5 bg-red-600/20 rounded-xl border border-red-600/40 shadow-lg shadow-red-900/30 animate-pulse">
+              <Skull className="w-6 h-6 text-red-500" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-wide">Event Registration</h2>
-              <p className="text-xs text-zinc-400">Secure your spot in the Upside Down</p>
+              <h2 className="text-xl font-bold text-red-100 tracking-wide flex items-center gap-2">
+                Enter The Upside Down
+                <Ghost className="w-4 h-4 text-red-400 animate-bounce" />
+              </h2>
+              <p className="text-xs text-red-400/60">Dare to register... if you survive</p>
             </div>
           </div>
           <Button
@@ -405,41 +408,65 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                         </div>
                       ) : (
                         <div className="grid gap-6">
-                          {/* Event Selection Section */}
-                          <div className="space-y-4 p-6 bg-white/5 border border-white/10 rounded-xl">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                              <span className="w-1 h-6 bg-red-500 rounded-full" />
-                              Event Details
+                          {/* Event Selection Section - Horror Theme */}
+                          <div className="space-y-4 p-6 bg-gradient-to-br from-red-950/20 via-black to-red-950/10 border border-red-900/40 rounded-xl shadow-lg shadow-red-900/10 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyMjAsIDM4LCAzOCwgMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
+                            <h3 className="text-lg font-semibold text-red-100 flex items-center gap-2 relative">
+                              <Flame className="w-5 h-5 text-red-500 animate-pulse" />
+                              Choose Your Fate
                             </h3>
                             
-                            <div className="space-y-2">
-                              <Label className="text-zinc-400">Select Event</Label>
+                            <div className="space-y-3 relative">
+                              <Label className="text-red-300/80 text-sm font-medium">Select Event <span className="text-red-500">*</span></Label>
                               <Select value={formData.eventId} onValueChange={(value) => handleChange('eventId', value)}>
-                                <SelectTrigger className="bg-black/40 border-white/10 text-white h-12 focus:ring-red-500/50">
-                                  <SelectValue placeholder="Choose an event..." />
+                                <SelectTrigger className="bg-black/60 border-red-800/50 text-white h-14 focus:ring-red-500/50 focus:border-red-500 hover:border-red-600/60 transition-all duration-300 hover:bg-black/80">
+                                  <SelectValue placeholder="⚡ Click to choose an event..." />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white max-h-[300px] z-[60]">
-                                  {events.map((event) => (
-                                    <SelectItem key={event.id} value={event.id} className="focus:bg-white/10 cursor-pointer py-3">
-                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                                        <span className="font-medium text-white">{event.name}</span>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 border border-white/5">
-                                            {event.category}
-                                          </span>
-                                          <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                                            event.registration_fee > 0 
-                                              ? 'bg-red-500/10 text-red-400 border-red-500/20' 
-                                              : 'bg-green-500/10 text-green-400 border-green-500/20'
-                                          }`}>
-                                            {event.registration_fee > 0 ? `₹${event.registration_fee}` : 'Free'}
-                                          </span>
+                                <SelectContent 
+                                  className="bg-zinc-950 border-red-800/60 text-white max-h-[350px] shadow-2xl shadow-red-900/40"
+                                  position="popper"
+                                  sideOffset={8}
+                                >
+                                  {events.length === 0 ? (
+                                    <div className="p-4 text-center text-zinc-500">
+                                      <Ghost className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                      <p>No events available</p>
+                                    </div>
+                                  ) : (
+                                    events.map((event) => (
+                                      <SelectItem 
+                                        key={event.id} 
+                                        value={event.id} 
+                                        className="focus:bg-red-900/30 hover:bg-red-900/20 cursor-pointer py-4 px-3 border-b border-red-900/20 last:border-0 transition-colors"
+                                      >
+                                        <div className="flex flex-col gap-1.5 w-full">
+                                          <span className="font-semibold text-red-100 text-base">{event.name}</span>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs px-2.5 py-1 rounded-full bg-red-900/40 text-red-300 border border-red-800/50">
+                                              {event.category}
+                                            </span>
+                                            <span className="text-xs px-2.5 py-1 rounded-full bg-zinc-800/60 text-zinc-300 border border-zinc-700/50">
+                                              {event.event_type === 'team' ? '👥 Team' : '👤 Solo'}
+                                            </span>
+                                            <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${
+                                              event.registration_fee > 0 
+                                                ? 'bg-orange-900/30 text-orange-300 border-orange-700/50' 
+                                                : 'bg-green-900/30 text-green-300 border-green-700/50'
+                                            }`}>
+                                              {event.registration_fee > 0 ? `₹${event.registration_fee}` : '✨ Free'}
+                                            </span>
+                                          </div>
                                         </div>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
+                              {events.length > 0 && (
+                                <p className="text-xs text-red-400/50 flex items-center gap-1">
+                                  <Zap className="w-3 h-3" /> {events.length} event{events.length > 1 ? 's' : ''} available
+                                </p>
+                              )}
                             </div>
 
                             {selectedEvent?.event_type === 'team' && (
@@ -456,11 +483,12 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                             )}
                           </div>
 
-                          {/* Personal Details Section */}
-                          <div className="space-y-4 p-6 bg-white/5 border border-white/10 rounded-xl">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                              <span className="w-1 h-6 bg-blue-500 rounded-full" />
-                              Personal Information
+                          {/* Personal Details Section - Horror Theme */}
+                          <div className="space-y-4 p-6 bg-gradient-to-br from-zinc-900/80 via-black to-zinc-900/50 border border-zinc-800/60 rounded-xl shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full blur-3xl" />
+                            <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2 relative">
+                              <span className="w-1.5 h-6 bg-gradient-to-b from-red-500 to-red-700 rounded-full" />
+                              Your Identity
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -500,11 +528,12 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                             </div>
                           </div>
 
-                          {/* Academic Details Section */}
-                          <div className="space-y-4 p-6 bg-white/5 border border-white/10 rounded-xl">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                              <span className="w-1 h-6 bg-purple-500 rounded-full" />
-                              Academic Details
+                          {/* Academic Details Section - Horror Theme */}
+                          <div className="space-y-4 p-6 bg-gradient-to-br from-purple-950/20 via-black to-purple-950/10 border border-purple-900/30 rounded-xl shadow-lg relative overflow-hidden">
+                            <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-600/5 rounded-full blur-3xl" />
+                            <h3 className="text-lg font-semibold text-purple-100 flex items-center gap-2 relative">
+                              <span className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-700 rounded-full" />
+                              Academic Realm
                             </h3>
 
                             <div className="space-y-2">
@@ -520,14 +549,16 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label className="text-zinc-400">Year of Study</Label>
+                                <Label className="text-purple-300/80 text-sm font-medium">Year of Study <span className="text-red-500">*</span></Label>
                                 <Select value={formData.year} onValueChange={(value) => handleChange('year', value)}>
-                                  <SelectTrigger className="bg-black/40 border-white/10 text-white h-12">
+                                  <SelectTrigger className="bg-black/60 border-purple-800/40 text-white h-12 hover:border-purple-600/60 transition-all">
                                     <SelectValue placeholder="Select Year" />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                  <SelectContent className="bg-zinc-950 border-purple-800/50 text-white shadow-xl" position="popper" sideOffset={8}>
                                     {[1, 2, 3, 4].map(y => (
-                                      <SelectItem key={y} value={y.toString()}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</SelectItem>
+                                      <SelectItem key={y} value={y.toString()} className="focus:bg-purple-900/30 hover:bg-purple-900/20 cursor-pointer py-3">
+                                        {y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year
+                                      </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
