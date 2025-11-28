@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -21,11 +22,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import {
-  Eye, Trash2, MessageSquare, Search, Filter, Mail, Clock,
+  Eye, Trash2, MessageSquare, Search, Filter, Mail,
   CheckCircle, AlertCircle, Send, RefreshCw, User, Calendar,
-  MessageCircle, Archive, Inbox
+  MessageCircle, Inbox
 } from 'lucide-react';
 
 interface Query {
@@ -46,6 +57,7 @@ export default function Queries() {
   const [replyDialog, setReplyDialog] = useState<Query | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Stats
@@ -70,33 +82,36 @@ export default function Queries() {
     });
   }, [queries, searchQuery, statusFilter]);
 
-  useEffect(() => {
-    fetchQueries();
-
-    const channel = supabase
-      .channel('queries-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, () => {
-        fetchQueries();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchQueries = async () => {
-    setLoading(true);
+  const fetchQueries = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const { data } = await supabase
       .from('queries')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (data) setQueries(data);
-    setLoading(false);
-  };
+    if (!silent) setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchQueries();
+
+    const channel = supabase
+      .channel('queries-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, () => {
+        fetchQueries(true); // Silent update on real-time changes
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchQueries]);
 
   const markAsRead = async (id: string) => {
+    // Optimistic update
+    setQueries(prev => prev.map(q => q.id === id ? { ...q, status: 'seen' } : q));
+
     const { error } = await supabase
       .from('queries')
       .update({ status: 'seen' })
@@ -104,10 +119,14 @@ export default function Queries() {
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      fetchQueries(true); // Revert on error
     }
   };
 
   const updateStatus = async (id: string, status: string) => {
+    // Optimistic update
+    setQueries(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+
     const { error } = await supabase
       .from('queries')
       .update({ status })
@@ -115,6 +134,7 @@ export default function Queries() {
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      fetchQueries(true); // Revert on error
     } else {
       toast({ title: 'Success', description: `Query marked as ${status}` });
     }
@@ -139,20 +159,14 @@ export default function Queries() {
       });
 
       // Update query status to resolved
-      await supabase
-        .from('queries')
-        .update({ status: 'resolved' })
-        .eq('id', replyDialog.id);
+      await updateStatus(replyDialog.id, 'resolved');
 
       toast({ title: 'Success', description: 'Reply sent successfully!' });
       setReplyDialog(null);
       setReplyMessage('');
     } catch (error) {
       // Even if email fails, mark as resolved
-      await supabase
-        .from('queries')
-        .update({ status: 'resolved' })
-        .eq('id', replyDialog.id);
+      await updateStatus(replyDialog.id, 'resolved');
 
       toast({
         title: 'Note',
@@ -164,8 +178,15 @@ export default function Queries() {
     setSending(false);
   };
 
-  const deleteQuery = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this query?')) return;
+  const deleteQuery = async () => {
+    if (!deleteId) return;
+    
+    const id = deleteId;
+    setDeleteId(null); // Close dialog immediately
+
+    // Optimistic update
+    const previousQueries = [...queries];
+    setQueries(prev => prev.filter(q => q.id !== id));
 
     const { error } = await supabase
       .from('queries')
@@ -173,6 +194,7 @@ export default function Queries() {
       .eq('id', id);
 
     if (error) {
+      setQueries(previousQueries); // Revert
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Query deleted successfully' });
@@ -192,7 +214,7 @@ export default function Queries() {
               </h1>
               <p className="text-white/60 mt-1">Manage and respond to visitor inquiries</p>
             </div>
-            <Button onClick={fetchQueries} variant="outline" className="border-red-600/30 hover:bg-red-600/10">
+            <Button onClick={() => fetchQueries(false)} variant="outline" className="border-red-600/30 hover:bg-red-600/10">
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -200,7 +222,7 @@ export default function Queries() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="bg-black/40 border-red-600/30 p-4 cursor-pointer hover:bg-black/50" onClick={() => setStatusFilter('all')}>
+            <Card className="bg-black/40 border-red-600/30 p-4 cursor-pointer hover:bg-black/50 transition-colors" onClick={() => setStatusFilter('all')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg">
                   <Inbox className="w-5 h-5 text-blue-500" />
@@ -211,7 +233,7 @@ export default function Queries() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-red-600/30 p-4 cursor-pointer hover:bg-red-600/5" onClick={() => setStatusFilter('new')}>
+            <Card className="bg-black/40 border-red-600/30 p-4 cursor-pointer hover:bg-red-600/5 transition-colors" onClick={() => setStatusFilter('new')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-red-500/20 rounded-lg relative">
                   <AlertCircle className="w-5 h-5 text-red-500" />
@@ -225,7 +247,7 @@ export default function Queries() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-yellow-600/30 p-4 cursor-pointer hover:bg-yellow-600/5" onClick={() => setStatusFilter('seen')}>
+            <Card className="bg-black/40 border-yellow-600/30 p-4 cursor-pointer hover:bg-yellow-600/5 transition-colors" onClick={() => setStatusFilter('seen')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/20 rounded-lg">
                   <Eye className="w-5 h-5 text-yellow-500" />
@@ -236,7 +258,7 @@ export default function Queries() {
                 </div>
               </div>
             </Card>
-            <Card className="bg-black/40 border-green-600/30 p-4 cursor-pointer hover:bg-green-600/5" onClick={() => setStatusFilter('resolved')}>
+            <Card className="bg-black/40 border-green-600/30 p-4 cursor-pointer hover:bg-green-600/5 transition-colors" onClick={() => setStatusFilter('resolved')}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-green-500" />
@@ -278,105 +300,129 @@ export default function Queries() {
 
           {/* Queries List */}
           <div className="space-y-4">
-            {filteredQueries.map((query) => (
-              <Card
-                key={query.id}
-                className={`bg-black/40 p-4 sm:p-6 transition-all duration-300 hover:border-red-500/50 ${query.status === 'new'
-                    ? 'border-red-600/50 shadow-lg shadow-red-600/10'
-                    : 'border-red-600/20'
-                  }`}
-              >
-                <div className="flex flex-col lg:flex-row gap-4">
-                  {/* Query Content */}
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <User className="w-4 h-4 text-red-500" />
-                        {query.name}
-                      </h3>
-                      <Badge className={`text-xs ${query.status === 'new'
-                          ? 'bg-red-500/20 text-red-500 border-red-500/30'
-                          : query.status === 'seen'
-                            ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
-                            : 'bg-green-500/20 text-green-500 border-green-500/30'
-                        }`}>
-                        {query.status === 'new' && <AlertCircle className="w-3 h-3 mr-1" />}
-                        {query.status === 'seen' && <Eye className="w-3 h-3 mr-1" />}
-                        {query.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" />}
-                        {query.status}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-white/60 text-sm mb-2">
-                      <Mail className="w-4 h-4" />
-                      <a href={`mailto:${query.email}`} className="hover:text-red-400 transition-colors">
-                        {query.email}
-                      </a>
-                    </div>
-
-                    <div className="bg-black/30 rounded-lg p-4 mb-3">
-                      <div className="flex items-center gap-2 text-white/90 font-medium mb-2">
-                        <MessageCircle className="w-4 h-4 text-red-500" />
-                        {query.subject}
+            {loading ? (
+              // Loading Skeletons
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="bg-black/40 border-red-600/20 p-6">
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-6 w-32 bg-white/10" />
+                        <Skeleton className="h-5 w-16 bg-white/10" />
                       </div>
-                      <p className="text-white/70 text-sm whitespace-pre-wrap">{query.message}</p>
+                      <Skeleton className="h-4 w-48 bg-white/10" />
+                      <Skeleton className="h-24 w-full bg-white/10 rounded-lg" />
+                      <Skeleton className="h-4 w-32 bg-white/10" />
                     </div>
-
-                    <div className="flex items-center gap-2 text-white/40 text-xs">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(query.created_at).toLocaleString()}
+                    <div className="flex lg:flex-col gap-2 justify-end">
+                      <Skeleton className="h-8 w-8 bg-white/10 rounded-md" />
+                      <Skeleton className="h-8 w-8 bg-white/10 rounded-md" />
+                      <Skeleton className="h-8 w-8 bg-white/10 rounded-md" />
                     </div>
                   </div>
+                </Card>
+              ))
+            ) : (
+              filteredQueries.map((query) => (
+                <Card
+                  key={query.id}
+                  className={`bg-black/40 p-4 sm:p-6 transition-all duration-300 hover:border-red-500/50 ${query.status === 'new'
+                      ? 'border-red-600/50 shadow-lg shadow-red-600/10'
+                      : 'border-red-600/20'
+                    }`}
+                >
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Query Content */}
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                          <User className="w-4 h-4 text-red-500" />
+                          {query.name}
+                        </h3>
+                        <Badge className={`text-xs ${query.status === 'new'
+                            ? 'bg-red-500/20 text-red-500 border-red-500/30'
+                            : query.status === 'seen'
+                              ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
+                              : 'bg-green-500/20 text-green-500 border-green-500/30'
+                          }`}>
+                          {query.status === 'new' && <AlertCircle className="w-3 h-3 mr-1" />}
+                          {query.status === 'seen' && <Eye className="w-3 h-3 mr-1" />}
+                          {query.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {query.status}
+                        </Badge>
+                      </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-row lg:flex-col gap-2 justify-end">
-                    {query.status === 'new' && (
+                      <div className="flex items-center gap-2 text-white/60 text-sm mb-2">
+                        <Mail className="w-4 h-4" />
+                        <a href={`mailto:${query.email}`} className="hover:text-red-400 transition-colors">
+                          {query.email}
+                        </a>
+                      </div>
+
+                      <div className="bg-black/30 rounded-lg p-4 mb-3">
+                        <div className="flex items-center gap-2 text-white/90 font-medium mb-2">
+                          <MessageCircle className="w-4 h-4 text-red-500" />
+                          {query.subject}
+                        </div>
+                        <p className="text-white/70 text-sm whitespace-pre-wrap">{query.message}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-white/40 text-xs">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(query.created_at).toLocaleString()}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-row lg:flex-col gap-2 justify-end">
+                      {query.status === 'new' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => markAsRead(query.id)}
+                          className="text-yellow-500 hover:bg-yellow-600/10"
+                          title="Mark as seen"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => markAsRead(query.id)}
-                        className="text-yellow-500 hover:bg-yellow-600/10"
-                        title="Mark as seen"
+                        onClick={() => {
+                          setReplyDialog(query);
+                          if (query.status === 'new') markAsRead(query.id);
+                        }}
+                        className="text-blue-500 hover:bg-blue-600/10"
+                        title="Reply"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Send className="w-4 h-4" />
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setReplyDialog(query);
-                        if (query.status === 'new') markAsRead(query.id);
-                      }}
-                      className="text-blue-500 hover:bg-blue-600/10"
-                      title="Reply"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                    {query.status !== 'resolved' && (
+                      {query.status !== 'resolved' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => updateStatus(query.id, 'resolved')}
+                          className="text-green-500 hover:bg-green-600/10"
+                          title="Mark as resolved"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => updateStatus(query.id, 'resolved')}
-                        className="text-green-500 hover:bg-green-600/10"
-                        title="Mark as resolved"
+                        onClick={() => setDeleteId(query.id)}
+                        className="text-red-500 hover:bg-red-600/10"
+                        title="Delete"
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => deleteQuery(query.id)}
-                      className="text-red-500 hover:bg-red-600/10"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+            )}
 
             {filteredQueries.length === 0 && !loading && (
               <Card className="bg-black/40 border-red-600/30 p-12 text-center">
@@ -389,16 +435,15 @@ export default function Queries() {
                 </p>
               </Card>
             )}
-
-            {loading && (
-              <div className="text-center py-12">
-                <div className="w-10 h-10 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto" />
-              </div>
-            )}
           </div>
 
           {/* Reply Dialog */}
-          <Dialog open={!!replyDialog} onOpenChange={() => setReplyDialog(null)}>
+          <Dialog open={!!replyDialog} onOpenChange={(open) => {
+            if (!open) {
+              setReplyDialog(null);
+              setReplyMessage('');
+            }
+          }}>
             <DialogContent className="bg-black/95 border-red-600/30 max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center gap-2">
@@ -430,7 +475,10 @@ export default function Queries() {
               <DialogFooter>
                 <Button
                   variant="outline"
-                  onClick={() => setReplyDialog(null)}
+                  onClick={() => {
+                    setReplyDialog(null);
+                    setReplyMessage('');
+                  }}
                   className="border-red-600/30"
                 >
                   Cancel
@@ -450,6 +498,22 @@ export default function Queries() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+            <AlertDialogContent className="bg-black/95 border-red-600/30">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Delete Query</AlertDialogTitle>
+                <AlertDialogDescription className="text-white/60">
+                  Are you sure you want to delete this query? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-red-600/30 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteQuery} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </AdminLayout>
     </ProtectedRoute>
