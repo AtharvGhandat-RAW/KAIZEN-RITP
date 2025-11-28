@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Download, FileText, Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { Download, FileText, Users, DollarSign, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 
 interface Event {
   id: string;
   name: string;
   event_date: string;
+  registration_fee: number;
 }
 
 interface ReportStats {
@@ -35,84 +36,118 @@ export default function Reports() {
     totalParticipants: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
-  const fetchEvents = async () => {
-    const { data } = await supabase
-      .from('events')
-      .select('id, name, event_date')
-      .order('event_date', { ascending: false });
-
-    if (data) setEvents(data);
-  };
-
-  const fetchStats = async (eventId: string, eventList: Event[]) => {
-    // Fetch registrations
-    let registrationsQuery = supabase
-      .from('registrations')
-      .select('*, events(name, registration_fee), profiles(full_name, email, phone, college)');
-
-    if (eventId !== 'all') {
-      registrationsQuery = registrationsQuery.eq('event_id', eventId);
-    }
-
-    const { data: registrations } = await registrationsQuery;
-    if (registrations) {
-      const totalRegistrations = registrations.length;
-      const completedPayments = registrations.filter(r => r.payment_status === 'completed').length;
-      const pendingPayments = registrations.filter(r => r.payment_status === 'pending').length;
-
-      const totalRevenue = registrations
-        .filter(r => r.payment_status === 'completed')
-        .reduce((sum, r) => sum + (r.events?.registration_fee || 0), 0);
-
-      setStats({
-        totalRegistrations,
-        totalRevenue,
-        pendingPayments,
-        completedPayments,
-        upcomingEvents: eventList.filter(e => new Date(e.event_date) > new Date()).length,
-        totalParticipants: totalRegistrations,
-      });
-    }
-  };
+  // Refs to hold current state for real-time subscriptions
+  const selectedEventRef = useRef(selectedEvent);
+  const eventsRef = useRef(events);
 
   useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase
+    selectedEventRef.current = selectedEvent;
+    eventsRef.current = events;
+  }, [selectedEvent, events]);
+
+  const fetchStats = useCallback(async (eventId: string, eventList: Event[]) => {
+    try {
+      let registrationsQuery = supabase
+        .from('registrations')
+        .select('*, events(name, registration_fee), profiles(full_name, email, phone, college)');
+
+      if (eventId !== 'all') {
+        registrationsQuery = registrationsQuery.eq('event_id', eventId);
+      }
+
+      const { data: registrations, error } = await registrationsQuery;
+
+      if (error) {
+        console.error('Error fetching registrations:', error);
+        return;
+      }
+
+      if (registrations) {
+        const totalRegistrations = registrations.length;
+        const completedPayments = registrations.filter(r => r.payment_status === 'completed').length;
+        const pendingPayments = registrations.filter(r => r.payment_status === 'pending').length;
+
+        const totalRevenue = registrations
+          .filter(r => r.payment_status === 'completed')
+          .reduce((sum, r) => {
+            const fee = r.events?.registration_fee || 0;
+            return sum + Number(fee);
+          }, 0);
+
+        setStats({
+          totalRegistrations,
+          totalRevenue,
+          pendingPayments,
+          completedPayments,
+          upcomingEvents: eventList.filter(e => new Date(e.event_date) > new Date()).length,
+          totalParticipants: totalRegistrations,
+        });
+      }
+    } catch (error) {
+      console.error('Error in fetchStats:', error);
+    }
+  }, []);
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
         .from('events')
-        .select('id, name, event_date')
+        .select('id, name, event_date, registration_fee')
         .order('event_date', { ascending: false });
+
+      if (error) throw error;
 
       if (data) {
         setEvents(data);
-        fetchStats(selectedEvent, data);
+        return data;
       }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast.error('Failed to load events');
+    }
+    return [];
+  }, []);
+
+  // Initial Load
+  useEffect(() => {
+    const init = async () => {
+      setPageLoading(true);
+      const eventList = await fetchEvents();
+      if (eventList) {
+        await fetchStats('all', eventList);
+      }
+      setPageLoading(false);
     };
 
     init();
 
-    // Real-time listener for registrations
+    // Real-time listener
     const channel = supabase
       .channel('reports-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => {
-        fetchStats(selectedEvent, events);
+        fetchStats(selectedEventRef.current, eventsRef.current);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
-        fetchEvents();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, async () => {
+        const newEvents = await fetchEvents();
+        if (newEvents) {
+           fetchStats(selectedEventRef.current, newEvents);
+        }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchEvents, fetchStats]);
 
-  // Separate effect for fetching stats when selectedEvent changes
+  // Update stats when filter changes
   useEffect(() => {
     if (events.length > 0) {
       fetchStats(selectedEvent, events);
     }
-  }, [selectedEvent, events]);
+  }, [selectedEvent, events, fetchStats]);
 
   const generateCSV = (data: Record<string, unknown>[], filename: string) => {
     if (data.length === 0) {
@@ -333,8 +368,14 @@ export default function Reports() {
             <p className="text-white/60 mt-1 text-sm sm:text-base">Generate comprehensive reports for events, registrations, and payments</p>
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pageLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="bg-black/60 border-red-600/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-white">Total Registrations</CardTitle>
@@ -411,7 +452,7 @@ export default function Reports() {
                   disabled={loading}
                   className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Export Registrations
                 </Button>
               </CardContent>
@@ -433,7 +474,7 @@ export default function Reports() {
                   disabled={loading}
                   className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Export Payments
                 </Button>
               </CardContent>
@@ -455,7 +496,7 @@ export default function Reports() {
                   disabled={loading}
                   className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Export Summary
                 </Button>
               </CardContent>
@@ -477,12 +518,14 @@ export default function Reports() {
                   disabled={loading}
                   className="w-full bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Export Attendance
                 </Button>
               </CardContent>
             </Card>
           </div>
+            </>
+          )}
         </div>
       </AdminLayout>
     </ProtectedRoute>
