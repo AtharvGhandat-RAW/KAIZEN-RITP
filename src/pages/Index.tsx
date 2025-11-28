@@ -88,7 +88,7 @@ SectionSkeleton.displayName = 'SectionSkeleton';
 
 // Modal loader
 const ModalLoader = memo(() => (
-  <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999]">
     <div className="w-10 h-10 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
   </div>
 ));
@@ -272,6 +272,7 @@ const Index = () => {
             </Suspense>
           </div>
         </div>
+      </div>
 
         {/* Modal components - only render when active */}
         {showRegistration && (
@@ -323,7 +324,6 @@ const Index = () => {
             </ErrorBoundary>
           </Suspense>
         )}
-      </div>
     </>
   );
 };
