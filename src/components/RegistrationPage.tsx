@@ -226,7 +226,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         const { data: newProfile, error: profileError } = await supabase
           .from('profiles')
           .insert({
-            user_id: crypto.randomUUID(),
+            // user_id is optional for public registrations
             full_name: formData.fullName,
             email: formData.email,
             phone: formData.phone,
@@ -418,7 +418,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 <SelectTrigger className="bg-black/40 border-white/10 text-white h-12 focus:ring-red-500/50">
                                   <SelectValue placeholder="Choose an event..." />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white max-h-[300px]">
+                                <SelectContent className="bg-zinc-950 border-white/10 text-white max-h-[300px] z-[60]">
                                   {events.map((event) => (
                                     <SelectItem key={event.id} value={event.id} className="focus:bg-white/10 cursor-pointer py-3">
                                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
