@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -15,9 +16,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus, Edit, Trash2, Eye, EyeOff, Calendar, MapPin, Users,
   IndianRupee, Search, Filter, Star, Clock, CheckCircle,
-  AlertCircle, TrendingUp, Copy, ExternalLink
+  AlertCircle, TrendingUp, Copy, ExternalLink, RefreshCw
 } from 'lucide-react';
 import { EventDialog } from '@/components/admin/EventDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +54,8 @@ export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Get unique categories
@@ -73,32 +86,40 @@ export default function Events() {
     return { totalEvents, upcomingEvents, totalRegistrations, totalCapacity, featuredCount, expectedRevenue };
   }, [events]);
 
+  const fetchEvents = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    const { data } = await supabase
+      .from('events')
+      .select('id, name, category, event_date, venue, registration_fee, max_participants, current_participants, status, is_featured, description')
+      .order('created_at', { ascending: false });
+
+    if (data) setEvents(data);
+    if (!silent) setLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchEvents();
 
     const channel = supabase
       .channel('events-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
-        fetchEvents();
+        fetchEvents(true);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchEvents]);
 
-  const fetchEvents = async () => {
-    const { data } = await supabase
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const id = deleteId;
+    setDeleteId(null);
 
-    if (data) setEvents(data);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    // Optimistic update
+    const previousEvents = [...events];
+    setEvents(prev => prev.filter(e => e.id !== id));
 
     const { error } = await supabase
       .from('events')
@@ -106,6 +127,7 @@ export default function Events() {
       .eq('id', id);
 
     if (error) {
+      setEvents(previousEvents); // Revert
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Event deleted successfully' });
@@ -113,23 +135,24 @@ export default function Events() {
   };
 
   const toggleFeatured = async (event: Event) => {
+    // Optimistic update
+    const previousEvents = [...events];
+    setEvents(prev => prev.map(e => e.id === event.id ? { ...e, is_featured: !e.is_featured } : e));
+
     const { error } = await supabase
       .from('events')
       .update({ is_featured: !event.is_featured })
       .eq('id', event.id);
 
     if (error) {
+      setEvents(previousEvents); // Revert
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: event.is_featured ? 'Unfeatured' : 'Featured', description: `${event.name} has been ${event.is_featured ? 'removed from' : 'added to'} featured events` });
+      toast({
+        title: !event.is_featured ? 'Featured' : 'Unfeatured',
+        description: `${event.name} has been ${!event.is_featured ? 'added to' : 'removed from'} featured events`
+      });
     }
-  };
-
-  const copyEventLink = (eventId: string) => {
-    const baseUrl = window.location.href.substring(0, window.location.href.indexOf('/admin'));
-    const link = `${baseUrl}/register?event=${eventId}`;
-    navigator.clipboard.writeText(link);
-    toast({ title: 'Copied!', description: 'Event registration link copied to clipboard' });
   };
 
   const getCapacityColor = (percentage: number) => {
@@ -164,20 +187,27 @@ export default function Events() {
               </h1>
               <p className="text-white/60 mt-1">Create, manage and track all KAIZEN events</p>
             </div>
-            <Button
-              onClick={() => {
-                setSelectedEvent(null);
-                setDialogOpen(true);
-              }}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto shadow-lg shadow-red-900/20 transition-all hover:scale-105"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Event
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button onClick={() => fetchEvents(false)} variant="outline" className="border-red-600/30 hover:bg-red-600/10 backdrop-blur-sm">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedEvent(null);
+                  setDialogOpen(true);
+                }}
+                className="bg-red-600 hover:bg-red-700 flex-1 sm:flex-none shadow-lg shadow-red-900/20 transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Event
+              </Button>
+            </div>
           </div>
 
           {/* Stats Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* ... Stats Cards ... */}
             <Card className="bg-black/60 border-red-600/20 p-4 hover:bg-red-900/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-500/20 rounded-lg">
@@ -228,7 +258,7 @@ export default function Events() {
                   <TrendingUp className="w-5 h-5 text-cyan-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">{Math.round((stats.totalRegistrations / stats.totalCapacity) * 100) || 0}%</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalCapacity > 0 ? Math.round((stats.totalRegistrations / stats.totalCapacity) * 100) : 0}%</p>
                   <p className="text-white/60 text-xs">Capacity Used</p>
                 </div>
               </div>
@@ -289,134 +319,165 @@ export default function Events() {
 
           {/* Events Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredEvents.length === 0 && (
-              <Card className="bg-black/60 border-red-600/30 p-12 text-center">
-                <Calendar className="w-16 h-16 text-white/20 mx-auto mb-4" />
-                <p className="text-white/60 text-lg">No events found</p>
-                <p className="text-white/40 text-sm mt-1">
-                  {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Create your first event to get started'}
-                </p>
-              </Card>
-            )}
-
-            {filteredEvents.map((event, index) => {
-              const capacityPercentage = (event.current_participants / event.max_participants) * 100;
-              const daysUntil = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
-              return (
-                <Card 
-                  key={event.id} 
-                  className="bg-black/60 border-red-600/20 p-4 sm:p-6 hover:border-red-500/50 transition-colors group"
-                >
-                  <div className="flex flex-col lg:flex-row justify-between gap-4">
-                    {/* Event Info */}
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">{event.name}</h3>
-                        {event.is_featured && (
-                          <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
-                            <Star className="w-3 h-3 mr-1" />
-                            Featured
-                          </Badge>
-                        )}
-                        <Badge className={`${event.status === 'upcoming' ? 'bg-green-500/20 text-green-500 border-green-500/30' :
-                            event.status === 'ongoing' ? 'bg-blue-500/20 text-blue-500 border-blue-500/30' :
-                              'bg-gray-500/20 text-gray-500 border-gray-500/30'
-                          }`}>
-                          {getStatusIcon(event.status)}
-                          <span className="ml-1 capitalize">{event.status}</span>
-                        </Badge>
-                        {daysUntil > 0 && daysUntil <= 7 && (
-                          <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30 animate-pulse">
-                            {daysUntil} days left
-                          </Badge>
-                        )}
-                      </div>
-
-                      <Badge variant="outline" className="text-white/60 border-white/20 mb-3">{event.category}</Badge>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-red-500/70" />
-                          <div>
-                            <p className="text-white/40 text-xs">Date</p>
-                            <p className="text-white text-sm">{new Date(event.event_date).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-red-500/70" />
-                          <div>
-                            <p className="text-white/40 text-xs">Venue</p>
-                            <p className="text-white text-sm">{event.venue}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <IndianRupee className="w-4 h-4 text-red-500/70" />
-                          <div>
-                            <p className="text-white/40 text-xs">Fee</p>
-                            <p className="text-white text-sm">₹{event.registration_fee}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-red-500/70" />
-                          <div>
-                            <p className="text-white/40 text-xs">Revenue</p>
-                            <p className="text-emerald-500 text-sm font-medium">₹{(event.current_participants * event.registration_fee).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Capacity Progress Bar */}
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-white/60 text-sm">Capacity</span>
-                          <span className={`text-sm font-medium ${getCapacityColor(capacityPercentage)}`}>
-                            {event.current_participants}/{event.max_participants} ({Math.round(capacityPercentage)}%)
-                          </span>
-                        </div>
-                        <Progress
-                          value={Math.min(capacityPercentage, 100)}
-                          className="h-2"
-                        />
-                        {capacityPercentage >= 90 && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Almost full! Consider increasing capacity.
-                          </p>
-                        )}
-                      </div>
+            {loading ? (
+              // Skeleton Loaders
+              Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="bg-black/60 border-red-600/20 p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-6 w-1/2 bg-white/10" />
+                      <Skeleton className="h-6 w-20 bg-white/10" />
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-row lg:flex-col gap-2 justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setDialogOpen(true);
-                        }}
-                        className="text-blue-500 hover:bg-blue-600/10"
-                        title="Edit event"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(event.id)}
-                        className="text-red-500 hover:bg-red-600/10"
-                        title="Delete event"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <Skeleton className="h-4 w-24 bg-white/10" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Skeleton className="h-10 w-full bg-white/10" />
+                      <Skeleton className="h-10 w-full bg-white/10" />
+                      <Skeleton className="h-10 w-full bg-white/10" />
+                      <Skeleton className="h-10 w-full bg-white/10" />
                     </div>
+                    <Skeleton className="h-2 w-full bg-white/10" />
                   </div>
                 </Card>
-              );
-            })}
+              ))
+            ) : (
+              <>
+                {filteredEvents.length === 0 && (
+                  <Card className="bg-black/60 border-red-600/30 p-12 text-center col-span-full">
+                    <Calendar className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                    <p className="text-white/60 text-lg">No events found</p>
+                    <p className="text-white/40 text-sm mt-1">
+                      {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
+                        ? 'Try adjusting your filters'
+                        : 'Create your first event to get started'}
+                    </p>
+                  </Card>
+                )}
+
+                {filteredEvents.map((event) => {
+                  const capacityPercentage = (event.current_participants / event.max_participants) * 100;
+                  const daysUntil = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+                  return (
+                    <Card
+                      key={event.id}
+                      className="bg-black/60 border-red-600/20 p-4 sm:p-6 hover:border-red-500/50 transition-colors group"
+                    >
+                      <div className="flex flex-col lg:flex-row justify-between gap-4">
+                        {/* Event Info */}
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">{event.name}</h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFeatured(event)}
+                              className={`h-6 px-2 text-xs ${event.is_featured
+                                ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30'
+                                : 'text-white/40 hover:text-yellow-500 hover:bg-yellow-500/10'}`}
+                            >
+                              <Star className={`w-3 h-3 mr-1 ${event.is_featured ? 'fill-yellow-500' : ''}`} />
+                              {event.is_featured ? 'Featured' : 'Feature'}
+                            </Button>
+                            <Badge className={`${event.status === 'upcoming' ? 'bg-green-500/20 text-green-500 border-green-500/30' :
+                              event.status === 'ongoing' ? 'bg-blue-500/20 text-blue-500 border-blue-500/30' :
+                                'bg-gray-500/20 text-gray-500 border-gray-500/30'
+                              }`}>
+                              {getStatusIcon(event.status)}
+                              <span className="ml-1 capitalize">{event.status}</span>
+                            </Badge>
+                            {daysUntil > 0 && daysUntil <= 7 && (
+                              <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30 animate-pulse">
+                                {daysUntil} days left
+                              </Badge>
+                            )}
+                          </div>
+
+                          <Badge variant="outline" className="text-white/60 border-white/20 mb-3">{event.category}</Badge>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-red-500/70" />
+                              <div>
+                                <p className="text-white/40 text-xs">Date</p>
+                                <p className="text-white text-sm">{new Date(event.event_date).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-red-500/70" />
+                              <div>
+                                <p className="text-white/40 text-xs">Venue</p>
+                                <p className="text-white text-sm">{event.venue}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <IndianRupee className="w-4 h-4 text-red-500/70" />
+                              <div>
+                                <p className="text-white/40 text-xs">Fee</p>
+                                <p className="text-white text-sm">₹{event.registration_fee}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-red-500/70" />
+                              <div>
+                                <p className="text-white/40 text-xs">Revenue</p>
+                                <p className="text-emerald-500 text-sm font-medium">₹{(event.current_participants * event.registration_fee).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Capacity Progress Bar */}
+                          <div className="mt-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-white/60 text-sm">Capacity</span>
+                              <span className={`text-sm font-medium ${getCapacityColor(capacityPercentage)}`}>
+                                {event.current_participants}/{event.max_participants} ({Math.round(capacityPercentage)}%)
+                              </span>
+                            </div>
+                            <Progress
+                              value={Math.min(capacityPercentage, 100)}
+                              className="h-2"
+                            />
+                            {capacityPercentage >= 90 && (
+                              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Almost full! Consider increasing capacity.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-row lg:flex-col gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setDialogOpen(true);
+                            }}
+                            className="text-blue-500 hover:bg-blue-600/10"
+                            title="Edit event"
+                            aria-label={`Edit ${event.name}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeleteId(event.id)}
+                            className="text-red-500 hover:bg-red-600/10"
+                            title="Delete event"
+                            aria-label={`Delete ${event.name}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
           </div>
 
           <EventDialog
@@ -428,6 +489,22 @@ export default function Events() {
               fetchEvents();
             }}
           />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+            <AlertDialogContent className="bg-black/95 border-red-600/30">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
+                <AlertDialogDescription className="text-white/60">
+                  Are you sure you want to delete this event? This action cannot be undone and will remove all associated registrations.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-red-600/30 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </AdminLayout>
     </ProtectedRoute>

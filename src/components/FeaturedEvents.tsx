@@ -1,6 +1,8 @@
-import React, { useEffect, useState, memo } from 'react';
-import { Code, Cpu, Lightbulb, Trophy, Zap, Users, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState, memo, useCallback } from 'react';
+import { Code, Cpu, Lightbulb, Trophy, Zap, Users, ChevronRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface FeaturedEventsProps {
   onViewAll?: () => void;
@@ -29,6 +31,28 @@ const getIconForCategory = (category: string) => {
 export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: FeaturedEventsProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchFeaturedEvents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name, description, category')
+        .in('status', ['upcoming', 'ongoing'])
+        .order('event_date')
+        .limit(6);
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (err: unknown) {
+      console.error('Error fetching events:', err);
+      setError('Failed to load featured events.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchFeaturedEvents();
@@ -44,25 +68,7 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: Featur
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  const fetchFeaturedEvents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, name, description, category')
-        .in('status', ['upcoming', 'ongoing'])
-        .order('event_date')
-        .limit(6);
-
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchFeaturedEvents]);
 
   return (
     <section id="events" className="relative py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-[1440px] mx-auto">
@@ -78,12 +84,29 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: Featur
         <div className="h-px w-20 sm:w-24 md:w-32 bg-gradient-to-r from-transparent via-red-600/60 to-transparent mx-auto mt-6" />
       </div>
 
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="w-12 h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-red-500/60">Loading featured events...</p>
+      {error && (
+        <div className="max-w-2xl mx-auto mb-8">
+          <Alert variant="destructive" className="bg-red-950/50 border-red-800 text-red-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </div>
-      ) : events.length === 0 ? (
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-[300px] border border-red-900/20 bg-black/40 p-6 rounded-lg">
+              <Skeleton className="h-12 w-12 rounded-full bg-red-900/20 mb-6" />
+              <Skeleton className="h-8 w-3/4 bg-red-900/20 mb-4" />
+              <Skeleton className="h-4 w-full bg-red-900/10 mb-2" />
+              <Skeleton className="h-4 w-5/6 bg-red-900/10 mb-2" />
+              <Skeleton className="h-4 w-4/6 bg-red-900/10" />
+            </div>
+          ))}
+        </div>
+      ) : events.length === 0 && !error ? (
         <div className="text-center py-12">
           <p className="text-red-500/60">No events available yet</p>
         </div>
@@ -119,21 +142,14 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: Featur
                     </h3>
 
                     {/* Description */}
-                    <p className="text-white/60 text-sm sm:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-300">
+                    <p className="text-white/60 text-sm sm:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-300 line-clamp-3">
                       {event.description}
                     </p>
 
                     {/* Learn More Link */}
                     <div className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-300">
                       <span className="text-sm sm:text-base">Learn More</span>
-                      <svg
-                        className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300" />
                     </div>
                   </div>
 

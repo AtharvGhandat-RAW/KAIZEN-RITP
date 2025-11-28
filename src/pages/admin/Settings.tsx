@@ -95,7 +95,7 @@ export default function Settings() {
     try {
       const { data, error } = await supabase.from('settings').select('*');
       if (error) throw error;
-      
+
       if (data) {
         const settingsMap: Record<string, SettingValue> = {};
         data.forEach((s: { key: string; value: string }) => {
@@ -124,8 +124,8 @@ export default function Settings() {
       // Use upsert for atomic insert/update - much faster
       const { error } = await supabase
         .from('settings')
-        .upsert({ 
-          key, 
+        .upsert({
+          key,
           value: JSON.stringify(value),
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });

@@ -108,7 +108,9 @@ body {
 }
 
 /* Optimize backdrop-blur - disable on mobile for performance */
-@media (pointer: coarse), (max-width: 768px) {
+@media (pointer: coarse),
+(max-width: 768px) {
+
   .backdrop-blur-md,
   .backdrop-blur-sm,
   .backdrop-blur {
@@ -119,24 +121,25 @@ body {
 
 /* Disable hover scale effects on touch devices */
 @media (pointer: coarse) {
+
   .hover\:scale-105:hover,
   .hover\:scale-\[1\.02\]:hover,
   .hover\:scale-110:hover {
     transform: none !important;
   }
-  
+
   /* Reduce animation complexity on mobile */
   .animate-pulse {
     animation: none !important;
   }
-  
+
   .animate-ping {
     animation: none !important;
   }
 }
 
 /* GPU acceleration for smooth scrolling containers */
-main, 
+main,
 [class*="overflow-y-auto"],
 [class*="overflow-auto"] {
   transform: translateZ(0);

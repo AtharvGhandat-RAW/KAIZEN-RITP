@@ -86,7 +86,7 @@ export default function Queries() {
     if (!silent) setLoading(true);
     const { data } = await supabase
       .from('queries')
-      .select('*')
+      .select('id, name, email, subject, message, status, created_at')
       .order('created_at', { ascending: false });
 
     if (data) setQueries(data);
@@ -180,7 +180,7 @@ export default function Queries() {
 
   const deleteQuery = async () => {
     if (!deleteId) return;
-    
+
     const id = deleteId;
     setDeleteId(null); // Close dialog immediately
 
@@ -327,8 +327,8 @@ export default function Queries() {
                 <Card
                   key={query.id}
                   className={`bg-black/40 p-4 sm:p-6 transition-all duration-300 hover:border-red-500/50 ${query.status === 'new'
-                      ? 'border-red-600/50 shadow-lg shadow-red-600/10'
-                      : 'border-red-600/20'
+                    ? 'border-red-600/50 shadow-lg shadow-red-600/10'
+                    : 'border-red-600/20'
                     }`}
                 >
                   <div className="flex flex-col lg:flex-row gap-4">
@@ -340,10 +340,10 @@ export default function Queries() {
                           {query.name}
                         </h3>
                         <Badge className={`text-xs ${query.status === 'new'
-                            ? 'bg-red-500/20 text-red-500 border-red-500/30'
-                            : query.status === 'seen'
-                              ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
-                              : 'bg-green-500/20 text-green-500 border-green-500/30'
+                          ? 'bg-red-500/20 text-red-500 border-red-500/30'
+                          : query.status === 'seen'
+                            ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
+                            : 'bg-green-500/20 text-green-500 border-green-500/30'
                           }`}>
                           {query.status === 'new' && <AlertCircle className="w-3 h-3 mr-1" />}
                           {query.status === 'seen' && <Eye className="w-3 h-3 mr-1" />}
@@ -382,6 +382,7 @@ export default function Queries() {
                           onClick={() => markAsRead(query.id)}
                           className="text-yellow-500 hover:bg-yellow-600/10"
                           title="Mark as seen"
+                          aria-label="Mark as seen"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -395,6 +396,7 @@ export default function Queries() {
                         }}
                         className="text-blue-500 hover:bg-blue-600/10"
                         title="Reply"
+                        aria-label="Reply"
                       >
                         <Send className="w-4 h-4" />
                       </Button>
@@ -405,6 +407,7 @@ export default function Queries() {
                           onClick={() => updateStatus(query.id, 'resolved')}
                           className="text-green-500 hover:bg-green-600/10"
                           title="Mark as resolved"
+                          aria-label="Mark as resolved"
                         >
                           <CheckCircle className="w-4 h-4" />
                         </Button>
@@ -415,6 +418,7 @@ export default function Queries() {
                         onClick={() => setDeleteId(query.id)}
                         className="text-red-500 hover:bg-red-600/10"
                         title="Delete"
+                        aria-label="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

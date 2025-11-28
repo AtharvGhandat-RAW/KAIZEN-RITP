@@ -51,7 +51,7 @@ export default function Reports() {
     try {
       let registrationsQuery = supabase
         .from('registrations')
-        .select('*, events(name, registration_fee), profiles(full_name, email, phone, college)');
+        .select('payment_status, events(registration_fee)');
 
       if (eventId !== 'all') {
         registrationsQuery = registrationsQuery.eq('event_id', eventId);
@@ -132,7 +132,7 @@ export default function Reports() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, async () => {
         const newEvents = await fetchEvents();
         if (newEvents) {
-           fetchStats(selectedEventRef.current, newEvents);
+          fetchStats(selectedEventRef.current, newEvents);
         }
       })
       .subscribe();
@@ -380,154 +380,154 @@ export default function Reports() {
             <>
               {/* Stats Overview */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="bg-black/60 border-red-600/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-white">Total Registrations</CardTitle>
-                <Users className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">{stats.totalRegistrations}</div>
-              </CardContent>
-            </Card>
+                <Card className="bg-black/60 border-red-600/30">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-white">Total Registrations</CardTitle>
+                    <Users className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{stats.totalRegistrations}</div>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-black/60 border-red-600/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">₹{stats.totalRevenue}</div>
-              </CardContent>
-            </Card>
+                <Card className="bg-black/60 border-red-600/30">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">₹{stats.totalRevenue}</div>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-black/60 border-red-600/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-white">Payment Status</CardTitle>
-                <TrendingUp className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm">
-                  <span className="text-green-400 font-semibold">{stats.completedPayments} Completed</span>
-                  {' / '}
-                  <span className="text-yellow-400 font-semibold">{stats.pendingPayments} Pending</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Card className="bg-black/60 border-red-600/30">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-white">Payment Status</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm">
+                      <span className="text-green-400 font-semibold">{stats.completedPayments} Completed</span>
+                      {' / '}
+                      <span className="text-yellow-400 font-semibold">{stats.pendingPayments} Pending</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Filter */}
-          <Card className="bg-black/60 border-red-600/30">
-            <CardHeader>
-              <CardTitle className="text-white">Filter Reports</CardTitle>
-              <CardDescription className="text-white/60">Select an event to generate specific reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                <SelectTrigger className="w-full sm:w-[300px] bg-black/50 border-white/10 text-white">
-                  <SelectValue placeholder="Select event" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90 border-red-600/30 text-white">
-                  <SelectItem value="all" className="focus:bg-red-600/20 focus:text-white">All Events</SelectItem>
-                  {events.map((event) => (
-                    <SelectItem key={event.id} value={event.id} className="focus:bg-red-600/20 focus:text-white">
-                      {event.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+              {/* Filter */}
+              <Card className="bg-black/60 border-red-600/30">
+                <CardHeader>
+                  <CardTitle className="text-white">Filter Reports</CardTitle>
+                  <CardDescription className="text-white/60">Select an event to generate specific reports</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                    <SelectTrigger className="w-full sm:w-[300px] bg-black/50 border-white/10 text-white">
+                      <SelectValue placeholder="Select event" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 border-red-600/30 text-white">
+                      <SelectItem value="all" className="focus:bg-red-600/20 focus:text-white">All Events</SelectItem>
+                      {events.map((event) => (
+                        <SelectItem key={event.id} value={event.id} className="focus:bg-red-600/20 focus:text-white">
+                          {event.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
 
-          {/* Report Types */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-red-500" />
-                  <CardTitle className="text-white">Registration Report</CardTitle>
-                </div>
-                <CardDescription className="text-white/60">
-                  Complete student details with registration information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={exportRegistrationsReport}
-                  disabled={loading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Export Registrations
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Report Types */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-white">Registration Report</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/60">
+                      Complete student details with registration information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={exportRegistrationsReport}
+                      disabled={loading}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Export Registrations
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-red-500" />
-                  <CardTitle className="text-white">Payment Report</CardTitle>
-                </div>
-                <CardDescription className="text-white/60">
-                  Payment status and transaction details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={exportPaymentReport}
-                  disabled={loading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Export Payments
-                </Button>
-              </CardContent>
-            </Card>
+                <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-white">Payment Report</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/60">
+                      Payment status and transaction details
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={exportPaymentReport}
+                      disabled={loading}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Export Payments
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-red-500" />
-                  <CardTitle className="text-white">Event Summary</CardTitle>
-                </div>
-                <CardDescription className="text-white/60">
-                  Overview of all events with statistics
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={exportEventSummaryReport}
-                  disabled={loading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Export Summary
-                </Button>
-              </CardContent>
-            </Card>
+                <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-white">Event Summary</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/60">
+                      Overview of all events with statistics
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={exportEventSummaryReport}
+                      disabled={loading}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Export Summary
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-red-500" />
-                  <CardTitle className="text-white">Attendance Sheet</CardTitle>
-                </div>
-                <CardDescription className="text-white/60">
-                  Printable attendance sheet for events
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={exportAttendanceSheet}
-                  disabled={loading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Export Attendance
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+                <Card className="bg-black/60 border-red-600/30 hover:bg-black/70 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-white">Attendance Sheet</CardTitle>
+                    </div>
+                    <CardDescription className="text-white/60">
+                      Printable attendance sheet for events
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={exportAttendanceSheet}
+                      disabled={loading}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Export Attendance
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </>
           )}
         </div>
