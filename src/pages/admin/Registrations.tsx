@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -15,9 +16,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import {
-  Download, Search, ArrowRight, Users, CheckCircle, Clock, XCircle,
+  Download, Search, Users, CheckCircle, Clock, XCircle,
   Image, ExternalLink, RefreshCw, Filter, UserCheck, UserX, Eye,
   Mail, Phone, Building, GraduationCap, Calendar
 } from 'lucide-react';
@@ -42,6 +53,7 @@ export default function Registrations() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkAction, setBulkAction] = useState<{ type: 'completed' | 'failed', count: number } | null>(null);
   const { toast } = useToast();
 
   // Stats
@@ -53,22 +65,42 @@ export default function Registrations() {
     return { total, completed, pending, failed };
   }, [registrations]);
 
+  const fetchRegistrations = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    const { data } = await supabase
+      .from('registrations')
+      .select(`
+        id,
+        created_at,
+        payment_status,
+        payment_proof_url,
+        payment_id,
+        profiles (full_name, email, phone, college, year, branch),
+        events (name),
+        teams (name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (data) setRegistrations(data as Registration[]);
+    if (!silent) setLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchRegistrations();
 
     const channel = supabase
       .channel('registrations-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => {
-        fetchRegistrations();
+        fetchRegistrations(true);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchRegistrations]);
 
-  // Use useMemo instead of useEffect + useState for derived state
+  // Filtered registrations
   const filteredRegistrations = useMemo(() => {
     let filtered = registrations;
 
@@ -89,29 +121,9 @@ export default function Registrations() {
     return filtered;
   }, [registrations, statusFilter, searchQuery]);
 
-  const fetchRegistrations = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('registrations')
-      .select(`
-        id,
-        created_at,
-        payment_status,
-        payment_proof_url,
-        payment_id,
-        profiles (full_name, email, phone, college, year, branch),
-        events (name),
-        teams (name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (data) setRegistrations(data as Registration[]);
-    setLoading(false);
-  };
-
   // Bulk selection handlers
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredRegistrations.length) {
+    if (selectedIds.size === filteredRegistrations.length && filteredRegistrations.length > 0) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredRegistrations.map(r => r.id)));
@@ -129,30 +141,43 @@ export default function Registrations() {
   };
 
   // Bulk update handler
-  const bulkUpdateStatus = async (status: string) => {
-    if (selectedIds.size === 0) {
-      toast({ title: 'No Selection', description: 'Please select registrations first', variant: 'destructive' });
-      return;
-    }
+  const executeBulkUpdate = async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
 
     setBulkProcessing(true);
+    const status = bulkAction.type;
+    const idsToUpdate = Array.from(selectedIds);
+
+    // Optimistic update
+    const previousRegistrations = [...registrations];
+    setRegistrations(prev => prev.map(r => 
+      idsToUpdate.includes(r.id) ? { ...r, payment_status: status } : r
+    ));
+
     const { error } = await supabase
       .from('registrations')
       .update({ payment_status: status })
-      .in('id', Array.from(selectedIds));
+      .in('id', idsToUpdate);
 
     if (error) {
+      setRegistrations(previousRegistrations); // Revert
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: `Updated ${selectedIds.size} registrations to ${status}` });
       setSelectedIds(new Set());
-      fetchRegistrations();
+      // No need to fetchRegistrations() because of optimistic update + real-time subscription
     }
     setBulkProcessing(false);
+    setBulkAction(null);
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
-    // Get registration details for email
+    // Optimistic update
+    const previousRegistrations = [...registrations];
+    setRegistrations(prev => prev.map(r => 
+      r.id === id ? { ...r, payment_status: status } : r
+    ));
+
     const registration = registrations.find(r => r.id === id);
 
     const { error } = await supabase
@@ -161,6 +186,7 @@ export default function Registrations() {
       .eq('id', id);
 
     if (error) {
+      setRegistrations(previousRegistrations); // Revert
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Payment status updated' });
@@ -226,7 +252,7 @@ export default function Registrations() {
               <p className="text-white/60 mt-1">Manage and verify all event registrations</p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={fetchRegistrations} variant="outline" className="border-red-600/30 hover:bg-red-600/10 backdrop-blur-sm">
+              <Button onClick={() => fetchRegistrations(false)} variant="outline" className="border-red-600/30 hover:bg-red-600/10 backdrop-blur-sm">
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
@@ -320,7 +346,7 @@ export default function Registrations() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    onClick={() => bulkUpdateStatus('completed')}
+                    onClick={() => setBulkAction({ type: 'completed', count: selectedIds.size })}
                     disabled={bulkProcessing}
                     className="bg-green-600 hover:bg-green-700"
                   >
@@ -329,7 +355,7 @@ export default function Registrations() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => bulkUpdateStatus('failed')}
+                    onClick={() => setBulkAction({ type: 'failed', count: selectedIds.size })}
                     disabled={bulkProcessing}
                     variant="destructive"
                   >
@@ -373,121 +399,156 @@ export default function Registrations() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRegistrations.map((reg, index) => (
-                    <tr 
-                      key={reg.id} 
-                      className="border-t border-red-600/20 hover:bg-red-600/5 transition-colors"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <td className="px-3 py-4">
-                        <Checkbox
-                          checked={selectedIds.has(reg.id)}
-                          onCheckedChange={() => toggleSelect(reg.id)}
-                          className="border-white/30"
-                        />
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-red-900/20">
-                            {reg.profiles?.full_name?.charAt(0) || '?'}
+                  {loading ? (
+                    // Skeleton Rows
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="border-t border-red-600/20">
+                        <td className="px-3 py-4"><Skeleton className="h-4 w-4 bg-white/10" /></td>
+                        <td className="px-3 py-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-9 w-9 rounded-full bg-white/10" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-4 w-32 bg-white/10" />
+                              <Skeleton className="h-3 w-20 bg-white/10" />
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-white font-medium text-sm">{reg.profiles?.full_name}</div>
-                            {reg.teams?.name && (
-                              <Badge variant="outline" className="text-xs text-white/50 border-white/20 mt-1">
-                                Team: {reg.teams.name}
-                              </Badge>
-                            )}
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-32 bg-white/10" />
+                            <Skeleton className="h-3 w-24 bg-white/10" />
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1 text-white/70 text-xs">
-                            <Mail className="w-3 h-3" />
-                            <span className="break-all">{reg.profiles?.email}</span>
+                        </td>
+                        <td className="px-3 py-4 hidden lg:table-cell">
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-24 bg-white/10" />
+                            <Skeleton className="h-3 w-20 bg-white/10" />
                           </div>
-                          <div className="flex items-center gap-1 text-white/50 text-xs">
-                            <Phone className="w-3 h-3" />
-                            {reg.profiles?.phone}
+                        </td>
+                        <td className="px-3 py-4"><Skeleton className="h-6 w-24 bg-white/10 rounded-full" /></td>
+                        <td className="px-3 py-4"><Skeleton className="h-8 w-28 bg-white/10 rounded-md" /></td>
+                        <td className="px-3 py-4 hidden md:table-cell"><Skeleton className="h-8 w-16 bg-white/10 rounded-md" /></td>
+                        <td className="px-3 py-4 hidden xl:table-cell"><Skeleton className="h-4 w-24 bg-white/10" /></td>
+                        <td className="px-3 py-4"><Skeleton className="h-8 w-8 bg-white/10 rounded-md" /></td>
+                      </tr>
+                    ))
+                  ) : (
+                    filteredRegistrations.map((reg, index) => (
+                      <tr 
+                        key={reg.id} 
+                        className="border-t border-red-600/20 hover:bg-red-600/5 transition-colors"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <td className="px-3 py-4">
+                          <Checkbox
+                            checked={selectedIds.has(reg.id)}
+                            onCheckedChange={() => toggleSelect(reg.id)}
+                            className="border-white/30"
+                          />
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-red-900/20">
+                              {reg.profiles?.full_name?.charAt(0) || '?'}
+                            </div>
+                            <div>
+                              <div className="text-white font-medium text-sm">{reg.profiles?.full_name}</div>
+                              {reg.teams?.name && (
+                                <Badge variant="outline" className="text-xs text-white/50 border-white/20 mt-1">
+                                  Team: {reg.teams.name}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 hidden lg:table-cell">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1 text-white/70 text-xs">
-                            <Building className="w-3 h-3" />
-                            {reg.profiles?.college}
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 text-white/70 text-xs">
+                              <Mail className="w-3 h-3" />
+                              <span className="break-all">{reg.profiles?.email}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-white/50 text-xs">
+                              <Phone className="w-3 h-3" />
+                              {reg.profiles?.phone}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 text-white/50 text-xs">
-                            <GraduationCap className="w-3 h-3" />
-                            {reg.profiles?.year} - {reg.profiles?.branch}
+                        </td>
+                        <td className="px-3 py-4 hidden lg:table-cell">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 text-white/70 text-xs">
+                              <Building className="w-3 h-3" />
+                              {reg.profiles?.college}
+                            </div>
+                            <div className="flex items-center gap-1 text-white/50 text-xs">
+                              <GraduationCap className="w-3 h-3" />
+                              {reg.profiles?.year} - {reg.profiles?.branch}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <Badge variant="outline" className="text-white/80 border-white/20">
-                          {reg.events?.name}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-4">
-                        <Select
-                          value={reg.payment_status}
-                          onValueChange={(value) => updatePaymentStatus(reg.id, value)}
-                        >
-                          <SelectTrigger className={`w-28 text-xs ${reg.payment_status === 'completed'
-                              ? 'bg-green-600/20 text-green-500 border-green-500/30'
-                              : reg.payment_status === 'failed'
-                                ? 'bg-red-600/20 text-red-500 border-red-500/30'
-                                : 'bg-yellow-600/20 text-yellow-500 border-yellow-500/30'
-                            }`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-black border-red-600/30 text-white">
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="failed">Failed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {reg.payment_id && (
-                          <p className="text-white/40 text-xs mt-1 truncate max-w-[100px]" title={reg.payment_id}>
-                            ID: {reg.payment_id}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-3 py-4 hidden md:table-cell">
-                        {reg.payment_proof_url ? (
+                        </td>
+                        <td className="px-3 py-4">
+                          <Badge variant="outline" className="text-white/80 border-white/20">
+                            {reg.events?.name}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-4">
+                          <Select
+                            value={reg.payment_status}
+                            onValueChange={(value) => updatePaymentStatus(reg.id, value)}
+                          >
+                            <SelectTrigger className={`w-28 text-xs ${reg.payment_status === 'completed'
+                                ? 'bg-green-600/20 text-green-500 border-green-500/30'
+                                : reg.payment_status === 'failed'
+                                  ? 'bg-red-600/20 text-red-500 border-red-500/30'
+                                  : 'bg-yellow-600/20 text-yellow-500 border-yellow-500/30'
+                              }`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-black border-red-600/30 text-white">
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="failed">Failed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {reg.payment_id && (
+                            <p className="text-white/40 text-xs mt-1 truncate max-w-[100px]" title={reg.payment_id}>
+                              ID: {reg.payment_id}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-3 py-4 hidden md:table-cell">
+                          {reg.payment_proof_url ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setImagePreview(reg.payment_proof_url)}
+                              className="text-cyan-500 hover:bg-cyan-500/10"
+                            >
+                              <Image className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                          ) : (
+                            <span className="text-white/30 text-xs">No proof</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-4 hidden xl:table-cell">
+                          <div className="flex items-center gap-1 text-white/60 text-xs">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(reg.created_at).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-3 py-4">
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setImagePreview(reg.payment_proof_url)}
-                            className="text-cyan-500 hover:bg-cyan-500/10"
+                            className="text-blue-500 hover:bg-blue-500/10"
+                            onClick={() => navigate(`/admin/registrations/${reg.id}`)}
                           >
-                            <Image className="w-4 h-4 mr-1" />
-                            View
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        ) : (
-                          <span className="text-white/30 text-xs">No proof</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-4 hidden xl:table-cell">
-                        <div className="flex items-center gap-1 text-white/60 text-xs">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(reg.created_at).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-blue-500 hover:bg-blue-500/10"
-                          onClick={() => navigate(`/admin/registrations/${reg.id}`)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -499,12 +560,6 @@ export default function Registrations() {
               <p className="text-white/60 text-lg">No registrations found</p>
               <p className="text-white/40 text-sm mt-1">Try adjusting your search or filters</p>
             </Card>
-          )}
-
-          {loading && (
-            <div className="text-center py-12">
-              <div className="w-10 h-10 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto" />
-            </div>
           )}
 
           {/* Image Preview Modal */}
@@ -534,6 +589,30 @@ export default function Registrations() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Bulk Action Confirmation Dialog */}
+          <AlertDialog open={!!bulkAction} onOpenChange={(open) => !open && setBulkAction(null)}>
+            <AlertDialogContent className="bg-black/95 border-red-600/30">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">
+                  {bulkAction?.type === 'completed' ? 'Approve' : 'Reject'} {bulkAction?.count} Registrations?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-white/60">
+                  Are you sure you want to {bulkAction?.type === 'completed' ? 'approve' : 'reject'} the selected registrations?
+                  {bulkAction?.type === 'completed' && " This will send confirmation emails to the students."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-red-600/30 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={executeBulkUpdate} 
+                  className={bulkAction?.type === 'completed' ? "bg-green-600 hover:bg-green-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
+                >
+                  {bulkProcessing ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Confirm"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </AdminLayout>
     </ProtectedRoute>
