@@ -12,7 +12,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  CreditCard,
   Instagram,
   Facebook,
   Twitter,
@@ -345,65 +344,6 @@ export default function Settings() {
                     />
                   </>
                 )}
-              </div>
-            </Card>
-
-            {/* Payment */}
-            <Card className="bg-black/60 border-red-600/30 p-5 xl:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="w-5 h-5 text-yellow-500" />
-                <h2 className="text-lg font-semibold text-white">Payment Details</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {settingsLoaded && (
-                  <>
-                    <SettingInput
-                      settingKey="payment_upi_id"
-                      label="UPI ID"
-                      placeholder="kaizen@ybl"
-                      value={String(settings['payment_upi_id'] || '')}
-                      saving={saving}
-                      onChange={handleInputChange}
-                      onBlur={handleInputBlur}
-                    />
-                    <SettingInput
-                      settingKey="payment_account_name"
-                      label="Account Name"
-                      placeholder="KAIZEN 2025"
-                      value={String(settings['payment_account_name'] || '')}
-                      saving={saving}
-                      onChange={handleInputChange}
-                      onBlur={handleInputBlur}
-                    />
-                  </>
-                )}
-                <div className="md:col-span-2">
-                  <Label className="text-white/80">Payment Instructions</Label>
-                  <Textarea
-                    key={settingsLoaded ? 'loaded' : 'loading'}
-                    defaultValue={String(settings.payment_instructions || '')}
-                    onBlur={(e) => saveSetting('payment_instructions', e.target.value)}
-                    className="bg-black/40 border-white/20 mt-1 focus:border-red-500"
-                    rows={3}
-                    placeholder="1. Pay using UPI&#10;2. Screenshot payment&#10;3. Upload during registration"
-                  />
-                </div>
-
-                <div className="md:col-span-2 flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div>
-                    <Label className="text-white">Require Payment Screenshot</Label>
-                    <p className="text-white/50 text-sm">Students must upload proof</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {saving === 'payment_screenshot_required' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
-                    <Switch
-                      checked={settings.payment_screenshot_required !== false}
-                      onCheckedChange={(checked) => handleSwitchChange('payment_screenshot_required', checked)}
-                      className="data-[state=checked]:bg-green-600"
-                    />
-                  </div>
-                </div>
               </div>
             </Card>
           </div>
