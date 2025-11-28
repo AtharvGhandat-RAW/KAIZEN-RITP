@@ -24,6 +24,7 @@ const registrationSchema = z.object({
 
 interface RegistrationPageProps {
   onClose: () => void;
+  initialEventId?: string;
 }
 
 interface Event {
@@ -40,7 +41,7 @@ interface RegistrationSettings {
   registration_notice: string;
 }
 
-export function RegistrationPage({ onClose }: RegistrationPageProps) {
+export function RegistrationPage({ onClose, initialEventId }: RegistrationPageProps) {
   const [loading, setLoading] = useState(false);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -58,7 +59,7 @@ export function RegistrationPage({ onClose }: RegistrationPageProps) {
     college: '',
     year: '',
     branch: '',
-    eventId: '',
+    eventId: initialEventId || '',
     teamName: '',
     declaration: false,
     paymentProof: null as File | null,

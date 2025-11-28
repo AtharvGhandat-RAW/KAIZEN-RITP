@@ -75,14 +75,6 @@ export function AboutSection({ onDiscoverMore }: AboutSectionProps) {
               );
             })}
           </div>
-
-          <button 
-            onClick={onDiscoverMore}
-            className="group relative px-8 py-3 border-2 border-red-600 text-white hover:bg-red-600/10 transition-all duration-300 w-full sm:w-auto"
-          >
-            <span className="relative z-10">Discover More</span>
-            <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/5 transition-all duration-300" />
-          </button>
         </div>
 
         {/* Right Side - Visual Element */}

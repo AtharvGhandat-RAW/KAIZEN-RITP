@@ -167,7 +167,10 @@ const Index = () => {
   const handleShowSchedule = useCallback(() => setShowSchedule(true), []);
   const handleCloseSchedule = useCallback(() => setShowSchedule(false), []);
 
-  const handleExploreToRegister = useCallback(() => {
+  const handleExploreToRegister = useCallback((eventId?: string) => {
+    if (eventId) {
+      setSelectedEventId(eventId);
+    }
     setShowExploreEvents(false);
     setShowEventDetails(false);
     setShowRegistration(true);
@@ -274,7 +277,10 @@ const Index = () => {
         {showRegistration && (
           <Suspense fallback={<ModalLoader />}>
             <ErrorBoundary>
-              <RegistrationPage onClose={handleCloseRegistration} />
+              <RegistrationPage 
+                onClose={handleCloseRegistration} 
+                initialEventId={selectedEventId}
+              />
             </ErrorBoundary>
           </Suspense>
         )}
