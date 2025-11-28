@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface FeaturedEventsProps {
   onViewAll?: () => void;
+  onEventClick?: (eventId: string) => void;
 }
 
 interface Event {
@@ -28,7 +29,7 @@ const getIconForCategory = (category: string) => {
   return iconMap[category] || Zap;
 };
 
-export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: FeaturedEventsProps) {
+export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventClick }: FeaturedEventsProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,7 +152,11 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll }: Featur
                       className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-300"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onViewAll?.();
+                        if (onEventClick) {
+                          onEventClick(event.id);
+                        } else {
+                          onViewAll?.();
+                        }
                       }}
                     >
                       <span className="text-sm sm:text-base">Learn More</span>

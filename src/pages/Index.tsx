@@ -62,22 +62,22 @@ const ContactFooter = lazy(() =>
 const RegistrationPage = lazy(() =>
   import('@/components/RegistrationPage')
     .then(m => ({ default: m.RegistrationPage }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Registration. Please refresh.</div> }))
 );
 const ExploreEventsPage = lazy(() =>
   import('@/components/ExploreEventsPage')
     .then(m => ({ default: m.ExploreEventsPage }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Events. Please refresh.</div> }))
 );
 const RegistrationStatusChecker = lazy(() =>
   import('@/components/RegistrationStatusChecker')
     .then(m => ({ default: m.RegistrationStatusChecker }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Status Checker. Please refresh.</div> }))
 );
 const ScheduleModal = lazy(() =>
   import('@/components/ScheduleModal')
     .then(m => ({ default: m.ScheduleModal }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-red-500">Failed to load Schedule. Please refresh.</div> }))
 );
 
 // Minimal skeleton loaders
@@ -104,6 +104,7 @@ const Index = () => {
   const [triggerHeroAnimation, setTriggerHeroAnimation] = useState(hasSeenIntro);
   const [showRegistration, setShowRegistration] = useState(false);
   const [showExploreEvents, setShowExploreEvents] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined);
   const [showStatusChecker, setShowStatusChecker] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
@@ -149,8 +150,18 @@ const Index = () => {
   // Memoized handlers
   const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
   const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
-  const handleShowExploreEvents = useCallback(() => setShowExploreEvents(true), []);
-  const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
+  const handleShowExploreEvents = useCallback((eventId?: string) => {
+    if (typeof eventId === 'string') {
+      setSelectedEventId(eventId);
+    } else {
+      setSelectedEventId(undefined);
+    }
+    setShowExploreEvents(true);
+  }, []);
+  const handleCloseExploreEvents = useCallback(() => {
+    setShowExploreEvents(false);
+    setSelectedEventId(undefined);
+  }, []);
   const handleShowStatusChecker = useCallback(() => setShowStatusChecker(true), []);
   const handleCloseStatusChecker = useCallback(() => setShowStatusChecker(false), []);
   const handleShowSchedule = useCallback(() => setShowSchedule(true), []);
@@ -229,7 +240,7 @@ const Index = () => {
           {/* Below-the-fold sections */}
           <div>
             <Suspense fallback={<SectionSkeleton />}>
-              <FeaturedEvents onViewAll={handleShowExploreEvents} />
+              <FeaturedEvents onViewAll={() => handleShowExploreEvents()} onEventClick={handleShowExploreEvents} />
             </Suspense>
           </div>
 
@@ -275,22 +286,29 @@ const Index = () => {
 
         {showExploreEvents && (
           <Suspense fallback={<ModalLoader />}>
-            <ExploreEventsPage
-              onClose={handleCloseExploreEvents}
-              onRegister={handleExploreToRegister}
-            />
+            <ErrorBoundary>
+              <ExploreEventsPage
+                onClose={handleCloseExploreEvents}
+                onRegister={handleExploreToRegister}
+                initialEventId={selectedEventId}
+              />
+            </ErrorBoundary>
           </Suspense>
         )}
 
         {showStatusChecker && (
           <Suspense fallback={<ModalLoader />}>
-            <RegistrationStatusChecker onClose={handleCloseStatusChecker} />
+            <ErrorBoundary>
+              <RegistrationStatusChecker onClose={handleCloseStatusChecker} />
+            </ErrorBoundary>
           </Suspense>
         )}
 
         {showSchedule && (
           <Suspense fallback={<ModalLoader />}>
-            <ScheduleModal onClose={handleCloseSchedule} />
+            <ErrorBoundary>
+              <ScheduleModal onClose={handleCloseSchedule} />
+            </ErrorBoundary>
           </Suspense>
         )}
       </div>
