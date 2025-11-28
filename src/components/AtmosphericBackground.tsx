@@ -10,16 +10,6 @@ Particle.displayName = 'Particle';
 export const AtmosphericBackground = memo(function AtmosphericBackground() {
   const isMobile = useIsMobile();
   
-  // On mobile, use a static gradient background for maximum performance
-  if (isMobile) {
-    return (
-      <div className="fixed inset-0 pointer-events-none z-0" style={{ contain: 'strict' }}>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/20 via-background to-background" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-red-950/30 via-transparent to-transparent" />
-      </div>
-    );
-  }
-  
   // Pre-calculate particles only once - reduce count on mobile
   const particles = useMemo(() => [...Array(15)].map((_, i) => {
     const xPos = Math.random() * 100;
@@ -72,6 +62,16 @@ export const AtmosphericBackground = memo(function AtmosphericBackground() {
       }
     };
   }), []);
+
+  // On mobile, use a static gradient background for maximum performance
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 pointer-events-none z-0" style={{ contain: 'strict' }}>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/20 via-background to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-red-950/30 via-transparent to-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0" style={{ contain: 'strict' }}>
