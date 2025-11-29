@@ -175,6 +175,13 @@ export default function CoordinatorScanner() {
             return;
         }
 
+        // Check if mediaDevices API is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setCameraError('Camera API not supported. Please use a modern browser like Chrome.');
+            setIsInitializing(false);
+            return;
+        }
+
         try {
             // Clean up any existing scanner
             if (scannerRef.current) {
@@ -190,34 +197,54 @@ export default function CoordinatorScanner() {
                 scannerRef.current = null;
             }
 
-            // IMPORTANT: Explicitly request camera permission first
-            // This triggers the browser's permission prompt on Android
-            console.log('Requesting camera permission...');
+            // Check camera permission status first (if supported)
+            let permissionStatus: PermissionState | null = null;
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
-                // Stop the stream immediately - we just needed to trigger permission
-                stream.getTracks().forEach(track => track.stop());
-                console.log('Camera permission granted');
-            } catch (permError) {
-                console.error('Permission error:', permError);
-                const errMsg = permError instanceof Error ? permError.message : String(permError);
-                
-                if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
-                    setCameraError('Camera permission denied. Please tap the lock icon in address bar, enable Camera, and refresh the page.');
-                } else if (errMsg.includes('NotFound')) {
-                    setCameraError('No camera found on this device.');
-                } else if (errMsg.includes('NotReadable') || errMsg.includes('in use')) {
-                    setCameraError('Camera is in use by another app. Close other apps and try again.');
-                } else {
-                    setCameraError(`Camera access error: ${errMsg}. Please check site settings and allow camera.`);
+                if (navigator.permissions && navigator.permissions.query) {
+                    const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                    permissionStatus = result.state;
+                    console.log('Camera permission status:', permissionStatus);
                 }
-                setIsInitializing(false);
-                return;
+            } catch (e) {
+                console.log('Permission query not supported');
             }
 
-            // Create new scanner instance - no format restriction for better detection
+            // IMPORTANT: Request camera permission
+            // Use different constraints to maximize compatibility on Android
+            console.log('Requesting camera access...');
+            let stream: MediaStream | null = null;
+
+            try {
+                // Try with environment facing mode first (back camera)
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+            } catch (e1) {
+                console.log('Environment camera failed, trying any camera...');
+                try {
+                    // Fallback to any camera
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+                } catch (e2) {
+                    console.error('All camera attempts failed:', e2);
+                    throw e2;
+                }
+            }
+
+            // If we got here, we have camera permission
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Camera permission granted, proceeding with scanner');
+            }
+
+            // Create new scanner instance
             const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
 
@@ -258,17 +285,22 @@ export default function CoordinatorScanner() {
             setIsInitializing(false);
             toast.success('Scanner ready! Point at QR code');
         } catch (error) {
-            console.error('Scanner error:', error);
+            console.error('Camera/Scanner error:', error);
             setIsInitializing(false);
 
             const errMsg = error instanceof Error ? error.message : String(error);
+            const errName = error instanceof Error ? error.name : '';
 
-            if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
-                setCameraError('Camera permission denied. Please allow camera access in browser settings and refresh.');
-            } else if (errMsg.includes('NotFound') || errMsg.includes('No cameras')) {
+            // Detect specific error types
+            if (errName === 'NotAllowedError' || errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
+                // Permission denied - provide Android-specific instructions
+                setCameraError('CAMERA_PERMISSION_DENIED');
+            } else if (errName === 'NotFoundError' || errMsg.includes('NotFound') || errMsg.includes('No cameras')) {
                 setCameraError('No camera found on this device.');
-            } else if (errMsg.includes('NotReadable') || errMsg.includes('in use')) {
+            } else if (errName === 'NotReadableError' || errMsg.includes('NotReadable') || errMsg.includes('in use')) {
                 setCameraError('Camera is in use by another app. Close other apps and try again.');
+            } else if (errName === 'OverconstrainedError') {
+                setCameraError('Camera does not meet requirements. Please try again.');
             } else {
                 setCameraError(`Camera error: ${errMsg}`);
             }
@@ -751,23 +783,42 @@ export default function CoordinatorScanner() {
 
                                 {/* Error State */}
                                 {!isScanning && !isInitializing && cameraError && !scanResult && (
-                                    <div className="aspect-video flex flex-col items-center justify-center bg-red-900/20 p-4">
+                                    <div className="flex flex-col items-center justify-center bg-red-900/20 p-4 min-h-[280px]">
                                         <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
-                                        <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
-                                        
-                                        {/* Help for camera permission */}
-                                        {cameraError.includes('permission') && (
-                                            <div className="bg-black/60 rounded-lg p-3 mb-3 text-left w-full max-w-xs">
-                                                <p className="text-yellow-400 text-xs font-semibold mb-2">To enable camera:</p>
-                                                <ol className="text-gray-300 text-xs space-y-1 list-decimal list-inside">
-                                                    <li>Tap the <span className="text-white font-bold">🔒 lock icon</span> in address bar</li>
-                                                    <li>Find <span className="text-white font-bold">"Camera"</span> setting</li>
-                                                    <li>Change to <span className="text-green-400 font-bold">"Allow"</span></li>
-                                                    <li>Tap <span className="text-white font-bold">"Try Again"</span> below</li>
-                                                </ol>
-                                            </div>
+
+                                        {/* Camera Permission Denied - Special handling for Android */}
+                                        {cameraError === 'CAMERA_PERMISSION_DENIED' ? (
+                                            <>
+                                                <p className="text-red-400 text-center text-sm mb-3">
+                                                    Camera permission required
+                                                </p>
+                                                <div className="bg-black/60 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
+                                                    <p className="text-yellow-400 text-sm font-semibold mb-3">📱 For Android Chrome:</p>
+                                                    <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
+                                                        <li>Tap the <span className="text-white font-bold">⋮ three dots</span> menu (top right)</li>
+                                                        <li>Tap <span className="text-white font-bold">"Settings"</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Site settings"</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Camera"</span></li>
+                                                        <li>Find <span className="text-blue-400">kaizen-ritp.in</span> and tap it</li>
+                                                        <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
+                                                    </ol>
+                                                    <div className="mt-3 pt-3 border-t border-gray-700">
+                                                        <p className="text-yellow-400 text-sm font-semibold mb-2">⚡ Quick method:</p>
+                                                        <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
+                                                            <li>Tap <span className="text-white font-bold">ⓘ</span> icon left of URL</li>
+                                                            <li>Tap <span className="text-white font-bold">"Permissions"</span></li>
+                                                            <li>Enable <span className="text-green-400 font-bold">"Camera"</span></li>
+                                                        </ol>
+                                                    </div>
+                                                </div>
+                                                <p className="text-gray-400 text-xs mb-3 text-center">
+                                                    After enabling, tap "Try Again" or refresh the page
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
                                         )}
-                                        
+
                                         {!window.isSecureContext && (
                                             <div className="bg-black/40 rounded p-2 mb-3 text-center">
                                                 <p className="text-green-400 text-xs font-mono">
@@ -775,10 +826,21 @@ export default function CoordinatorScanner() {
                                                 </p>
                                             </div>
                                         )}
-                                        <div className="flex gap-2">
-                                            <Button onClick={() => { setCameraError(''); startScanning(); }} size="sm">
+                                        <div className="flex gap-2 flex-wrap justify-center">
+                                            <Button
+                                                onClick={() => {
+                                                    setCameraError('');
+                                                    // Force page reload to reset permission state
+                                                    if (cameraError === 'CAMERA_PERMISSION_DENIED') {
+                                                        window.location.reload();
+                                                    } else {
+                                                        startScanning();
+                                                    }
+                                                }}
+                                                size="sm"
+                                            >
                                                 <RefreshCw className="w-4 h-4 mr-1" />
-                                                Try Again
+                                                {cameraError === 'CAMERA_PERMISSION_DENIED' ? 'Refresh Page' : 'Try Again'}
                                             </Button>
                                             <Button
                                                 onClick={() => setActiveTab('manual')}
@@ -786,7 +848,7 @@ export default function CoordinatorScanner() {
                                                 variant="outline"
                                             >
                                                 <Keyboard className="w-4 h-4 mr-1" />
-                                                Use Code
+                                                Use Code Instead
                                             </Button>
                                         </div>
                                     </div>
@@ -814,10 +876,10 @@ export default function CoordinatorScanner() {
                                 {scanResult && (
                                     <div
                                         className={`p-6 text-center ${scanResult.success
-                                                ? 'bg-green-900/30'
-                                                : scanResult.alreadyMarked
-                                                    ? 'bg-yellow-900/30'
-                                                    : 'bg-red-900/30'
+                                            ? 'bg-green-900/30'
+                                            : scanResult.alreadyMarked
+                                                ? 'bg-yellow-900/30'
+                                                : 'bg-red-900/30'
                                             }`}
                                     >
                                         {scanResult.success ? (
@@ -830,10 +892,10 @@ export default function CoordinatorScanner() {
 
                                         <h3
                                             className={`text-xl font-bold mb-2 ${scanResult.success
-                                                    ? 'text-green-400'
-                                                    : scanResult.alreadyMarked
-                                                        ? 'text-yellow-400'
-                                                        : 'text-red-400'
+                                                ? 'text-green-400'
+                                                : scanResult.alreadyMarked
+                                                    ? 'text-yellow-400'
+                                                    : 'text-red-400'
                                                 }`}
                                         >
                                             {scanResult.success
@@ -900,10 +962,10 @@ export default function CoordinatorScanner() {
                                 ) : (
                                     <div
                                         className={`p-6 text-center rounded-lg ${scanResult.success
-                                                ? 'bg-green-900/30'
-                                                : scanResult.alreadyMarked
-                                                    ? 'bg-yellow-900/30'
-                                                    : 'bg-red-900/30'
+                                            ? 'bg-green-900/30'
+                                            : scanResult.alreadyMarked
+                                                ? 'bg-yellow-900/30'
+                                                : 'bg-red-900/30'
                                             }`}
                                     >
                                         {scanResult.success ? (
@@ -916,10 +978,10 @@ export default function CoordinatorScanner() {
 
                                         <h3
                                             className={`text-xl font-bold mb-2 ${scanResult.success
-                                                    ? 'text-green-400'
-                                                    : scanResult.alreadyMarked
-                                                        ? 'text-yellow-400'
-                                                        : 'text-red-400'
+                                                ? 'text-green-400'
+                                                : scanResult.alreadyMarked
+                                                    ? 'text-yellow-400'
+                                                    : 'text-red-400'
                                                 }`}
                                         >
                                             {scanResult.success
