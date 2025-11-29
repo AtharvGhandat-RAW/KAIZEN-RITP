@@ -30,6 +30,8 @@ import {
     History,
     Keyboard,
     Search,
+    Settings,
+    ExternalLink,
 } from 'lucide-react';
 import { decryptQRData, QRPayload, isValidQRPayload, generateVerificationCode } from '@/utils/qrEncryption';
 
@@ -116,13 +118,33 @@ export default function CoordinatorScanner() {
         checkPermission();
     }, []);
 
+    // Open Chrome site settings (Android only)
+    const openChromeSettings = () => {
+        addLog('Opening Chrome site settings...');
+        // This intent URL opens Chrome's site settings for the current domain
+        // Works on Android Chrome
+        const settingsUrl = `intent://settings/content/camera#Intent;scheme=chrome;package=com.android.chrome;end`;
+        
+        // Try to open Chrome settings
+        try {
+            // Method 1: Try Chrome intent (Android)
+            window.location.href = settingsUrl;
+        } catch {
+            // Method 2: Show instructions
+            toast.info('Please go to Chrome menu (⋮) → Settings → Site settings → Camera');
+        }
+    };
+
     // Manual permission request - forces browser to show permission prompt
     const requestCameraPermission = async () => {
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        
         setRequestingPermission(true);
         setCameraError('');
         setDebugLogs([]);
         
         addLog('=== MANUAL PERMISSION REQUEST ===' );
+        addLog(`Platform: ${isAndroid ? 'Android' : 'Other'}`);
         addLog('Directly requesting camera access...');
         
         try {
@@ -152,7 +174,16 @@ export default function CoordinatorScanner() {
             
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 setPermissionState('denied');
-                setCameraError('CAMERA_PERMISSION_DENIED');
+                
+                // On Android, show special message about Chrome settings
+                if (isAndroid) {
+                    addLog('Android detected - Chrome has blocked camera');
+                    addLog('User must enable in Chrome site settings');
+                    setCameraError('ANDROID_CHROME_BLOCKED');
+                } else {
+                    setCameraError('CAMERA_PERMISSION_DENIED');
+                }
+                
                 addLog('User denied permission or system blocked it');
             } else if (error.name === 'NotFoundError') {
                 setCameraError('No camera found on this device.');
@@ -549,7 +580,12 @@ export default function CoordinatorScanner() {
             setIsInitializing(false);
             
             if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
-                setCameraError('CAMERA_PERMISSION_DENIED');
+                // Use Android-specific error on Android
+                if (isAndroid) {
+                    setCameraError('ANDROID_CHROME_BLOCKED');
+                } else {
+                    setCameraError('CAMERA_PERMISSION_DENIED');
+                }
             } else if (lastError?.name === 'NotFoundError') {
                 setCameraError('No camera found on this device.');
             } else if (lastError?.name === 'NotReadableError') {
@@ -941,7 +977,63 @@ export default function CoordinatorScanner() {
                                     <div className="flex flex-col items-center justify-center bg-red-900/20 p-4 min-h-[280px]">
                                         <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
 
-                                        {cameraError === 'CAMERA_PERMISSION_DENIED' ? (
+                                        {cameraError === 'ANDROID_CHROME_BLOCKED' ? (
+                                            <>
+                                                <p className="text-red-400 text-center text-sm mb-3 font-bold">
+                                                    📱 Android Chrome Has Blocked Camera
+                                                </p>
+                                                <div className="bg-black/80 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
+                                                    <p className="text-yellow-400 text-sm font-bold mb-3">⚠️ Chrome won't show permission popup again!</p>
+                                                    <p className="text-gray-300 text-xs mb-4">You must manually enable camera in Chrome settings:</p>
+                                                    
+                                                    <div className="bg-blue-900/40 rounded-lg p-3 mb-4">
+                                                        <p className="text-cyan-400 text-sm font-bold mb-2">📋 Quick Steps:</p>
+                                                        <ol className="text-white text-sm space-y-2 list-decimal list-inside">
+                                                            <li>Tap the <span className="bg-gray-700 px-1 rounded">⋮</span> menu (top right)</li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">Settings</span></li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">Site settings</span></li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">Camera</span></li>
+                                                            <li>Find <span className="text-blue-400">kaizen-ritp.in</span></li>
+                                                            <li>Change to <span className="text-green-400 font-bold">Allow</span></li>
+                                                        </ol>
+                                                    </div>
+                                                    
+                                                    <p className="text-gray-400 text-xs text-center">Then come back and tap "Try Again"</p>
+                                                </div>
+                                                
+                                                <div className="flex gap-2 flex-wrap justify-center mb-3">
+                                                    <Button
+                                                        onClick={() => {
+                                                            // Copy the URL path to help user find it
+                                                            navigator.clipboard?.writeText('chrome://settings/content/camera');
+                                                            toast.info('Open Chrome menu (⋮) → Settings → Site settings → Camera');
+                                                        }}
+                                                        size="sm"
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                    >
+                                                        <Settings className="w-4 h-4 mr-1" />
+                                                        Open Chrome Menu
+                                                    </Button>
+                                                    <Button
+                                                        onClick={requestCameraPermission}
+                                                        size="sm"
+                                                        className="bg-green-600 hover:bg-green-700"
+                                                    >
+                                                        <RefreshCw className="w-4 h-4 mr-1" />
+                                                        Try Again
+                                                    </Button>
+                                                </div>
+                                                
+                                                <Button
+                                                    onClick={() => setActiveTab('manual')}
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    <Keyboard className="w-4 h-4 mr-1" />
+                                                    Use Manual Code Instead
+                                                </Button>
+                                            </>
+                                        ) : cameraError === 'CAMERA_PERMISSION_DENIED' ? (
                                             <>
                                                 <p className="text-red-400 text-center text-sm mb-3">
                                                     Camera permission denied
