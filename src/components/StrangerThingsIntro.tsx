@@ -355,6 +355,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           overflow: hidden;
           font-family: 'Cinzel', serif;
           transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
+          will-change: opacity, transform; /* Performance hint */
         }
 
         .intro-container.exiting {

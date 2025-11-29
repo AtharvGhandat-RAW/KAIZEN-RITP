@@ -37,6 +37,7 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
                   0 0 35px rgba(255, 0, 0, 0.15)
                 `,
                 filter: 'contrast(1.1)',
+                willChange: 'transform, opacity', // Performance: Hint browser for GPU acceleration
                 animation: shouldAnimate ? `
                   letterGlitchReveal 0.8s ease-out ${index * 0.12}s forwards,
                   letterGlow 6s ease-in-out infinite ${1.2 + index * 0.12}s

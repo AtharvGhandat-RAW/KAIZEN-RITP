@@ -38,8 +38,8 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      // Enable background refetching
-      refetchOnMount: 'always',
+      // Performance: Disable aggressive refetching to reduce network requests
+      refetchOnMount: false,
       // Network mode for better offline support
       networkMode: 'offlineFirst',
     },
