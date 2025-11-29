@@ -17,6 +17,7 @@ const Refund = lazy(() => import("./pages/Refund"));
 const SchedulePage = lazy(() => import("./pages/Schedule"));
 const EventsPage = lazy(() => import("./pages/Events"));
 const HorrorDramatics = lazy(() => import("./pages/HorrorDramatics"));
+const AttendanceVerification = lazy(() => import("./pages/AttendanceVerification"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminEvents = lazy(() => import("./pages/admin/Events"));
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/horror-dramatics" element={<HorrorDramatics />} />
+                <Route path="/verify-attendance" element={<AttendanceVerification />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLogin />} />

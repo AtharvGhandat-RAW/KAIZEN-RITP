@@ -323,11 +323,11 @@ export function ContactFooter() {
 
             {/* Legal Links */}
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
-              <Link to="/privacy" className="text-white/40 hover:text-red-500 transition-colors duration-300">Privacy Policy</Link>
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-red-500 transition-colors duration-300">Privacy Policy</Link>
               <span className="text-white/20">•</span>
-              <Link to="/terms" className="text-white/40 hover:text-red-500 transition-colors duration-300">Terms & Conditions</Link>
+              <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-red-500 transition-colors duration-300">Terms & Conditions</Link>
               <span className="text-white/20">•</span>
-              <Link to="/refund" className="text-white/40 hover:text-red-500 transition-colors duration-300">Refund Policy</Link>
+              <Link to="/refund" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-red-500 transition-colors duration-300">Refund Policy</Link>
             </div>
 
             {/* Back to Top Button */}

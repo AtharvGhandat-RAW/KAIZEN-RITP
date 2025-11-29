@@ -16,7 +16,7 @@ function generateUUID(): string {
     return crypto.randomUUID();
   }
   // Fallback implementation
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -213,8 +213,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
               .eq('id', existingReg.id);
           } else {
             // Already registered with pending/completed status
-            const statusMsg = existingReg.payment_status === 'completed' 
-              ? 'You are already registered for this event!' 
+            const statusMsg = existingReg.payment_status === 'completed'
+              ? 'You are already registered for this event!'
               : 'You have a pending registration for this event. Please wait for payment verification.';
             toast.info(statusMsg);
             setError(statusMsg);
@@ -532,8 +532,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                               {event.event_type === 'team' ? '👥 Team' : '👤 Solo'}
                                             </span>
                                             <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${event.registration_fee > 0
-                                                ? 'bg-orange-900/30 text-orange-300 border-orange-700/50'
-                                                : 'bg-green-900/30 text-green-300 border-green-700/50'
+                                              ? 'bg-orange-900/30 text-orange-300 border-orange-700/50'
+                                              : 'bg-green-900/30 text-green-300 border-green-700/50'
                                               }`}>
                                               {event.registration_fee > 0 ? `₹${event.registration_fee}` : '✨ Free'}
                                             </span>
