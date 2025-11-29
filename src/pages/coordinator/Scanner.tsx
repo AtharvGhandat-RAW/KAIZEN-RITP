@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectContent,
@@ -20,13 +19,9 @@ import {
     CheckCircle,
     XCircle,
     AlertCircle,
-    User,
-    Calendar,
-    Building,
     LogOut,
     RefreshCw,
     History,
-    ShieldAlert,
 } from 'lucide-react';
 import { decryptQRData, QRPayload, isValidQRPayload } from '@/utils/qrEncryption';
 
@@ -57,8 +52,6 @@ interface RecentScan {
     success: boolean;
 }
 
-type CameraPermissionState = 'prompt' | 'granted' | 'denied' | 'unknown';
-
 export default function CoordinatorScanner() {
     const navigate = useNavigate();
     const [coordinator, setCoordinator] = useState<Coordinator | null>(null);
@@ -68,11 +61,14 @@ export default function CoordinatorScanner() {
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
     const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
     const [processing, setProcessing] = useState(false);
-    const scannerRef = useRef<Html5Qrcode | null>(null);
     const [todayCount, setTodayCount] = useState(0);
-    const [cameraPermission, setCameraPermission] = useState<CameraPermissionState>('unknown');
-    const [cameraError, setCameraError] = useState<string>(''); useEffect(() => {
-        // Check if coordinator is logged in
+    const [cameraError, setCameraError] = useState<string>('');
+    const [isInitializing, setIsInitializing] = useState(false);
+    
+    const scannerRef = useRef<Html5Qrcode | null>(null);
+    const scannerContainerId = 'qr-reader-container';
+
+    useEffect(() => {
         const coordinatorData = localStorage.getItem('coordinator');
         if (!coordinatorData) {
             navigate('/coordinator/login');
@@ -89,49 +85,43 @@ export default function CoordinatorScanner() {
         }
     }, [navigate]);
 
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            // Cleanup scanner on unmount
             if (scannerRef.current) {
-                scannerRef.current.stop().catch(console.error);
+                try {
+                    const state = scannerRef.current.getState();
+                    if (state === Html5QrcodeScannerState.SCANNING) {
+                        scannerRef.current.stop();
+                    }
+                } catch (e) {
+                    console.log('Cleanup error:', e);
+                }
             }
         };
     }, []);
 
     const fetchAssignedEvents = async (eventIds: string[]) => {
         if (!eventIds || eventIds.length === 0) {
-            console.log('No event IDs assigned to coordinator');
             setEvents([]);
-            toast.warning('No events assigned. Please contact admin.');
             return;
         }
 
         try {
-            console.log('Fetching events for IDs:', eventIds);
             const { data, error } = await supabase
                 .from('events')
                 .select('id, name')
                 .in('id', eventIds);
 
-            if (error) {
-                console.error('Supabase error:', error);
-                throw error;
-            }
-
-            console.log('Fetched events:', data);
-            setEvents((data || []) as Array<{ id: string; name: string }>);
-
-            // Auto-select if only one event
+            if (error) throw error;
+            setEvents(data || []);
+            
             if (data && data.length === 1) {
                 setSelectedEvent(data[0].id);
             }
-
-            if (!data || data.length === 0) {
-                toast.warning('No events found for assigned IDs');
-            }
         } catch (error) {
             console.error('Error fetching events:', error);
-            toast.error('Failed to load events. Please refresh.');
+            toast.error('Failed to load events');
         }
     };
 
@@ -146,87 +136,12 @@ export default function CoordinatorScanner() {
                 .eq('marked_by', coordinatorId)
                 .gte('marked_at', today.toISOString());
 
-            if (error) throw error;
-            setTodayCount(count || 0);
+            if (!error && count !== null) {
+                setTodayCount(count);
+            }
         } catch (error) {
             console.error('Error fetching today count:', error);
         }
-    };
-
-    // Check if we're in a secure context (HTTPS or localhost)
-    const isSecureContext = () => {
-        return window.isSecureContext || 
-               window.location.protocol === 'https:' || 
-               window.location.hostname === 'localhost' ||
-               window.location.hostname === '127.0.0.1';
-    };
-
-    // Check camera availability with fallbacks for different browsers
-    // Extended Navigator type for legacy browser support
-    type LegacyNavigator = Navigator & {
-        webkitGetUserMedia?: (
-            constraints: MediaStreamConstraints,
-            success: (stream: MediaStream) => void,
-            error: (err: Error) => void
-        ) => void;
-        mozGetUserMedia?: (
-            constraints: MediaStreamConstraints,
-            success: (stream: MediaStream) => void,
-            error: (err: Error) => void
-        ) => void;
-        msGetUserMedia?: (
-            constraints: MediaStreamConstraints,
-            success: (stream: MediaStream) => void,
-            error: (err: Error) => void
-        ) => void;
-    };
-
-    const checkCameraAvailability = async (): Promise<boolean> => {
-        // Check secure context first
-        if (!isSecureContext()) {
-            setCameraError('Camera requires HTTPS. Please use https:// URL.');
-            return false;
-        }
-
-        const nav = navigator as LegacyNavigator;
-
-        // Check for mediaDevices API with various fallbacks
-        const mediaDevices = navigator.mediaDevices || 
-            (nav.webkitGetUserMedia || nav.mozGetUserMedia || nav.msGetUserMedia ? {
-                getUserMedia: (constraints: MediaStreamConstraints) => {
-                    return new Promise<MediaStream>((resolve, reject) => {
-                        const getUserMedia = nav.webkitGetUserMedia || 
-                                           nav.mozGetUserMedia || 
-                                           nav.msGetUserMedia;
-                        if (!getUserMedia) {
-                            reject(new Error('getUserMedia not supported'));
-                            return;
-                        }
-                        getUserMedia.call(navigator, constraints, resolve, reject);
-                    });
-                }
-            } : null);
-
-        if (!mediaDevices || !mediaDevices.getUserMedia) {
-            // Last resort - check if we can enumerate devices
-            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-                try {
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    const hasCamera = devices.some(device => device.kind === 'videoinput');
-                    if (!hasCamera) {
-                        setCameraError('No camera detected on this device.');
-                        return false;
-                    }
-                } catch (e) {
-                    console.log('Could not enumerate devices');
-                }
-            }
-            
-            setCameraError('Camera API not available. Try using Chrome, Safari, or Firefox browser.');
-            return false;
-        }
-
-        return true;
     };
 
     const startScanning = async () => {
@@ -236,226 +151,171 @@ export default function CoordinatorScanner() {
         }
 
         setCameraError('');
-        
-        // First check if camera is available
-        const cameraAvailable = await checkCameraAvailability();
-        if (!cameraAvailable) {
-            toast.error('Camera not available');
+        setIsInitializing(true);
+        setScanResult(null);
+
+        // Check for HTTPS
+        if (!window.isSecureContext) {
+            setCameraError('Camera requires HTTPS. Please use https://kaizen-ritp.in');
+            setIsInitializing(false);
             return;
         }
 
         try {
-            // Check current permission state if available
-            if (navigator.permissions && navigator.permissions.query) {
+            // Clean up any existing scanner
+            if (scannerRef.current) {
                 try {
-                    const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
-                    setCameraPermission(permissionStatus.state as CameraPermissionState);
-                    console.log('Camera permission state:', permissionStatus.state);
+                    const state = scannerRef.current.getState();
+                    if (state === Html5QrcodeScannerState.SCANNING) {
+                        await scannerRef.current.stop();
+                    }
+                    scannerRef.current.clear();
                 } catch (e) {
-                    console.log('Permission query not supported, will request directly');
+                    console.log('Cleanup error (ignored):', e);
                 }
+                scannerRef.current = null;
             }
 
-            // Request camera access - try different constraint configurations
-            console.log('Requesting camera access...');
-            let stream: MediaStream | null = null;
-            
-            // Try with environment camera first (back camera on mobile)
-            const constraintOptions = [
-                { video: { facingMode: { exact: 'environment' } } },
-                { video: { facingMode: 'environment' } },
-                { video: { facingMode: { ideal: 'environment' } } },
-                { video: true }
-            ];
-
-            for (const constraints of constraintOptions) {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    console.log('Camera access granted with constraints:', constraints);
-                    break;
-                } catch (e) {
-                    console.log('Failed with constraints:', constraints, e);
-                }
-            }
-
-            if (!stream) {
-                throw new Error('Could not access camera with any configuration');
-            }
-
-            // Permission granted - stop the test stream
-            stream.getTracks().forEach(track => track.stop());
-            setCameraPermission('granted');
-
-            // Now start the QR scanner
-            const html5QrCode = new Html5Qrcode('qr-reader', {
-                verbose: false,
-                formatsToSupport: [0] // QR_CODE format
-            });
+            // Create new scanner instance
+            const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
 
-            // Scanner configuration - optimize for mobile
-            const scannerConfig = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-                disableFlip: false,
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                }
-            };
-
-            // Try starting scanner with different configs
-            try {
-                await html5QrCode.start(
-                    { facingMode: 'environment' },
-                    scannerConfig,
-                    onScanSuccess,
-                    onScanFailure
-                );
-            } catch (scannerError) {
-                console.log('Trying simpler scanner config...', scannerError);
-                // Try with simpler config - no qrbox constraint
-                await html5QrCode.start(
-                    { facingMode: 'environment' },
-                    { fps: 10, qrbox: 200 },
-                    onScanSuccess,
-                    onScanFailure
-                );
+            // Get available cameras
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || cameras.length === 0) {
+                throw new Error('No cameras found on this device');
             }
+
+            console.log('Available cameras:', cameras);
+
+            // Prefer back camera
+            let cameraId = cameras[0].id;
+            const backCamera = cameras.find(
+                (c) =>
+                    c.label.toLowerCase().includes('back') ||
+                    c.label.toLowerCase().includes('rear') ||
+                    c.label.toLowerCase().includes('environment')
+            );
+            if (backCamera) {
+                cameraId = backCamera.id;
+            }
+
+            // Start scanner with camera ID
+            await html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                },
+                handleScanSuccess,
+                handleScanError
+            );
 
             setIsScanning(true);
-            setScanResult(null);
-            toast.success('Scanner started!');
-        } catch (error: unknown) {
-            console.error('Camera/Scanner error:', error);
-            const err = error as DOMException;
-            const errorMessage = err.message || String(error);
+            setIsInitializing(false);
+            toast.success('Scanner ready!');
+        } catch (error) {
+            console.error('Scanner error:', error);
+            setIsInitializing(false);
 
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || errorMessage.includes('denied')) {
-                setCameraPermission('denied');
-                setCameraError('Camera permission denied. Please allow camera access in your browser settings, then refresh the page.');
-                toast.error('Camera access denied');
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError' || errorMessage.includes('not found')) {
+            const errMsg = error instanceof Error ? error.message : String(error);
+
+            if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
+                setCameraError('Camera permission denied. Please allow camera access and refresh.');
+            } else if (errMsg.includes('NotFound') || errMsg.includes('No cameras')) {
                 setCameraError('No camera found on this device.');
-                toast.error('No camera found');
-            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError' || errorMessage.includes('in use')) {
-                setCameraError('Camera is in use by another app. Please close other apps using the camera and try again.');
-                toast.error('Camera is busy');
-            } else if (err.name === 'SecurityError' || errorMessage.includes('secure') || errorMessage.includes('https')) {
-                setCameraError('Camera access blocked. Make sure you are using HTTPS.');
-                toast.error('HTTPS required for camera');
+            } else if (errMsg.includes('NotReadable') || errMsg.includes('in use')) {
+                setCameraError('Camera is in use by another app. Close other apps and try again.');
             } else {
-                setCameraError(`Camera error: ${errorMessage}. Please try refreshing the page or use a different browser.`);
-                toast.error('Failed to start camera');
+                setCameraError(`Camera error: ${errMsg}`);
             }
         }
     };
 
-    const stopScanning = async () => {
+    const stopScanning = useCallback(async () => {
         if (scannerRef.current) {
             try {
-                await scannerRef.current.stop();
-                setIsScanning(false);
-            } catch (error) {
-                console.error('Error stopping scanner:', error);
+                const state = scannerRef.current.getState();
+                if (state === Html5QrcodeScannerState.SCANNING) {
+                    await scannerRef.current.stop();
+                }
+                scannerRef.current.clear();
+            } catch (e) {
+                console.log('Stop error (ignored):', e);
             }
+            scannerRef.current = null;
         }
-    };
+        setIsScanning(false);
+    }, []);
 
-    const onScanSuccess = async (decodedText: string) => {
+    const handleScanSuccess = async (decodedText: string) => {
         if (processing) return;
         setProcessing(true);
 
-        try {
-            // Stop scanner temporarily
-            await stopScanning();
+        // Pause scanner during processing
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.pause(true);
+            } catch (e) {
+                console.log('Pause error:', e);
+            }
+        }
 
-            // Decrypt and validate QR data
+        try {
+            // Decrypt QR data
             const payload = decryptQRData(decodedText);
 
             if (!payload || !isValidQRPayload(payload)) {
                 setScanResult({
                     success: false,
-                    message: 'Invalid QR code. This may not be a valid event pass.',
+                    message: 'Invalid QR code. Not a KAIZEN pass.',
                 });
-                setProcessing(false);
+                resumeScanner();
                 return;
             }
 
-            // Check if event matches
+            // Validate event
             if (payload.eventId !== selectedEvent) {
-                const eventName = events.find(e => e.id === payload.eventId)?.name || 'another event';
+                const eventName = events.find((e) => e.id === payload.eventId)?.name || 'another event';
                 setScanResult({
                     success: false,
                     message: `This pass is for ${eventName}, not the selected event.`,
                     data: payload,
+                    attendeeName: payload.name,
                 });
-                setProcessing(false);
+                resumeScanner();
                 return;
             }
 
-            // Check if already marked attendance
-            const { data: existingAttendance } = await supabase
+            // Check if already marked
+            const { data: existing } = await supabase
                 .from('attendance')
-                .select('id, marked_at')
-                .eq('registration_id', payload.registrationId)
+                .select('id')
+                .eq('registration_id', payload.regId)
                 .eq('event_id', payload.eventId)
-                .single();
+                .maybeSingle();
 
-            if (existingAttendance) {
+            if (existing) {
                 setScanResult({
                     success: false,
-                    message: 'Attendance already marked for this registration.',
+                    message: 'Already checked in!',
                     data: payload,
                     attendeeName: payload.name,
                     alreadyMarked: true,
                 });
-                setProcessing(false);
-                return;
-            }
-
-            // Verify registration exists and is completed
-            const { data: registration, error: regError } = await supabase
-                .from('registrations')
-                .select('id, payment_status, profiles(full_name)')
-                .eq('id', payload.registrationId)
-                .single();
-
-            if (regError || !registration) {
-                setScanResult({
-                    success: false,
-                    message: 'Registration not found in system.',
-                    data: payload,
-                });
-                setProcessing(false);
-                return;
-            }
-
-            if (registration.payment_status !== 'completed' && registration.payment_status !== 'verified') {
-                const profiles = registration.profiles as { full_name?: string } | null;
-                setScanResult({
-                    success: false,
-                    message: `Registration payment status is "${registration.payment_status}". Only completed registrations can be verified.`,
-                    data: payload,
-                    attendeeName: profiles?.full_name || payload.name,
-                });
-                setProcessing(false);
+                resumeScanner();
                 return;
             }
 
             // Mark attendance
-            const { error: attendanceError } = await supabase
-                .from('attendance')
-                .insert({
-                    registration_id: payload.registrationId,
-                    event_id: payload.eventId,
-                    marked_by: coordinator?.id,
-                    verification_method: 'qr_scan',
-                });
+            const { error: insertError } = await supabase.from('attendance').insert({
+                registration_id: payload.regId,
+                event_id: payload.eventId,
+                marked_by: coordinator?.id,
+                marked_at: new Date().toISOString(),
+            });
 
-            if (attendanceError) {
-                throw attendanceError;
-            }
+            if (insertError) throw insertError;
 
             // Success!
             setScanResult({
@@ -465,47 +325,67 @@ export default function CoordinatorScanner() {
                 attendeeName: payload.name,
             });
 
-            // Add to recent scans
-            setRecentScans(prev => [
+            setRecentScans((prev) => [
                 {
                     timestamp: new Date(),
                     name: payload.name,
-                    event: events.find(e => e.id === payload.eventId)?.name || 'Unknown',
+                    event: events.find((e) => e.id === payload.eventId)?.name || 'Unknown',
                     success: true,
                 },
                 ...prev.slice(0, 9),
             ]);
 
-            setTodayCount(prev => prev + 1);
+            setTodayCount((prev) => prev + 1);
             toast.success(`✓ ${payload.name} checked in!`);
         } catch (error) {
             console.error('Scan processing error:', error);
             setScanResult({
                 success: false,
-                message: 'An error occurred while processing. Please try again.',
+                message: 'An error occurred. Please try again.',
             });
         } finally {
             setProcessing(false);
         }
     };
 
-    const onScanFailure = (error: string) => {
-        // This is called for every failed scan attempt, which is normal
-        // Only log actual errors, not "QR code not found" type messages
-        if (!error.includes('No QR code found') && !error.includes('NotFoundException')) {
-            console.error('Scan error:', error);
+    const resumeScanner = () => {
+        setTimeout(() => {
+            if (scannerRef.current) {
+                try {
+                    scannerRef.current.resume();
+                } catch (e) {
+                    console.log('Resume error:', e);
+                }
+            }
+            setProcessing(false);
+        }, 1500);
+    };
+
+    const handleScanError = (error: string) => {
+        // Ignore normal "no QR found" messages
+        if (!error.includes('No QR') && !error.includes('NotFoundException')) {
+            console.log('Scan error:', error);
         }
     };
 
     const handleLogout = () => {
+        stopScanning();
         localStorage.removeItem('coordinator');
         navigate('/coordinator/login');
     };
 
-    const resetScanner = () => {
+    const resetScanner = async () => {
         setScanResult(null);
-        if (!isScanning) {
-            startScanning();
+        if (scannerRef.current) {
+            try {
+                scannerRef.current.resume();
+            } catch {
+                // If resume fails, restart scanner
+                await stopScanning();
+                await startScanning();
+            }
+        } else {
+            await startScanning();
         }
     };
 
@@ -519,6 +399,40 @@ export default function CoordinatorScanner() {
 
     return (
         <div className="min-h-screen bg-gray-950 text-white">
+            {/* Optimized CSS for battery saving */}
+            <style>{`
+                * {
+                    -webkit-tap-highlight-color: transparent;
+                }
+                #${scannerContainerId} {
+                    width: 100% !important;
+                    border: none !important;
+                }
+                #${scannerContainerId} video {
+                    width: 100% !important;
+                    height: auto !important;
+                    min-height: 300px !important;
+                    object-fit: cover !important;
+                    border-radius: 8px !important;
+                }
+                #${scannerContainerId}__scan_region {
+                    background: transparent !important;
+                }
+                #${scannerContainerId}__dashboard,
+                #${scannerContainerId}__dashboard_section,
+                #${scannerContainerId}__dashboard_section_csr,
+                #${scannerContainerId}__header_message,
+                #${scannerContainerId}__camera_selection {
+                    display: none !important;
+                }
+                #${scannerContainerId} img[alt="Info icon"] {
+                    display: none !important;
+                }
+                #qr-shaded-region {
+                    border-color: rgba(239, 68, 68, 0.7) !important;
+                }
+            `}</style>
+
             {/* Header */}
             <header className="sticky top-0 z-50 bg-gray-900/95 border-b border-red-600/30 backdrop-blur-sm">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -541,41 +455,42 @@ export default function CoordinatorScanner() {
                 </div>
             </header>
 
-            <main className="container mx-auto px-4 py-6 max-w-lg">
+            <main className="container mx-auto px-4 py-4 max-w-lg">
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-3 mb-4">
                     <Card className="bg-black/40 border-green-600/30">
-                        <CardContent className="pt-4 text-center">
-                            <p className="text-3xl font-bold text-green-400">{todayCount}</p>
+                        <CardContent className="py-3 text-center">
+                            <p className="text-2xl font-bold text-green-400">{todayCount}</p>
                             <p className="text-xs text-gray-400">Scanned Today</p>
                         </CardContent>
                     </Card>
                     <Card className="bg-black/40 border-blue-600/30">
-                        <CardContent className="pt-4 text-center">
-                            <p className="text-3xl font-bold text-blue-400">{events.length}</p>
+                        <CardContent className="py-3 text-center">
+                            <p className="text-2xl font-bold text-blue-400">{events.length}</p>
                             <p className="text-xs text-gray-400">Assigned Events</p>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Event Selection */}
-                <Card className="bg-black/40 border-red-600/30 mb-6">
-                    <CardHeader className="pb-3">
+                <Card className="bg-black/40 border-red-600/30 mb-4">
+                    <CardHeader className="pb-2 pt-3">
                         <CardTitle className="text-sm text-gray-400">Select Event</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pb-3">
                         {events.length === 0 ? (
-                            <div className="text-center py-4">
-                                <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                            <div className="text-center py-3">
+                                <AlertCircle className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
                                 <p className="text-yellow-400 text-sm">No events assigned</p>
-                                <p className="text-gray-500 text-xs mt-1">
-                                    Contact admin to assign events to your account
-                                </p>
                             </div>
                         ) : (
-                            <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                            <Select 
+                                value={selectedEvent} 
+                                onValueChange={setSelectedEvent}
+                                disabled={isScanning}
+                            >
                                 <SelectTrigger className="bg-black/40 border-red-600/30">
-                                    <SelectValue placeholder="Choose an event to scan for" />
+                                    <SelectValue placeholder="Choose an event" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-gray-900 border-red-600/30">
                                     {events.map((event) => (
@@ -590,201 +505,84 @@ export default function CoordinatorScanner() {
                 </Card>
 
                 {/* Scanner Area */}
-                <Card className="bg-black/40 border-red-600/30 mb-6 overflow-hidden">
+                <Card className="bg-black/40 border-red-600/30 mb-4 overflow-hidden relative">
                     <CardContent className="p-0">
-                        {/* QR Scanner */}
-                        <div className={`relative ${!isScanning ? 'hidden' : ''}`}>
-                            <div
-                                id="qr-reader"
-                                className="w-full"
-                                style={{
-                                    minHeight: '350px',
-                                }}
-                            ></div>
-                            
-                            {/* Scanning overlay with frame */}
-                            <div className="absolute inset-0 pointer-events-none">
-                                {/* Corner brackets */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px]">
-                                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-red-500"></div>
-                                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-red-500"></div>
-                                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-red-500"></div>
-                                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-red-500"></div>
+                        {/* Scanner Container - Always present */}
+                        <div 
+                            id={scannerContainerId} 
+                            className={`w-full ${!isScanning ? 'hidden' : ''}`}
+                            style={{ minHeight: isScanning ? '320px' : '0' }}
+                        />
+
+                        {/* Scanning Overlay */}
+                        {isScanning && !scanResult && (
+                            <div className="p-3 bg-black/60 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                    <span className="text-green-400 text-sm">Scanning...</span>
                                 </div>
-                                
-                                {/* Scanning line animation */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] overflow-hidden">
-                                    <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
-                                </div>
-                            </div>
-                            
-                            {/* Stop button */}
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
                                 <Button
+                                    size="sm"
+                                    variant="destructive"
                                     onClick={stopScanning}
-                                    className="bg-red-600/90 hover:bg-red-700 shadow-lg"
                                 >
-                                    <CameraOff className="w-4 h-4 mr-2" />
-                                    Stop Scanning
-                                </Button>
-                            </div>
-                            
-                            {/* Processing indicator */}
-                            {processing && (
-                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                                    <div className="text-center">
-                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto mb-2"></div>
-                                        <p className="text-white text-sm">Processing...</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Custom styles for html5-qrcode */}
-                        {isScanning && (
-                            <style>{`
-                                #qr-reader {
-                                    border: none !important;
-                                    width: 100% !important;
-                                }
-                                #qr-reader video {
-                                    width: 100% !important;
-                                    height: auto !important;
-                                    min-height: 350px !important;
-                                    object-fit: cover !important;
-                                    border-radius: 0 !important;
-                                }
-                                #qr-reader__scan_region {
-                                    background: transparent !important;
-                                    min-height: 300px !important;
-                                }
-                                #qr-reader__scan_region video {
-                                    display: block !important;
-                                    width: 100% !important;
-                                }
-                                #qr-reader__dashboard {
-                                    display: none !important;
-                                }
-                                #qr-reader__dashboard_section {
-                                    display: none !important;
-                                }
-                                #qr-reader__dashboard_section_csr {
-                                    display: none !important;
-                                }
-                                #qr-reader__header_message {
-                                    display: none !important;
-                                }
-                                #qr-reader img {
-                                    display: none !important;
-                                }
-                                #qr-reader__camera_selection {
-                                    display: none !important;
-                                }
-                                #qr-shaded-region {
-                                    border-color: rgba(239, 68, 68, 0.5) !important;
-                                }
-                            `}</style>
-                        )}
-
-                        {/* Camera Permission Denied */}
-                        {!isScanning && !scanResult && cameraPermission === 'denied' && (
-                            <div className="aspect-square flex flex-col items-center justify-center bg-red-900/20 p-6">
-                                <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-                                <h3 className="text-red-400 font-semibold text-lg mb-2">Camera Access Denied</h3>
-                                <p className="text-gray-400 text-center text-sm mb-4">
-                                    Please allow camera permission to scan QR codes
-                                </p>
-                                <div className="bg-black/40 rounded-lg p-4 mb-4 text-left w-full max-w-xs">
-                                    <p className="text-gray-300 text-xs mb-2 font-semibold">How to enable:</p>
-                                    <ol className="text-gray-400 text-xs space-y-1 list-decimal list-inside">
-                                        <li>Tap the lock/info icon in address bar</li>
-                                        <li>Find "Camera" permission</li>
-                                        <li>Set to "Allow"</li>
-                                        <li>Refresh this page</li>
-                                    </ol>
-                                </div>
-                                <Button
-                                    onClick={() => window.location.reload()}
-                                    className="bg-red-600 hover:bg-red-700"
-                                >
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Refresh Page
+                                    <CameraOff className="w-4 h-4 mr-1" />
+                                    Stop
                                 </Button>
                             </div>
                         )}
 
-                        {/* Camera Error */}
-                        {!isScanning && !scanResult && cameraError && cameraPermission !== 'denied' && (
-                            <div className="aspect-square flex flex-col items-center justify-center bg-yellow-900/20 p-6 overflow-y-auto">
-                                <AlertCircle className="w-12 h-12 text-yellow-500 mb-3 flex-shrink-0" />
-                                <h3 className="text-yellow-400 font-semibold text-lg mb-2">Camera Error</h3>
-                                <p className="text-gray-400 text-center text-sm mb-3 px-2">
-                                    {cameraError}
-                                </p>
-                                
-                                {/* HTTPS Required Message */}
+                        {/* Processing Overlay */}
+                        {processing && (
+                            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
+                                <div className="text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-2"></div>
+                                    <p className="text-white text-sm">Processing...</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Initializing State */}
+                        {isInitializing && (
+                            <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mb-3"></div>
+                                <p className="text-gray-400 text-sm">Starting camera...</p>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {!isScanning && !isInitializing && cameraError && (
+                            <div className="aspect-video flex flex-col items-center justify-center bg-red-900/20 p-4">
+                                <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+                                <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
                                 {!window.isSecureContext && (
-                                    <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-3 mb-3 w-full max-w-xs">
-                                        <p className="text-red-400 text-xs font-semibold mb-1">⚠️ HTTPS Required</p>
-                                        <p className="text-gray-300 text-xs mb-2">
-                                            Camera only works on secure (HTTPS) connections.
-                                        </p>
-                                        <p className="text-green-400 text-xs font-mono break-all">
-                                            Use: https://kaizen-ritp.in/coordinator/scan
+                                    <div className="bg-black/40 rounded p-2 mb-3 text-center">
+                                        <p className="text-green-400 text-xs font-mono">
+                                            https://kaizen-ritp.in/coordinator/scan
                                         </p>
                                     </div>
                                 )}
-                                
-                                {/* Debug info */}
-                                <div className="bg-black/40 rounded-lg p-2 mb-3 text-left w-full max-w-xs">
-                                    <p className="text-gray-500 text-xs truncate">
-                                        URL: {window.location.href}
-                                    </p>
-                                    <p className={`text-xs ${window.isSecureContext ? 'text-green-500' : 'text-red-500'}`}>
-                                        Secure: {window.isSecureContext ? '✓ Yes' : '✗ No'}
-                                    </p>
-                                </div>
-                                
-                                <div className="flex gap-2 flex-wrap justify-center">
-                                    <Button
-                                        onClick={() => {
-                                            setCameraError('');
-                                            startScanning();
-                                        }}
-                                        className="bg-yellow-600 hover:bg-yellow-700"
-                                    >
-                                        <Camera className="w-4 h-4 mr-2" />
-                                        Try Again
-                                    </Button>
-                                    <Button
-                                        onClick={() => window.location.reload()}
-                                        variant="outline"
-                                        className="border-yellow-600/30"
-                                    >
-                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                        Refresh
-                                    </Button>
-                                </div>
+                                <Button onClick={() => { setCameraError(''); startScanning(); }} size="sm">
+                                    <RefreshCw className="w-4 h-4 mr-1" />
+                                    Try Again
+                                </Button>
                             </div>
                         )}
 
-                        {/* Placeholder when not scanning */}
-                        {!isScanning && !scanResult && !cameraError && cameraPermission !== 'denied' && (
-                            <div className="aspect-square flex flex-col items-center justify-center bg-gray-900/50 p-6">
-                                <Camera className="w-16 h-16 text-gray-600 mb-4" />
-                                <p className="text-gray-400 text-center mb-2">
-                                    Camera preview will appear here
-                                </p>
-                                <p className="text-gray-500 text-xs text-center mb-4">
-                                    You may be asked to allow camera access
+                        {/* Idle State */}
+                        {!isScanning && !isInitializing && !cameraError && !scanResult && (
+                            <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
+                                <Camera className="w-12 h-12 text-gray-600 mb-3" />
+                                <p className="text-gray-400 text-center text-sm mb-4">
+                                    {!selectedEvent ? 'Select an event first' : 'Ready to scan'}
                                 </p>
                                 <Button
                                     onClick={startScanning}
                                     disabled={!selectedEvent || events.length === 0}
-                                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                                    className="bg-red-600 hover:bg-red-700"
                                 >
                                     <Camera className="w-4 h-4 mr-2" />
-                                    {!selectedEvent ? 'Select Event First' : 'Start Scanning'}
+                                    Start Scanner
                                 </Button>
                             </div>
                         )}
@@ -792,111 +590,84 @@ export default function CoordinatorScanner() {
                         {/* Scan Result */}
                         {scanResult && (
                             <div
-                                className={`p-6 ${scanResult.success
-                                    ? 'bg-green-900/30'
-                                    : scanResult.alreadyMarked
+                                className={`p-6 text-center ${
+                                    scanResult.success
+                                        ? 'bg-green-900/30'
+                                        : scanResult.alreadyMarked
                                         ? 'bg-yellow-900/30'
                                         : 'bg-red-900/30'
-                                    }`}
+                                }`}
                             >
-                                <div className="text-center">
-                                    {scanResult.success ? (
-                                        <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                                    ) : scanResult.alreadyMarked ? (
-                                        <AlertCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                                    ) : (
-                                        <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                                    )}
+                                {scanResult.success ? (
+                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                                ) : scanResult.alreadyMarked ? (
+                                    <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-3" />
+                                ) : (
+                                    <XCircle className="w-16 h-16 text-red-500 mx-auto mb-3" />
+                                )}
 
-                                    <h3
-                                        className={`text-xl font-bold mb-2 ${scanResult.success
+                                <h3
+                                    className={`text-xl font-bold mb-2 ${
+                                        scanResult.success
                                             ? 'text-green-400'
                                             : scanResult.alreadyMarked
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
-                                            }`}
-                                    >
-                                        {scanResult.success
-                                            ? 'Check-in Successful!'
-                                            : scanResult.alreadyMarked
-                                                ? 'Already Checked In'
-                                                : 'Scan Failed'}
-                                    </h3>
+                                            ? 'text-yellow-400'
+                                            : 'text-red-400'
+                                    }`}
+                                >
+                                    {scanResult.success
+                                        ? 'Success!'
+                                        : scanResult.alreadyMarked
+                                        ? 'Already Checked In'
+                                        : 'Error'}
+                                </h3>
 
-                                    <p className="text-gray-300 mb-4">{scanResult.message}</p>
+                                {scanResult.attendeeName && (
+                                    <p className="text-white text-lg mb-2">{scanResult.attendeeName}</p>
+                                )}
 
-                                    {scanResult.attendeeName && (
-                                        <div className="bg-black/30 rounded-lg p-4 mb-4 text-left">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <User className="w-4 h-4 text-gray-400" />
-                                                <span className="text-white font-medium">
-                                                    {scanResult.attendeeName}
-                                                </span>
-                                            </div>
-                                            {scanResult.data?.email && (
-                                                <p className="text-gray-400 text-sm ml-6">
-                                                    {scanResult.data.email}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
+                                <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
 
-                                    <Button
-                                        onClick={resetScanner}
-                                        className="bg-red-600 hover:bg-red-700"
-                                    >
-                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                        Scan Next
-                                    </Button>
-                                </div>
+                                <Button onClick={resetScanner} className="bg-red-600 hover:bg-red-700">
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Scan Next
+                                </Button>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Control Buttons */}
-                {isScanning && (
-                    <div className="flex gap-4 mb-6">
-                        <Button
-                            onClick={stopScanning}
-                            variant="outline"
-                            className="flex-1 border-red-600/30"
-                        >
-                            <CameraOff className="w-4 h-4 mr-2" />
-                            Stop
-                        </Button>
-                    </div>
-                )}
-
                 {/* Recent Scans */}
                 {recentScans.length > 0 && (
-                    <Card className="bg-black/40 border-red-600/30">
-                        <CardHeader className="pb-3">
+                    <Card className="bg-black/40 border-gray-700/30">
+                        <CardHeader className="pb-2 pt-3">
                             <CardTitle className="text-sm text-gray-400 flex items-center gap-2">
                                 <History className="w-4 h-4" />
                                 Recent Scans
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
+                        <CardContent className="pb-3">
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {recentScans.map((scan, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0"
+                                        className="flex items-center justify-between text-sm py-1 border-b border-gray-800 last:border-0"
                                     >
                                         <div className="flex items-center gap-2">
                                             {scan.success ? (
-                                                <CheckCircle className="w-4 h-4 text-green-400" />
+                                                <CheckCircle className="w-3 h-3 text-green-500" />
                                             ) : (
-                                                <XCircle className="w-4 h-4 text-red-400" />
+                                                <XCircle className="w-3 h-3 text-red-500" />
                                             )}
-                                            <div>
-                                                <p className="text-white text-sm">{scan.name}</p>
-                                                <p className="text-gray-500 text-xs">{scan.event}</p>
-                                            </div>
+                                            <span className="text-gray-300 truncate max-w-[150px]">
+                                                {scan.name}
+                                            </span>
                                         </div>
                                         <span className="text-gray-500 text-xs">
-                                            {scan.timestamp.toLocaleTimeString()}
+                                            {scan.timestamp.toLocaleTimeString([], {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
                                         </span>
                                     </div>
                                 ))}
