@@ -442,15 +442,16 @@ export default function CoordinatorScanner() {
         lastScannedRef.current = '';
         setDebugLogs([]);
 
-        // Detect Android
+        // Detect platform
         const isAndroid = /Android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const chromeVersion = navigator.userAgent.match(/Chrome\/(\d+)/)?.[1];
         
         addLog('=== STARTING CAMERA ===');
-        addLog(`Android: ${isAndroid}, iOS: ${isIOS}`);
-        addLog(`UserAgent: ${navigator.userAgent.substring(0, 80)}...`);
+        addLog(`Platform: ${isAndroid ? 'Android' : isIOS ? 'iOS' : 'Other'}`);
+        addLog(`Chrome: ${chromeVersion || 'N/A'}`);
         addLog(`Secure: ${window.isSecureContext}`);
-        addLog(`Permission state: ${permissionState}`);
+        addLog(`URL: ${window.location.hostname}`);
 
         // Check for HTTPS
         if (!window.isSecureContext) {
@@ -461,126 +462,154 @@ export default function CoordinatorScanner() {
         }
 
         // Check if mediaDevices API is available
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            addLog('ERROR: mediaDevices API not available');
-            setCameraError('Camera API not available. Please use Chrome browser.');
+        if (!navigator.mediaDevices) {
+            addLog('ERROR: navigator.mediaDevices is undefined');
+            setCameraError('Camera API not available. Please use a modern browser.');
             setIsInitializing(false);
             return;
         }
 
-        addLog('mediaDevices API available');
+        if (!navigator.mediaDevices.getUserMedia) {
+            addLog('ERROR: getUserMedia not available');
+            setCameraError('Camera not supported. Please update your browser.');
+            setIsInitializing(false);
+            return;
+        }
+
+        addLog('mediaDevices API: OK');
 
         // Stop any existing stream
         stopCamera();
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         let stream: MediaStream | null = null;
         let lastError: Error | null = null;
 
-        // For Android, we need to be more careful with constraints
-        // Many Android devices fail with exact constraints
-        const getConstraints = () => {
-            if (isAndroid) {
-                // Android: Start simple, then get more specific
-                return [
-                    // Simple constraints work best on Android
-                    { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-                    { video: { facingMode: 'environment' }, audio: false },
-                    { video: true, audio: false },
-                ];
-            } else {
-                // iOS and others
-                return [
-                    { video: { facingMode: { exact: 'environment' } }, audio: false },
-                    { video: { facingMode: { ideal: 'environment' } }, audio: false },
-                    { video: { facingMode: 'environment' }, audio: false },
-                    { video: true, audio: false },
-                ];
-            }
-        };
-
-        const constraintsList = getConstraints();
-        addLog(`Will try ${constraintsList.length} constraint options`);
-
-        for (let i = 0; i < constraintsList.length; i++) {
-            const constraints = constraintsList[i];
-            const constraintStr = JSON.stringify(constraints.video).substring(0, 50);
-            addLog(`Attempt ${i + 1}: ${constraintStr}...`);
-
+        // ANDROID-SPECIFIC APPROACH
+        // On Android, we try the simplest possible constraint first
+        // The key insight: Android Chrome often fails with ANY video constraints
+        // So we try { video: true } first, then refine
+        
+        if (isAndroid) {
+            addLog('=== ANDROID MODE ===');
+            
+            // Step 1: Try the absolute simplest request
+            addLog('Step 1: Requesting with { video: true }...');
             try {
-                // This is the critical call that needs camera permission
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                addLog('SUCCESS with basic video: true');
                 
+                // Now we have permission! Let's see what cameras we have
                 const tracks = stream.getVideoTracks();
-                addLog(`Got ${tracks.length} video track(s)`);
-                
                 if (tracks.length > 0) {
-                    const track = tracks[0];
-                    const settings = track.getSettings();
-                    addLog(`Track: ${track.label || 'unnamed'}`);
-                    addLog(`Settings: ${settings.width}x${settings.height}, facing: ${settings.facingMode || 'N/A'}`);
+                    const currentTrack = tracks[0];
+                    const settings = currentTrack.getSettings();
+                    addLog(`Got camera: ${currentTrack.label}`);
+                    addLog(`Facing: ${settings.facingMode || 'unknown'}`);
                     
-                    // On Android, try to switch to back camera if we got front
-                    if (isAndroid && i === 0) {
-                        const isFront = track.label.toLowerCase().includes('front') || 
-                                       track.label.includes('0') ||
-                                       settings.facingMode === 'user';
-                        if (isFront) {
-                            addLog('Got front camera on Android, trying to get back...');
-                            // Try to enumerate and find back camera
-                            try {
-                                const devices = await navigator.mediaDevices.enumerateDevices();
-                                const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                                addLog(`Found ${videoDevices.length} cameras`);
+                    // Check if this is front camera (we want back)
+                    const isFrontCamera = 
+                        currentTrack.label.toLowerCase().includes('front') ||
+                        currentTrack.label.toLowerCase().includes('facing front') ||
+                        settings.facingMode === 'user';
+                    
+                    if (isFrontCamera) {
+                        addLog('Got front camera, trying to switch to back...');
+                        
+                        // Step 2: Enumerate devices to find back camera
+                        try {
+                            const devices = await navigator.mediaDevices.enumerateDevices();
+                            const cameras = devices.filter(d => d.kind === 'videoinput');
+                            addLog(`Found ${cameras.length} camera(s)`);
+                            
+                            cameras.forEach((cam, idx) => {
+                                addLog(`  Camera ${idx}: ${cam.label || cam.deviceId.substring(0, 8)}`);
+                            });
+                            
+                            // Find back camera
+                            const backCamera = cameras.find(cam => 
+                                cam.label.toLowerCase().includes('back') ||
+                                cam.label.toLowerCase().includes('rear') ||
+                                cam.label.toLowerCase().includes('environment') ||
+                                cam.label.includes('0, facing back')
+                            );
+                            
+                            if (backCamera && backCamera.deviceId) {
+                                addLog(`Switching to back camera: ${backCamera.label}`);
                                 
-                                const backCamera = videoDevices.find(d => 
-                                    d.label.toLowerCase().includes('back') ||
-                                    d.label.toLowerCase().includes('rear') ||
-                                    d.label.includes('1')
-                                );
+                                // Stop current stream
+                                stream.getTracks().forEach(t => t.stop());
                                 
-                                if (backCamera) {
-                                    addLog(`Switching to: ${backCamera.label}`);
-                                    stream.getTracks().forEach(t => t.stop());
-                                    stream = await navigator.mediaDevices.getUserMedia({
-                                        video: { deviceId: { exact: backCamera.deviceId } },
-                                        audio: false
-                                    });
-                                    addLog('Switched to back camera!');
-                                }
-                            } catch (switchErr) {
-                                addLog(`Camera switch failed: ${(switchErr as Error).message}`);
+                                // Get back camera
+                                stream = await navigator.mediaDevices.getUserMedia({
+                                    video: { deviceId: { exact: backCamera.deviceId } }
+                                });
+                                addLog('Switched to back camera!');
+                            } else if (cameras.length > 1) {
+                                // Try the second camera (often the back camera)
+                                addLog('No labeled back camera, trying camera index 1...');
+                                stream.getTracks().forEach(t => t.stop());
+                                
+                                stream = await navigator.mediaDevices.getUserMedia({
+                                    video: { deviceId: { exact: cameras[1].deviceId } }
+                                });
+                                addLog('Switched to camera 1');
                             }
+                        } catch (enumErr) {
+                            addLog(`Camera enumeration failed: ${(enumErr as Error).message}`);
+                            // Continue with front camera
                         }
                     }
                 }
-                
-                addLog('SUCCESS!');
-                break;
-                
             } catch (err) {
-                const error = err as Error;
-                lastError = error;
-                addLog(`FAILED: ${error.name}: ${error.message}`);
+                lastError = err as Error;
+                addLog(`Basic request failed: ${lastError.name}`);
+                addLog(`Message: ${lastError.message}`);
                 
-                // Permission denied - stop trying
-                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                // If permission denied, show Android-specific error
+                if (lastError.name === 'NotAllowedError') {
                     setPermissionState('denied');
-                    addLog('Permission denied by user or system');
-                    break;
+                    setCameraError('ANDROID_CHROME_BLOCKED');
+                    setIsInitializing(false);
+                    return;
                 }
-                
-                // Continue to next constraint
-                continue;
+            }
+        } else {
+            // iOS and other platforms - use standard approach
+            addLog('=== iOS/Standard MODE ===');
+            
+            const constraintsList = [
+                { video: { facingMode: { exact: 'environment' } }, audio: false },
+                { video: { facingMode: 'environment' }, audio: false },
+                { video: true, audio: false },
+            ];
+
+            for (let i = 0; i < constraintsList.length; i++) {
+                const constraints = constraintsList[i];
+                addLog(`Attempt ${i + 1}/${constraintsList.length}...`);
+
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    addLog('SUCCESS!');
+                    break;
+                } catch (err) {
+                    lastError = err as Error;
+                    addLog(`Failed: ${lastError.name}`);
+                    
+                    if (lastError.name === 'NotAllowedError') {
+                        setPermissionState('denied');
+                        break;
+                    }
+                }
             }
         }
 
+        // Check if we got a stream
         if (!stream) {
             addLog('=== ALL ATTEMPTS FAILED ===');
             setIsInitializing(false);
             
             if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
-                // Use Android-specific error on Android
                 if (isAndroid) {
                     setCameraError('ANDROID_CHROME_BLOCKED');
                 } else {
@@ -596,9 +625,19 @@ export default function CoordinatorScanner() {
             return;
         }
 
-        // Success - connect to video element
+        // SUCCESS! Connect stream to video
+        addLog('=== CONNECTING VIDEO ===');
         setPermissionState('granted');
         streamRef.current = stream;
+
+        const videoTracks = stream.getVideoTracks();
+        if (videoTracks.length > 0) {
+            const track = videoTracks[0];
+            const settings = track.getSettings();
+            addLog(`Final camera: ${track.label}`);
+            addLog(`Resolution: ${settings.width}x${settings.height}`);
+            addLog(`Facing: ${settings.facingMode || 'N/A'}`);
+        }
 
         if (videoRef.current) {
             addLog('Connecting stream to video...');
