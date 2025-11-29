@@ -458,7 +458,7 @@ export default function CoordinatorScanner() {
         }
     };
 
-    // Manual verification code lookup
+    // Manual verification code lookup - optimized
     const verifyByCode = async () => {
         if (!selectedEvent) {
             toast.error('Please select an event first');
@@ -475,49 +475,52 @@ export default function CoordinatorScanner() {
         setScanResult(null);
 
         try {
-            // Get all registrations for this event with profile data
-            const { data: registrations, error } = await supabase
+            // OPTIMIZATION: Only fetch registration IDs first (lighter query)
+            const { data: regIds, error: regError } = await supabase
                 .from('registrations')
-                .select(`
-                    id, 
-                    event_id,
-                    profiles:profile_id (
-                        full_name,
-                        email,
-                        phone
-                    )
-                `)
+                .select('id')
                 .eq('event_id', selectedEvent);
 
-            if (error) throw error;
+            if (regError) throw regError;
 
-            // Find registration matching verification code
-            let matchedRegistration: { id: string; name: string } | null = null;
-            for (const reg of registrations || []) {
-                const regCode = generateVerificationCode(reg.id);
-                if (regCode === code) {
-                    const profile = reg.profiles as { full_name: string; email: string; phone: string } | null;
-                    matchedRegistration = {
-                        id: reg.id,
-                        name: profile?.full_name || 'Unknown'
-                    };
+            // Find matching registration ID quickly
+            let matchedRegId: string | null = null;
+            for (const reg of regIds || []) {
+                if (generateVerificationCode(reg.id) === code) {
+                    matchedRegId = reg.id;
                     break;
                 }
             }
 
-            if (!matchedRegistration) {
+            if (!matchedRegId) {
                 setScanResult({
                     success: false,
                     message: 'Invalid verification code. No matching registration found.',
                 });
+                setVerifyingCode(false);
                 return;
             }
+
+            // Now fetch only the matched registration with profile
+            const { data: registration, error: fetchError } = await supabase
+                .from('registrations')
+                .select(`
+                    id,
+                    profiles:profile_id (full_name)
+                `)
+                .eq('id', matchedRegId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            const profile = registration?.profiles as { full_name: string } | null;
+            const attendeeName = profile?.full_name || 'Unknown';
 
             // Check if already marked
             const { data: existing } = await supabase
                 .from('attendance')
                 .select('id')
-                .eq('registration_id', matchedRegistration.id)
+                .eq('registration_id', matchedRegId)
                 .eq('event_id', selectedEvent)
                 .maybeSingle();
 
@@ -525,15 +528,16 @@ export default function CoordinatorScanner() {
                 setScanResult({
                     success: false,
                     message: 'Already checked in!',
-                    attendeeName: matchedRegistration.name,
+                    attendeeName,
                     alreadyMarked: true,
                 });
+                setVerifyingCode(false);
                 return;
             }
 
             // Mark attendance
             const { error: insertError } = await supabase.from('attendance').insert({
-                registration_id: matchedRegistration.id,
+                registration_id: matchedRegId,
                 event_id: selectedEvent,
                 marked_by: coordinator?.id,
                 marked_at: new Date().toISOString(),
@@ -545,13 +549,13 @@ export default function CoordinatorScanner() {
             setScanResult({
                 success: true,
                 message: 'Attendance marked successfully!',
-                attendeeName: matchedRegistration.name,
+                attendeeName,
             });
 
             setRecentScans((prev) => [
                 {
                     timestamp: new Date(),
-                    name: matchedRegistration.name,
+                    name: attendeeName,
                     event: events.find((e) => e.id === selectedEvent)?.name || 'Unknown',
                     success: true,
                 },
@@ -560,7 +564,7 @@ export default function CoordinatorScanner() {
 
             setTodayCount((prev) => prev + 1);
             setVerificationCode('');
-            toast.success(`✓ ${matchedRegistration.name} checked in!`);
+            toast.success(`✓ ${attendeeName} checked in!`);
         } catch (error) {
             console.error('Verification error:', error);
             setScanResult({

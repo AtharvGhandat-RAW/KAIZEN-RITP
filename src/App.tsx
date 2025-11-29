@@ -35,8 +35,24 @@ const Register = lazy(() => import("./pages/Register"));
 const Coordinators = lazy(() => import("./pages/admin/CoordinatorsList"));
 const CoordinatorForm = lazy(() => import("./pages/admin/CoordinatorForm"));
 const AdminAttendance = lazy(() => import("./pages/admin/Attendance"));
+
+// Coordinator pages - preload these for faster access
 const CoordinatorLogin = lazy(() => import("./pages/coordinator/Login"));
 const CoordinatorScanner = lazy(() => import("./pages/coordinator/Scanner"));
+
+// Preload coordinator pages when user lands on coordinator routes
+const preloadCoordinatorPages = () => {
+  import("./pages/coordinator/Login");
+  import("./pages/coordinator/Scanner");
+};
+
+// Call preload on module load for coordinator routes
+if (typeof window !== 'undefined') {
+  const path = window.location.pathname;
+  if (path.includes('/coordinator')) {
+    preloadCoordinatorPages();
+  }
+}
 
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 
@@ -61,13 +77,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Loading fallback component
+// Loading fallback component - simpler and faster
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-center">
-      <div className="w-12 h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
-      <p className="text-red-500/60">Loading...</p>
-    </div>
+  <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="w-10 h-10 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
   </div>
 );
 

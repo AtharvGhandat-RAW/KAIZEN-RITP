@@ -21,8 +21,6 @@ export default function CoordinatorLogin() {
         return CryptoJS.SHA256(password).toString();
     };
 
-    const [debugInfo, setDebugInfo] = useState<string>('');
-
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -35,69 +33,42 @@ export default function CoordinatorLogin() {
         }
 
         setLoading(true);
-        setDebugInfo('Starting login...');
 
         try {
-            console.log('Attempting login for:', trimmedEmail);
-            setDebugInfo(`Querying database for: ${trimmedEmail}`);
-
-            // Test connection first
-            const { error: pingError } = await supabase.from('coordinators').select('count').limit(1);
-            if (pingError) {
-                console.error('Connection test failed:', pingError);
-                setDebugInfo(`Connection error: ${pingError.message}`);
-            }
-
-            // Fetch coordinator by email
+            // Fetch coordinator by email - single optimized query
             const { data: coordinator, error } = await supabase
                 .from('coordinators')
                 .select('id, name, email, phone, assigned_events, is_active, password_hash')
                 .eq('email', trimmedEmail)
                 .maybeSingle();
 
-            console.log('Query result:', { coordinator: coordinator ? 'found' : 'not found', error });
-            setDebugInfo(`Query done. Found: ${coordinator ? 'Yes' : 'No'}, Error: ${error ? error.message : 'None'}`);
-
             if (error) {
                 console.error('Database error:', error);
-                setDebugInfo(`DB Error: ${error.code} - ${error.message}`);
-                // Check if it's an RLS error
-                if (error.code === 'PGRST301' || error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy') || error.message?.includes('RLS')) {
-                    toast.error('Database access denied. RLS policy issue - contact admin.');
+                if (error.code === 'PGRST301' || error.code === '42501' || error.message?.includes('permission')) {
+                    toast.error('Database access denied. Contact admin.');
                 } else {
-                    toast.error(`Login failed: ${error.message}`);
+                    toast.error('Login failed. Please try again.');
                 }
                 setLoading(false);
                 return;
             }
 
             if (!coordinator) {
-                console.log('No coordinator found for email:', trimmedEmail);
-                setDebugInfo(`No coordinator found for: ${trimmedEmail}`);
-                toast.error('No account found with this email. Please check spelling.');
+                toast.error('No account found with this email');
                 setLoading(false);
                 return;
             }
 
-            setDebugInfo(`Found: ${coordinator.name}, checking password...`);
-
             // Check if active
             if (!coordinator.is_active) {
-                toast.error('Your account has been deactivated. Please contact admin.');
+                toast.error('Your account has been deactivated');
                 setLoading(false);
                 return;
             }
 
             // Verify password
             const passwordHash = hashPassword(trimmedPassword);
-            console.log('Password verification:', {
-                inputHashStart: passwordHash.substring(0, 10) + '...',
-                storedHashStart: coordinator.password_hash?.substring(0, 10) + '...',
-                match: passwordHash === coordinator.password_hash
-            });
-
             if (passwordHash !== coordinator.password_hash) {
-                setDebugInfo('Password mismatch');
                 toast.error('Incorrect password');
                 setLoading(false);
                 return;
@@ -107,14 +78,11 @@ export default function CoordinatorLogin() {
             const { password_hash, ...coordinatorData } = coordinator;
             localStorage.setItem('coordinator', JSON.stringify(coordinatorData));
 
-            setDebugInfo('Login successful!');
             toast.success(`Welcome, ${coordinator.name}!`);
             navigate('/coordinator/scan');
         } catch (error: unknown) {
             console.error('Login error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            setDebugInfo(`Exception: ${errorMessage}`);
-            toast.error(`Login failed: ${errorMessage}`);
+            toast.error('Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -210,13 +178,6 @@ export default function CoordinatorLogin() {
                                     'Sign In'
                                 )}
                             </Button>
-
-                            {/* Debug info - visible during development */}
-                            {debugInfo && (
-                                <div className="mt-3 p-2 bg-gray-800/50 rounded text-xs text-gray-400 break-all">
-                                    Debug: {debugInfo}
-                                </div>
-                            )}
                         </form>
 
                         <div className="mt-6 pt-6 border-t border-red-600/20 text-center">

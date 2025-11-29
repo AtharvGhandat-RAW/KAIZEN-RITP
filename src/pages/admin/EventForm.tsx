@@ -82,48 +82,48 @@ export default function EventForm() {
     });
 
     useEffect(() => {
+        const loadEvent = async (eventId: string) => {
+            setFetching(true);
+            const { data, error } = await supabase
+                .from('events')
+                .select('*')
+                .eq('id', eventId)
+                .single();
+
+            if (error) {
+                toast({
+                    title: 'Error',
+                    description: 'Event not found',
+                    variant: 'destructive',
+                });
+                navigate('/admin/events');
+                return;
+            }
+
+            if (data) {
+                setFormData({
+                    name: data.name || '',
+                    category: data.category || 'Tech',
+                    description: data.description || '',
+                    venue: data.venue || '',
+                    event_date: data.event_date?.split('T')[0] || '',
+                    registration_deadline: data.registration_deadline?.split('T')[0] || '',
+                    registration_fee: data.registration_fee || 0,
+                    max_participants: data.max_participants || 0,
+                    min_team_size: data.min_team_size || 1,
+                    max_team_size: data.max_team_size || 1,
+                    event_type: data.event_type || 'individual',
+                    status: data.status || 'upcoming',
+                    upi_qr_url: data.upi_qr_url || '',
+                });
+            }
+            setFetching(false);
+        };
+
         if (isEdit && id) {
-            fetchEvent(id);
+            loadEvent(id);
         }
-    }, [id, isEdit]);
-
-    const fetchEvent = async (eventId: string) => {
-        setFetching(true);
-        const { data, error } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', eventId)
-            .single();
-
-        if (error) {
-            toast({
-                title: 'Error',
-                description: 'Event not found',
-                variant: 'destructive',
-            });
-            navigate('/admin/events');
-            return;
-        }
-
-        if (data) {
-            setFormData({
-                name: data.name || '',
-                category: data.category || 'Tech',
-                description: data.description || '',
-                venue: data.venue || '',
-                event_date: data.event_date?.split('T')[0] || '',
-                registration_deadline: data.registration_deadline?.split('T')[0] || '',
-                registration_fee: data.registration_fee || 0,
-                max_participants: data.max_participants || 0,
-                min_team_size: data.min_team_size || 1,
-                max_team_size: data.max_team_size || 1,
-                event_type: data.event_type || 'individual',
-                status: data.status || 'upcoming',
-                upi_qr_url: data.upi_qr_url || '',
-            });
-        }
-        setFetching(false);
-    };
+    }, [id, isEdit, navigate, toast]);
 
     const handleInputChange = (field: keyof FormData, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
