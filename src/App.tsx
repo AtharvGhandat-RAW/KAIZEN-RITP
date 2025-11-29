@@ -1,3 +1,4 @@
+// KAIZEN Event Management - Main App Router
 import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -30,6 +31,11 @@ const Schedule = lazy(() => import("./pages/admin/Schedule"));
 const ScheduleBuilder = lazy(() => import("./pages/admin/ScheduleBuilder"));
 const ScheduleItemForm = lazy(() => import("./pages/admin/ScheduleItemForm"));
 const Register = lazy(() => import("./pages/Register"));
+const Coordinators = lazy(() => import("./pages/admin/CoordinatorsList"));
+const CoordinatorForm = lazy(() => import("./pages/admin/CoordinatorForm"));
+const AdminAttendance = lazy(() => import("./pages/admin/Attendance"));
+const CoordinatorLogin = lazy(() => import("./pages/coordinator/Login"));
+const CoordinatorScanner = lazy(() => import("./pages/coordinator/Scanner"));
 
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 
@@ -99,6 +105,14 @@ const App = () => (
                 <Route path="/admin/schedule-builder/new" element={<ScheduleItemForm />} />
                 <Route path="/admin/schedule-builder/:id" element={<ScheduleItemForm />} />
                 <Route path="/admin/settings" element={<Settings />} />
+                <Route path="/admin/coordinators" element={<Coordinators />} />
+                <Route path="/admin/coordinators/new" element={<CoordinatorForm />} />
+                <Route path="/admin/coordinators/:id" element={<CoordinatorForm />} />
+                <Route path="/admin/attendance" element={<AdminAttendance />} />
+
+                {/* Coordinator Routes */}
+                <Route path="/coordinator/login" element={<CoordinatorLogin />} />
+                <Route path="/coordinator/scan" element={<CoordinatorScanner />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

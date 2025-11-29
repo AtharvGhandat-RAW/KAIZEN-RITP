@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { Search, CheckCircle, Clock, XCircle, Mail, Phone, Calendar, Trophy, X } from 'lucide-react';
+import { Search, CheckCircle, Clock, XCircle, Mail, Phone, Calendar, Trophy, X, QrCode, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { QRPassGenerator } from './QRPassGenerator';
 
 interface Registration {
     id: string;
     created_at: string;
     payment_status: string;
-    events: { name: string; event_date: string; venue: string };
+    event_id: string;
+    profiles: { full_name: string; email: string; phone: string | null; college: string | null } | null;
+    events: { name: string; event_date: string; venue: string } | null;
     teams: { name: string } | null;
 }
 
@@ -25,6 +28,7 @@ export function RegistrationStatusChecker({ onClose }: RegistrationStatusChecker
     const [loading, setLoading] = useState(false);
     const [registrations, setRegistrations] = useState<Registration[] | null>(null);
     const [studentName, setStudentName] = useState('');
+    const [expandedPass, setExpandedPass] = useState<string | null>(null);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -73,6 +77,8 @@ export function RegistrationStatusChecker({ onClose }: RegistrationStatusChecker
           id,
           created_at,
           payment_status,
+          event_id,
+          profiles (full_name, email, phone, college),
           events (name, event_date, venue),
           teams (name)
         `)
@@ -259,8 +265,41 @@ export function RegistrationStatusChecker({ onClose }: RegistrationStatusChecker
                                                 <p className="text-white/60 text-xs mt-2">
                                                     {getStatusMessage(reg.payment_status)}
                                                 </p>
+
+                                                {/* Show QR Pass button for completed registrations */}
+                                                {(reg.payment_status === 'completed' || reg.payment_status === 'verified') && (
+                                                    <Button
+                                                        onClick={() => setExpandedPass(expandedPass === reg.id ? null : reg.id)}
+                                                        className="mt-4 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white w-full"
+                                                        size="sm"
+                                                    >
+                                                        <QrCode className="w-4 h-4 mr-2" />
+                                                        {expandedPass === reg.id ? 'Hide Event Pass' : 'View Event Pass'}
+                                                        {expandedPass === reg.id ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {/* QR Pass Section */}
+                                        {expandedPass === reg.id && (reg.payment_status === 'completed' || reg.payment_status === 'verified') && (
+                                            <div className="mt-4 pt-4 border-t border-red-600/30">
+                                                <QRPassGenerator
+                                                    registration={{
+                                                        id: reg.id,
+                                                        event_id: reg.event_id,
+                                                        name: reg.profiles?.full_name || studentName,
+                                                        email: reg.profiles?.email || searchValue,
+                                                        phone: reg.profiles?.phone || null,
+                                                        college: reg.profiles?.college || null,
+                                                        education_type: ''
+                                                    }}
+                                                    eventName={reg.events?.name || 'KAIZEN Event'}
+                                                    eventDate={reg.events?.event_date ? new Date(reg.events.event_date).toLocaleDateString() : undefined}
+                                                    eventVenue={reg.events?.venue}
+                                                />
+                                            </div>
+                                        )}
                                     </Card>
                                 ))
                             )}
