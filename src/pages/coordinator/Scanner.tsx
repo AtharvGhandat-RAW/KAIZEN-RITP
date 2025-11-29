@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -33,9 +33,6 @@ import {
     Search,
 } from 'lucide-react';
 import { decryptQRData, QRPayload, isValidQRPayload, generateVerificationCode } from '@/utils/qrEncryption';
-import CryptoJS from 'crypto-js';
-
-const SECRET_KEY = import.meta.env.VITE_QR_SECRET_KEY || 'kaizen-ritp-2025-secret-key';
 
 interface Coordinator {
     id: string;
@@ -193,11 +190,8 @@ export default function CoordinatorScanner() {
                 scannerRef.current = null;
             }
 
-            // Create new scanner instance with QR code format
-            const html5QrCode = new Html5Qrcode(scannerContainerId, {
-                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-                verbose: false
-            });
+            // Create new scanner instance - no format restriction for better detection
+            const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
 
             // Get available cameras
@@ -422,20 +416,32 @@ export default function CoordinatorScanner() {
         setScanResult(null);
 
         try {
-            // Get all registrations for this event
+            // Get all registrations for this event with profile data
             const { data: registrations, error } = await supabase
                 .from('registrations')
-                .select('id, name, email, phone, event_id')
+                .select(`
+                    id, 
+                    event_id,
+                    profiles:profile_id (
+                        full_name,
+                        email,
+                        phone
+                    )
+                `)
                 .eq('event_id', selectedEvent);
 
             if (error) throw error;
 
             // Find registration matching verification code
-            let matchedRegistration = null;
+            let matchedRegistration: { id: string; name: string } | null = null;
             for (const reg of registrations || []) {
                 const regCode = generateVerificationCode(reg.id);
                 if (regCode === code) {
-                    matchedRegistration = reg;
+                    const profile = reg.profiles as { full_name: string; email: string; phone: string } | null;
+                    matchedRegistration = {
+                        id: reg.id,
+                        name: profile?.full_name || 'Unknown'
+                    };
                     break;
                 }
             }

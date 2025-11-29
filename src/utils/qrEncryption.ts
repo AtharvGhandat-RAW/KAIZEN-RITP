@@ -14,26 +14,37 @@ export interface QRPayload {
     expiresAt: number;
 }
 
+// Compact payload for QR (shorter data = easier to scan)
+interface CompactQRData {
+    r: string;  // registrationId
+    e: string;  // eventId
+    n: string;  // name
+    t: number;  // timestamp
+    s: string;  // signature (short)
+}
+
 /**
- * Encrypts QR data using AES encryption with HMAC signature
+ * Encrypts QR data using a compact format for better scanning
  */
 export function encryptQRData(payload: QRPayload): string {
-    const payloadString = JSON.stringify(payload);
-
-    // Create HMAC signature for integrity verification
-    const signature = CryptoJS.HmacSHA256(payloadString, SECRET_KEY).toString();
-
-    // Combine payload with signature
-    const dataWithSignature = JSON.stringify({
-        data: payloadString,
-        sig: signature
-    });
-
-    // Encrypt the combined data
-    const encrypted = CryptoJS.AES.encrypt(dataWithSignature, SECRET_KEY).toString();
-
-    // Base64 encode for QR compatibility
-    return btoa(encrypted);
+    // Create compact data
+    const compact: CompactQRData = {
+        r: payload.registrationId,
+        e: payload.eventId,
+        n: payload.name,
+        t: payload.timestamp,
+        s: '' // will be set below
+    };
+    
+    // Create short signature
+    const sigData = `${compact.r}|${compact.e}|${compact.t}`;
+    compact.s = CryptoJS.HmacSHA256(sigData, SECRET_KEY).toString().substring(0, 16);
+    
+    // Simple encoding - JSON + base64 (no AES for shorter result)
+    const jsonStr = JSON.stringify(compact);
+    
+    // Use URL-safe base64
+    return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 /**
@@ -41,40 +52,67 @@ export function encryptQRData(payload: QRPayload): string {
  */
 export function decryptQRData(encryptedData: string): QRPayload | null {
     try {
-        // Base64 decode
-        const encrypted = atob(encryptedData);
+        // Handle URL-safe base64
+        let base64 = encryptedData.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        while (base64.length % 4) {
+            base64 += '=';
+        }
+        
+        // Decode
+        const jsonStr = atob(base64);
+        const compact: CompactQRData = JSON.parse(jsonStr);
+        
+        // Verify signature
+        const sigData = `${compact.r}|${compact.e}|${compact.t}`;
+        const expectedSig = CryptoJS.HmacSHA256(sigData, SECRET_KEY).toString().substring(0, 16);
+        
+        if (compact.s !== expectedSig) {
+            console.error('QR signature verification failed');
+            return null;
+        }
+        
+        // Convert to full payload
+        return {
+            registrationId: compact.r,
+            eventId: compact.e,
+            name: compact.n,
+            email: '',
+            phone: '',
+            eventName: '',
+            timestamp: compact.t,
+            expiresAt: compact.t + (30 * 24 * 60 * 60 * 1000) // 30 days
+        };
+    } catch (error) {
+        console.error('Error decrypting QR data:', error);
+        
+        // Try legacy format (old encrypted QR codes)
+        return decryptLegacyQRData(encryptedData);
+    }
+}
 
-        // Decrypt
+/**
+ * Decrypts old format QR codes for backward compatibility
+ */
+function decryptLegacyQRData(encryptedData: string): QRPayload | null {
+    try {
+        const encrypted = atob(encryptedData);
         const decrypted = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
         const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
 
         if (!decryptedString) {
-            console.error('Failed to decrypt QR data');
             return null;
         }
 
-        // Parse the data with signature
         const { data, sig } = JSON.parse(decryptedString);
-
-        // Verify signature
         const expectedSignature = CryptoJS.HmacSHA256(data, SECRET_KEY).toString();
+        
         if (sig !== expectedSignature) {
-            console.error('QR signature verification failed');
             return null;
         }
 
-        // Parse and return payload
-        const payload: QRPayload = JSON.parse(data);
-
-        // Check expiration
-        if (payload.expiresAt && Date.now() > payload.expiresAt) {
-            console.error('QR code has expired');
-            return null;
-        }
-
-        return payload;
-    } catch (error) {
-        console.error('Error decrypting QR data:', error);
+        return JSON.parse(data);
+    } catch {
         return null;
     }
 }

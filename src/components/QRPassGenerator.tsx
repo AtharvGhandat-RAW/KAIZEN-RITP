@@ -99,22 +99,21 @@ export const QRPassGenerator: React.FC<QRPassGeneratorProps> = ({
 
                 {/* Main Content */}
                 <div className="p-4 space-y-4">
-                    {/* QR Code with 2026 center branding */}
+                    {/* QR Code - clean without overlay for reliable scanning */}
                     <div className="flex justify-center">
-                        <div className="bg-white p-3 rounded-xl shadow-lg relative">
+                        <div className="bg-white p-4 rounded-xl shadow-lg">
                             <QRCodeSVG
                                 value={encryptedData}
-                                size={180}
-                                level="H"
-                                includeMargin={false}
+                                size={200}
+                                level="M"
+                                includeMargin={true}
                             />
-                            {/* Center branding overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="bg-white px-2 py-1 rounded shadow-sm">
-                                    <span className="text-red-600 font-bold text-xs tracking-wider">2026</span>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+                    
+                    {/* KAIZEN 2026 branding below QR */}
+                    <div className="text-center">
+                        <span className="text-red-500 font-bold text-sm tracking-wider">KAIZEN 2026</span>
                     </div>
 
                     {/* Verification Code */}
