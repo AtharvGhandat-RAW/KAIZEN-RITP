@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { KaizenLogo } from '@/components/KaizenLogo';
 import { Menu, X, Search } from 'lucide-react';
 
@@ -7,12 +8,28 @@ interface NavbarProps {
   onCheckStatusClick?: () => void;
 }
 
+interface MenuItem {
+  label: string;
+  href: string;
+  isRoute?: boolean;
+}
+
 export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchOffset, setTouchOffset] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const menuItems = ['Home', 'Events', 'About', 'Contact'];
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const menuItems: MenuItem[] = [
+    { label: 'Home', href: '#home' },
+    { label: 'Events', href: '#events' },
+    { label: 'Schedule', href: '/schedule', isRoute: true },
+    { label: 'Horror Dramatics', href: '/horror-dramatics', isRoute: true },
+    { label: 'About', href: '#about' },
+    { label: 'Contact', href: '#contact' },
+  ];
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -81,15 +98,31 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
               <KaizenLogo className="w-full h-auto" />
             </div>
 
-            <div className="hidden lg:flex items-center gap-8 xl:gap-12">
+            <div className="hidden lg:flex items-center gap-6 xl:gap-8">
               {menuItems.map((item) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className="text-white/90 hover:text-red-500 transition-colors text-[15px]"
-                >
-                  {item}
-                </a>
+                item.isRoute ? (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="text-white/90 hover:text-red-500 transition-colors text-[15px]"
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={location.pathname === '/' ? item.href : `/${item.href}`}
+                    onClick={(e) => {
+                      if (location.pathname !== '/') {
+                        e.preventDefault();
+                        navigate('/' + item.href);
+                      }
+                    }}
+                    className="text-white/90 hover:text-red-500 transition-colors text-[15px]"
+                  >
+                    {item.label}
+                  </a>
+                )
               ))}
             </div>
 
@@ -143,18 +176,39 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
           >
             <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-md">
               {menuItems.map((item, index) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  onClick={closeMenu}
-                  className="text-white/90 hover:text-red-500 transition-all duration-300 text-2xl sm:text-3xl md:text-4xl hover:scale-110 w-full text-center animate-fade-in"
-                  style={{
-                    animationDelay: `${index * 0.05}s`,
-                    animationFillMode: 'both'
-                  }}
-                >
-                  {item}
-                </a>
+                item.isRoute ? (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    onClick={closeMenu}
+                    className="text-white/90 hover:text-red-500 transition-all duration-300 text-2xl sm:text-3xl md:text-4xl hover:scale-110 w-full text-center animate-fade-in"
+                    style={{
+                      animationDelay: `${index * 0.05}s`,
+                      animationFillMode: 'both'
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={location.pathname === '/' ? item.href : `/${item.href}`}
+                    onClick={(e) => {
+                      closeMenu();
+                      if (location.pathname !== '/') {
+                        e.preventDefault();
+                        navigate('/' + item.href);
+                      }
+                    }}
+                    className="text-white/90 hover:text-red-500 transition-all duration-300 text-2xl sm:text-3xl md:text-4xl hover:scale-110 w-full text-center animate-fade-in"
+                    style={{
+                      animationDelay: `${index * 0.05}s`,
+                      animationFillMode: 'both'
+                    }}
+                  >
+                    {item.label}
+                  </a>
+                )
               ))}
               <button
                 onClick={() => { closeMenu(); if (onCheckStatusClick) onCheckStatusClick(); }}

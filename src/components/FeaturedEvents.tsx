@@ -113,43 +113,36 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventC
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {events.map((event, index) => {
+          {events.map((event) => {
             const Icon = getIconForCategory(event.category);
             return (
               <div
                 key={event.id}
                 className="event-card group relative cursor-pointer"
-                style={{
-                  animation: `fadeInScale 0.6s ease-out ${index * 0.1}s forwards`,
-                  opacity: 0
-                }}
               >
-                <div className="relative h-full bg-black/40 backdrop-blur-sm border border-red-600/20 p-6 sm:p-8 hover:border-red-600/50 transition-all duration-500 hover:-translate-y-2">
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-600/0 via-red-600/0 to-red-600/0 group-hover:from-red-600/10 group-hover:via-red-600/5 group-hover:to-transparent transition-all duration-500" />
-
+                <div className="relative h-full bg-black/40 border border-red-600/20 p-6 sm:p-8 hover:border-red-600/50 transition-colors duration-200">
                   {/* Content */}
                   <div className="relative z-10">
                     {/* Icon */}
                     <div className="mb-5 sm:mb-6">
-                      <div className="inline-flex p-3 sm:p-4 border border-red-600/30 group-hover:border-red-600/60 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
+                      <div className="inline-flex p-3 sm:p-4 border border-red-600/30 group-hover:border-red-600/60 transition-colors duration-200">
                         <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
                       </div>
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-xl sm:text-2xl text-white mb-3 sm:mb-4 group-hover:text-red-400 transition-colors duration-300">
+                    <h3 className="text-xl sm:text-2xl text-white mb-3 sm:mb-4 group-hover:text-red-400 transition-colors duration-200">
                       {event.name}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-white/60 text-sm sm:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-300 line-clamp-3">
+                    <p className="text-white/60 text-sm sm:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-200 line-clamp-3">
                       {event.description}
                     </p>
 
                     {/* Learn More Link */}
-                    <div 
-                      className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-300"
+                    <div
+                      className="mt-4 sm:mt-6 flex items-center gap-2 text-red-500 group-hover:text-red-400 transition-colors duration-200"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onEventClick) {
@@ -160,13 +153,13 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventC
                       }}
                     >
                       <span className="text-sm sm:text-base">Learn More</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300" />
+                      <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
 
                   {/* Corner decorations */}
-                  <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-red-600/40 group-hover:border-red-600/80 transition-colors duration-300" />
-                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-red-600/40 group-hover:border-red-600/80 transition-colors duration-300" />
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-red-600/40" />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-red-600/40" />
                 </div>
               </div>
             );
@@ -174,47 +167,18 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventC
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.9) translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
-
       {onViewAll && (
         <div className="text-center mt-12 sm:mt-16 relative z-50">
           <button
             type="button"
             onClick={onViewAll}
-            className="group px-8 sm:px-12 py-4 sm:py-5 border-2 border-red-700 bg-gradient-to-r from-red-900/40 via-red-800/30 to-red-900/40 hover:from-red-900/60 hover:via-red-800/50 hover:to-red-900/60 text-red-400 hover:text-red-300 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden cursor-pointer"
-            style={{
-              boxShadow: '0 0 30px rgba(220, 38, 38, 0.3)',
-              pointerEvents: 'auto',
-            }}
+            className="group px-8 sm:px-12 py-4 sm:py-5 border-2 border-red-700 bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 transition-colors duration-200 cursor-pointer"
             aria-label="View all events"
           >
-            {/* Animated glow effect */}
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{
-                background: 'radial-gradient(circle at center, rgba(220, 38, 38, 0.2) 0%, transparent 70%)',
-              }}
-            />
-
             <span className="relative z-10 flex items-center gap-3 text-base sm:text-lg">
               <span>View All Events</span>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+              <ChevronRight className="w-5 h-5" />
             </span>
-
-            {/* Corner accents */}
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-600 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
           </button>
 
           <p className="text-red-500/60 text-sm mt-4">

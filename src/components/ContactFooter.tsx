@@ -125,7 +125,7 @@ export function ContactFooter() {
   const quickLinks = [
     { name: 'About KAIZEN', link: '#about' },
     { name: 'Events', link: '#events' },
-    { name: 'Schedule', link: '#' },
+    { name: 'Schedule', link: '/schedule' },
     { name: 'Registration', link: '#registration' },
     { name: 'Contact', link: '#contact' }
   ];
@@ -187,14 +187,25 @@ export function ContactFooter() {
               <ul className="space-y-2 sm:space-y-3">
                 {quickLinks.map((link) => (
                   <li key={link.name}>
-                    <a
-                      href={link.link}
-                      className="group inline-flex items-center gap-2 text-white/60 hover:text-red-500 transition-all duration-300 text-sm sm:text-base"
-                    >
-                      <span className="w-0 h-px bg-red-500 group-hover:w-4 transition-all duration-300"></span>
-                      {link.name}
-                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </a>
+                    {link.link.startsWith('/') ? (
+                      <Link
+                        to={link.link}
+                        className="group inline-flex items-center gap-2 text-white/60 hover:text-red-500 transition-all duration-300 text-sm sm:text-base"
+                      >
+                        <span className="w-0 h-px bg-red-500 group-hover:w-4 transition-all duration-300"></span>
+                        {link.name}
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.link}
+                        className="group inline-flex items-center gap-2 text-white/60 hover:text-red-500 transition-all duration-300 text-sm sm:text-base"
+                      >
+                        <span className="w-0 h-px bg-red-500 group-hover:w-4 transition-all duration-300"></span>
+                        {link.name}
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -246,7 +257,7 @@ export function ContactFooter() {
                   disabled={subscribing}
                   className="w-full bg-black/40 border border-red-900/40 px-3 py-2.5 sm:px-4 sm:py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-red-700/60 transition-all duration-300 text-sm sm:text-base disabled:opacity-50"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={subscribing}
                   className="w-full mt-3 sm:mt-4 px-4 py-2.5 sm:px-6 sm:py-3 border border-red-600/60 bg-red-950/20 text-red-500 hover:bg-red-900/30 hover:border-red-500 transition-all duration-300 uppercase tracking-wider text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center gap-2"

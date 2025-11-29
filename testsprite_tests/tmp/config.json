@@ -1,7 +1,18 @@
 {
-  "status": "init",
-  "scope": "codebase",
+  "status": "commited",
   "type": "frontend",
-  "localEndpoint": "http://localhost:8080/",
-  "serverPort": 55456
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8080/C:\\Users\\athar\\OneDrive\\Desktop\\Downloads\\KAIZEN-RITP\\KAIZEN-RITP",
+  "loginUser": "atharvgh07@gmail.com",
+  "loginPassword": "9850",
+  "executionArgs": {
+    "projectName": "KAIZEN-RITP",
+    "projectPath": "C:\\Users\\athar\\OneDrive\\Desktop\\Downloads\\KAIZEN-RITP\\KAIZEN-RITP",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-l7X5xvyaTN5HmPfvKah20MN9pp6YMq_G20odH2Q2HTEeHgAe3yiqLf9VUpUWP-FyaHcmA7WwK0J72RkWsMy7xBe-iSfSUkhfEsbR8FtbVXGlCbCc-Df_b1TwGxJg2lNiPWk"
+    }
+  },
+  "proxy": "http://71dc08fc-2907-4fd4-81d9-9eb366e24804:f3fsQBtiUshSJrWxGfhytj9gqgwJ12v1@tun.testsprite.com:8080"
 }

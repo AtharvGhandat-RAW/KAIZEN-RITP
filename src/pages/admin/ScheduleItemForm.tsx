@@ -8,17 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Calendar, 
+import {
+  Calendar,
   ArrowLeft,
-  Save, 
+  Save,
   Loader2,
   Star,
   Coffee,
@@ -59,13 +59,13 @@ export default function ScheduleItemForm() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const defaultDay = parseInt(searchParams.get('day') || '1');
-  
+
   const isEditing = Boolean(id);
-  
+
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [totalDays, setTotalDays] = useState(3);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -89,7 +89,7 @@ export default function ScheduleItemForm() {
           .single();
 
         if (error) throw error;
-        
+
         if (data) {
           setFormData({
             title: data.title,
@@ -342,16 +342,16 @@ export default function ScheduleItemForm() {
 
               {/* Action Buttons */}
               <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-zinc-800">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/admin/schedule-builder')}
                   className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleSave} 
-                  disabled={saving} 
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
                   className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
                 >
                   {saving ? (

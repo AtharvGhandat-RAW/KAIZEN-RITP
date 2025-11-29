@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "project": "KAIZEN - RITP Tech Fest Website",
+    "date": "2025-11-19",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "KAIZEN is a cinematic Stranger Things-themed web portal for RIT Polytechnic Tech Fest, providing a public interface for event exploration, registration, and schedule viewing, alongside a comprehensive Admin Panel for event management.",
+  "core_goals": [
+    "Create an engaging, cinematic themed website reflecting the Stranger Things 80s horror aesthetic.",
+    "Provide a seamless public user experience to explore events, register for competitions, and view festival schedule.",
+    "Implement a robust multi-step registration process with payment verification and real-time validation.",
+    "Deliver a secure admin panel for managing events, registrations, schedules, queries, and application settings.",
+    "Ensure responsiveness and performance optimization for smooth operation across devices.",
+    "Maintain high standards of data integrity and error handling throughout the application."
+  ],
+  "key_features": [
+    "Stranger Things inspired landing page with cinematic intro animation, hero section, event countdown, and featured content.",
+    "Event exploration modal with detailed event information and easy navigation.",
+    "Multi-step registration system capturing personal, academic info and payment uploads with validations.",
+    "Schedule viewing interface grouping events by festival day in a timeline format.",
+    "Admin dashboard displaying registrations, revenue, and event counts.",
+    "Event management interface for creating, editing, and deleting events with detailed attributes.",
+    "Registration management allowing viewing, filtering, approving/rejecting payments, and data export.",
+    "Schedule builder with drag-and-drop or list functionality for event timeline creation.",
+    "Contact form with validation and an admin query management system.",
+    "Legal pages including terms of service, privacy policy, and refund policy.",
+    "SEO and metadata management for improved search engine presence.",
+    "Performance optimizations including image loading and caching.",
+    "Protected admin routes with authentication and authorization."
+  ],
+  "user_flow_summary": [
+    "Public users land on the homepage, experience a cinematic intro animation which can be skipped, and then access main content sections.",
+    "Users explore events via modal listings, view details, and navigate to register for their chosen event.",
+    "Public users proceed through a multi-step registration form with validation and payment screenshot upload, culminating in submission to the backend.",
+    "Users view event schedules organized by days via a timeline interface.",
+    "Admins log in via a secure admin login, access the dashboard, and manage events, registrations, schedules, queries, reports, and settings through dedicated interfaces.",
+    "Admins approve or reject registration payments and can export registration data as CSV files.",
+    "Users can submit inquiries via the contact form, which admins can view and manage.",
+    "Site visitors navigate legal information through dedicated pages."
+  ],
+  "validation_criteria": [
+    "Intro animation plays correctly on first load and can be skipped by the user.",
+    "Registration form validates inputs in real-time and successfully submits data to Supabase backend.",
+    "Admin authentication correctly restricts access to protected routes, redirecting unauthorized users.",
+    "Admin dashboard displays accurate registration counts, revenue figures, and event metrics.",
+    "Event creation, editing, deletion functions work reliably in the admin panel.",
+    "Payment approvals and rejections correctly update registration status and reflect in reports.",
+    "Schedule builder allows intuitive timeline creation and edits persist correctly.",
+    "Contact form validates inputs and submits queries to admin backend for management.",
+    "No crashes, black screens or broken navigation exist across the site, especially on mobile devices.",
+    "SEO metadata is correctly applied and performance optimizations reduce load times effectively."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React",
+      "Vite",
+      "React Router",
+      "TanStack Query",
+      "Supabase",
+      "Tailwind CSS",
+      "Radix UI",
+      "Zod",
+      "Playwright"
+    ],
+    "features": [
+      {
+        "name": "Homepage with Intro Animation",
+        "description": "Main landing page with Stranger Things-inspired intro animation, hero section, event countdown, and featured content",
+        "files": [
+          "src/pages/Index.tsx",
+          "src/components/StrangerThingsIntro.tsx",
+          "src/components/HeroSection.tsx",
+          "src/components/EventCountdown.tsx",
+          "src/components/FeaturedEvents.tsx"
+        ]
+      },
+      {
+        "name": "Event Registration System",
+        "description": "Complete event registration flow with form validation, payment integration, and status checking",
+        "files": [
+          "src/components/RegistrationPage.tsx",
+          "src/components/RegistrationCTA.tsx",
+          "src/components/RegistrationStatusChecker.tsx",
+          "src/pages/Register.tsx"
+        ]
+      },
+      {
+        "name": "Admin Dashboard",
+        "description": "Admin panel for managing events, registrations, queries, reports, and settings",
+        "files": [
+          "src/pages/admin/Dashboard.tsx",
+          "src/pages/admin/AdminLogin.tsx",
+          "src/components/admin/AdminLayout.tsx",
+          "src/components/admin/AdminSidebar.tsx",
+          "src/components/admin/ProtectedRoute.tsx"
+        ]
+      },
+      {
+        "name": "Event Management",
+        "description": "Admin interface for creating, editing, and managing events",
+        "files": [
+          "src/pages/admin/Events.tsx",
+          "src/components/admin/EventDialog.tsx",
+          "src/components/EventDetailsModal.tsx",
+          "src/components/ExploreEventsPage.tsx"
+        ]
+      },
+      {
+        "name": "Registration Management",
+        "description": "Admin interface to view, filter, and manage event registrations",
+        "files": [
+          "src/pages/admin/Registrations.tsx",
+          "src/pages/admin/RegistrationDetails.tsx"
+        ]
+      },
+      {
+        "name": "Schedule Management",
+        "description": "Admin interface for creating and managing event schedules",
+        "files": [
+          "src/pages/admin/Schedule.tsx",
+          "src/pages/admin/ScheduleBuilder.tsx",
+          "src/pages/admin/ScheduleItemForm.tsx",
+          "src/components/ScheduleModal.tsx"
+        ]
+      },
+      {
+        "name": "Contact Form",
+        "description": "Contact form for user inquiries with form validation",
+        "files": [
+          "src/components/ContactForm.tsx",
+          "src/components/ContactFooter.tsx"
+        ]
+      },
+      {
+        "name": "Query Management",
+        "description": "Admin interface for managing user queries and contact form submissions",
+        "files": [
+          "src/pages/admin/Queries.tsx"
+        ]
+      },
+      {
+        "name": "Reports and Analytics",
+        "description": "Admin dashboard for viewing reports and analytics",
+        "files": [
+          "src/pages/admin/Reports.tsx"
+        ]
+      },
+      {
+        "name": "Settings Management",
+        "description": "Admin interface for application settings and configuration",
+        "files": [
+          "src/pages/admin/Settings.tsx"
+        ]
+      },
+      {
+        "name": "Legal Pages",
+        "description": "Terms of service, privacy policy, and refund policy pages",
+        "files": [
+          "src/pages/Terms.tsx",
+          "src/pages/Privacy.tsx",
+          "src/pages/Refund.tsx"
+        ]
+      },
+      {
+        "name": "Navigation and UI Components",
+        "description": "Navigation bar, links, and reusable UI components",
+        "files": [
+          "src/components/Navbar.tsx",
+          "src/components/NavLink.tsx",
+          "src/components/ui/button.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/form.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/card.tsx"
+        ]
+      },
+      {
+        "name": "About and FAQ Sections",
+        "description": "About section and frequently asked questions component",
+        "files": [
+          "src/components/AboutSection.tsx",
+          "src/components/FAQSection.tsx"
+        ]
+      },
+      {
+        "name": "Visual Effects and Backgrounds",
+        "description": "Animated backgrounds and visual effects for enhanced UI",
+        "files": [
+          "src/components/AtmosphericBackground.tsx",
+          "src/components/DimensionalRift.tsx",
+          "src/components/UpsideDown.tsx"
+        ]
+      },
+      {
+        "name": "Error Handling and Maintenance",
+        "description": "Error boundary component and maintenance mode guard",
+        "files": [
+          "src/components/ErrorBoundary.tsx",
+          "src/components/MaintenanceGuard.tsx",
+          "src/components/MaintenancePage.tsx",
+          "src/pages/NotFound.tsx"
+        ]
+      },
+      {
+        "name": "Performance Optimization",
+        "description": "Performance monitoring and optimization utilities",
+        "files": [
+          "src/components/PerformanceOptimizer.tsx",
+          "src/components/OptimizedImage.tsx",
+          "src/lib/preload.ts",
+          "src/lib/cache.ts"
+        ]
+      },
+      {
+        "name": "SEO and Metadata",
+        "description": "SEO head component for managing page metadata",
+        "files": [
+          "src/components/SEOHead.tsx"
+        ]
+      },
+      {
+        "name": "Statistics Display",
+        "description": "Statistics section displaying event metrics",
+        "files": [
+          "src/components/StatsSection.tsx"
+        ]
+      },
+      {
+        "name": "Supabase Integration",
+        "description": "Supabase client configuration and database types",
+        "files": [
+          "src/integrations/supabase/client.ts",
+          "src/integrations/supabase/types.ts"
+        ]
+      },
+      {
+        "name": "Admin Authentication",
+        "description": "Admin authentication hook and protected routes",
+        "files": [
+          "src/hooks/useAdminAuth.ts"
+        ]
+      },
+      {
+        "name": "Utility Functions",
+        "description": "Shared utility functions and helpers",
+        "files": [
+          "src/lib/utils.ts"
+        ]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // Get port from environment or use default
-const PORT = process.env.PORT || 5173;
+const PORT = process.env.PORT || 8080;
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -28,10 +28,18 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
   ],
   webServer: {
-    command: 'npm run dev -- --port 5173',
-    url: 'http://localhost:5173',
+    command: 'npm run preview -- --port 8080',
+    url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

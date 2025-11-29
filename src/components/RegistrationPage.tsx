@@ -320,7 +320,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-300">
       <div className="relative w-full max-w-4xl h-full max-h-[90vh] flex flex-col bg-gradient-to-br from-zinc-900 via-black to-zinc-950 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-        
+
         {/* Header - Horror Theme */}
         <div className="flex items-center justify-between p-6 border-b border-red-900/30 bg-gradient-to-r from-black via-red-950/20 to-black backdrop-blur-xl sticky top-0 z-10 shrink-0">
           <div className="flex items-center gap-3">
@@ -432,14 +432,14 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                               <Flame className="w-5 h-5 text-red-500 animate-pulse" />
                               Choose Your Fate
                             </h3>
-                            
+
                             <div className="space-y-3 relative">
                               <Label className="text-red-300/80 text-sm font-medium">Select Event <span className="text-red-500">*</span></Label>
                               <Select value={formData.eventId} onValueChange={(value) => handleChange('eventId', value)}>
                                 <SelectTrigger className="bg-black/60 border-red-800/50 text-white h-14 focus:ring-red-500/50 focus:border-red-500 hover:border-red-600/60 transition-all duration-300 hover:bg-black/80">
                                   <SelectValue placeholder="⚡ Click to choose an event..." />
                                 </SelectTrigger>
-                                <SelectContent 
+                                <SelectContent
                                   className="bg-zinc-950 border-red-800/60 text-white max-h-[350px] shadow-2xl shadow-red-900/40"
                                   position="popper"
                                   sideOffset={8}
@@ -451,9 +451,9 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                     </div>
                                   ) : (
                                     events.map((event) => (
-                                      <SelectItem 
-                                        key={event.id} 
-                                        value={event.id} 
+                                      <SelectItem
+                                        key={event.id}
+                                        value={event.id}
                                         className="focus:bg-red-900/30 hover:bg-red-900/20 cursor-pointer py-4 px-3 border-b border-red-900/20 last:border-0 transition-colors"
                                       >
                                         <div className="flex flex-col gap-1.5 w-full">
@@ -465,11 +465,10 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                             <span className="text-xs px-2.5 py-1 rounded-full bg-zinc-800/60 text-zinc-300 border border-zinc-700/50">
                                               {event.event_type === 'team' ? '👥 Team' : '👤 Solo'}
                                             </span>
-                                            <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${
-                                              event.registration_fee > 0 
-                                                ? 'bg-orange-900/30 text-orange-300 border-orange-700/50' 
+                                            <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${event.registration_fee > 0
+                                                ? 'bg-orange-900/30 text-orange-300 border-orange-700/50'
                                                 : 'bg-green-900/30 text-green-300 border-green-700/50'
-                                            }`}>
+                                              }`}>
                                               {event.registration_fee > 0 ? `₹${event.registration_fee}` : '✨ Free'}
                                             </span>
                                           </div>
@@ -654,7 +653,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 className="mt-1 w-4 h-4 rounded border-white/20 bg-black/50 text-red-600 focus:ring-red-500/50"
                               />
                               <Label htmlFor="declaration" className="text-sm cursor-pointer text-zinc-300 leading-relaxed select-none">
-                                I hereby declare that the information provided above is true to the best of my knowledge. 
+                                I hereby declare that the information provided above is true to the best of my knowledge.
                                 I agree to abide by the rules and regulations of the event.
                               </Label>
                             </div>

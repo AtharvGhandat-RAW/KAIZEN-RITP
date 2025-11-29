@@ -1,0 +1,559 @@
+[
+  {
+    "id": "TC001",
+    "title": "Intro Animation Plays on First Load",
+    "description": "Verify that the Stranger Things-inspired intro animation plays correctly when the homepage is loaded for the first time.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Clear browser cache or use incognito mode."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to the homepage URL."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the intro animation starts playing automatically."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the animation completes without visual glitches or freezes."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Intro Animation Skip Functionality",
+    "description": "Confirm that users can skip the intro animation and proceed directly to main homepage content.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load the homepage."
+      },
+      {
+        "type": "action",
+        "description": "Click the 'Skip' button on the intro animation screen."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the intro animation stops promptly and main homepage content loads."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Event Exploration Modal Opens and Displays Details",
+    "description": "Test that clicking on an event in the events listing opens a modal displaying detailed event information.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the events exploration page or section."
+      },
+      {
+        "type": "action",
+        "description": "Click on an event item."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that an event details modal opens."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that all event attributes (name, description, rules, date/time, venue) are displayed correctly."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Multi-step Registration Form Success Flow",
+    "description": "Validate that a user can successfully complete the multi-step registration form with valid inputs and payment upload.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the registration page."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid personal information and proceed to next step."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid academic information and proceed."
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid payment receipt image (accepted format and size)."
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify form validates all inputs without errors."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm successful submission with confirmation message and backend record creation."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Multi-step Registration Form Validation Errors",
+    "description": "Verify real-time validation messages appear appropriately for invalid inputs at each step of the registration form.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to registration page."
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid data (empty required fields, invalid email format, incorrect file format or size for payment upload)."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that real-time validation errors appear for each invalid input."
+      },
+      {
+        "type": "assertion",
+        "description": "Attempt to proceed to next step or submit and verify submission is blocked."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Schedule Viewing Timeline Display",
+    "description": "Ensure the public schedule page displays events grouped correctly by festival days in a timeline format.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the schedule viewing page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that festival days are displayed as distinct sections."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that events are grouped under their correct respective days in chronological order."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate timeline interface elements and navigation between days."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Admin Login Authentication Success",
+    "description": "Test that admins with valid credentials can log in successfully and access the protected dashboard.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the admin login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid username and password."
+      },
+      {
+        "type": "action",
+        "description": "Click the login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful login and redirection to admin dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Admin Login Authentication Failure",
+    "description": "Verify that invalid admin login attempts are rejected with appropriate error messages and access is denied.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to admin login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter incorrect username and/or password."
+      },
+      {
+        "type": "action",
+        "description": "Click login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that login is rejected and error message is displayed."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to manually access an admin protected route."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm user is redirected back to the login page and no protected data is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Admin Dashboard Metrics Display Accuracy",
+    "description": "Confirm the admin dashboard displays accurate registration counts, revenue totals, and event metrics reflecting the current system data.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin and open the dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify registration counts match the backend records."
+      },
+      {
+        "type": "assertion",
+        "description": "Check revenue numbers are calculated and displayed correctly."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure event count metrics reflect actual events in the system."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Event Management CRUD Operations",
+    "description": "Test create, edit, and delete operations for events in the admin panel, ensuring data consistency and UI updates.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login to admin panel and navigate to event management interface."
+      },
+      {
+        "type": "action",
+        "description": "Create a new event with all mandatory fields completed."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new event appears in the event list with correct data."
+      },
+      {
+        "type": "action",
+        "description": "Edit an existing event's details and save changes."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the updated event details are correctly reflected in the list."
+      },
+      {
+        "type": "action",
+        "description": "Delete an event."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the event is removed from the event list and no errors occur."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Registration Management Approve and Reject Payments",
+    "description": "Validate admin actions to approve or reject user payment screenshots correctly update registration statuses and reports.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login to admin and navigate to registration management."
+      },
+      {
+        "type": "action",
+        "description": "Select a pending registration with uploaded payment."
+      },
+      {
+        "type": "action",
+        "description": "Approve the payment."
+      },
+      {
+        "type": "assertion",
+        "description": "Check registration status updates to 'approved' and reports reflect the transaction."
+      },
+      {
+        "type": "action",
+        "description": "Repeat the process and reject a payment."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify registration status updates to 'rejected' and relevant notifications are generated."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Schedule Builder Drag-and-Drop Functionality",
+    "description": "Ensure that admin users can drag and drop event items to create or modify the festival schedule timeline and changes persist.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin and access the schedule builder interface."
+      },
+      {
+        "type": "action",
+        "description": "Drag an event item to a different position or day in the timeline."
+      },
+      {
+        "type": "action",
+        "description": "Save the schedule changes."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the schedule updates visually and data persists after reload."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Contact Form Validation and Submission",
+    "description": "Validate that the contact form enforces input validation and submits user inquiries to the admin backend for management.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the contact form page."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid contact information and message."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm form accepts input without validation errors."
+      },
+      {
+        "type": "action",
+        "description": "Submit the contact form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful submission notification."
+      },
+      {
+        "type": "action",
+        "description": "Login to admin and check that the query appears in the queries management list."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Contact Form Validation Errors",
+    "description": "Test that invalid or incomplete inputs show proper validation error messages and block submission.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the contact page."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit form with empty required fields or invalid email format."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate that appropriate error messages are displayed and submission is prevented."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Legal Pages Display and Navigation",
+    "description": "Check that terms of service, privacy policy, and refund policy pages load correctly and are accessible from the site footer links.",
+    "category": "functional",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the homepage."
+      },
+      {
+        "type": "action",
+        "description": "Click links to Terms of Service, Privacy Policy, and Refund Policy pages from footer."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify each legal page loads fully with correct content."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure navigation flows back to homepage or prior pages as expected."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "SEO Metadata Application Verification",
+    "description": "Verify that every page applies correct SEO metadata and page titles for improved search engine presence.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Visit various public-facing pages including homepage, event details, registration, and legal pages."
+      },
+      {
+        "type": "assertion",
+        "description": "Check page source or use browser dev tools to verify SEO meta tags such as title, description, keywords are present and accurate."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Responsive Layout and Performance on Mobile Devices",
+    "description": "Ensure the entire website, including animations, modals, forms, and admin panel, is fully responsive and performs smoothly on mobile devices.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the site on multiple mobile devices or simulate via browser device emulation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify layout adjustments for various screen sizes without content overlap or cutoff."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm animations and UI components load and interact smoothly without crashes or slowdowns."
+      },
+      {
+        "type": "action",
+        "description": "Navigate across all main workflows including event exploration, registration, schedule viewing, and admin management."
+      },
+      {
+        "type": "assertion",
+        "description": "Check for broken navigation, black screens, or UI errors."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Data Export as CSV from Registration Management",
+    "description": "Test exporting registration data to CSV files works correctly with accurate data and proper formatting.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin and navigate to the registration management page."
+      },
+      {
+        "type": "action",
+        "description": "Use the export functionality to download registration data as a CSV file."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a CSV file is generated and downloaded."
+      },
+      {
+        "type": "assertion",
+        "description": "Open the CSV and check that the data matches current registrations and is properly formatted."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Protected Routes Access Restriction",
+    "description": "Confirm unauthorized users cannot access admin panel or other protected routes and are redirected to the login page.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to access admin dashboard and other protected admin routes without logging in."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify redirection to admin login page."
+      },
+      {
+        "type": "action",
+        "description": "Login as a non-admin or invalid user if applicable, and try accessing protected routes."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure access is blocked."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Performance Optimizations Verification",
+    "description": "Verify that performance features such as image loading optimizations, caching, and preload mechanisms reduce load times effectively.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate through the site and monitor network requests and load times using browser dev tools."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that images load progressively and use caching mechanisms."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that pages preload necessary assets to enhance user experience."
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Error Handling and Display",
+    "description": "Ensure the application gracefully handles and displays errors throughout, such as failed API calls, invalid routes, and backend failures.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate backend or network failures during registration submission, event loading, or admin data fetching."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user-friendly error messages are displayed without crashing the app."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to a non-existent URL."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the custom 404 Not Found page is shown."
+      }
+    ]
+  }
+]

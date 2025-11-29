@@ -1,0 +1,201 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React",
+    "Vite",
+    "React Router",
+    "TanStack Query",
+    "Supabase",
+    "Tailwind CSS",
+    "Radix UI",
+    "Zod",
+    "Playwright"
+  ],
+  "features": [
+    {
+      "name": "Homepage with Intro Animation",
+      "description": "Main landing page with Stranger Things-inspired intro animation, hero section, event countdown, and featured content",
+      "files": [
+        "src/pages/Index.tsx",
+        "src/components/StrangerThingsIntro.tsx",
+        "src/components/HeroSection.tsx",
+        "src/components/EventCountdown.tsx",
+        "src/components/FeaturedEvents.tsx"
+      ]
+    },
+    {
+      "name": "Event Registration System",
+      "description": "Complete event registration flow with form validation, payment integration, and status checking",
+      "files": [
+        "src/components/RegistrationPage.tsx",
+        "src/components/RegistrationCTA.tsx",
+        "src/components/RegistrationStatusChecker.tsx",
+        "src/pages/Register.tsx"
+      ]
+    },
+    {
+      "name": "Admin Dashboard",
+      "description": "Admin panel for managing events, registrations, queries, reports, and settings",
+      "files": [
+        "src/pages/admin/Dashboard.tsx",
+        "src/pages/admin/AdminLogin.tsx",
+        "src/components/admin/AdminLayout.tsx",
+        "src/components/admin/AdminSidebar.tsx",
+        "src/components/admin/ProtectedRoute.tsx"
+      ]
+    },
+    {
+      "name": "Event Management",
+      "description": "Admin interface for creating, editing, and managing events",
+      "files": [
+        "src/pages/admin/Events.tsx",
+        "src/components/admin/EventDialog.tsx",
+        "src/components/EventDetailsModal.tsx",
+        "src/components/ExploreEventsPage.tsx"
+      ]
+    },
+    {
+      "name": "Registration Management",
+      "description": "Admin interface to view, filter, and manage event registrations",
+      "files": [
+        "src/pages/admin/Registrations.tsx",
+        "src/pages/admin/RegistrationDetails.tsx"
+      ]
+    },
+    {
+      "name": "Schedule Management",
+      "description": "Admin interface for creating and managing event schedules",
+      "files": [
+        "src/pages/admin/Schedule.tsx",
+        "src/pages/admin/ScheduleBuilder.tsx",
+        "src/pages/admin/ScheduleItemForm.tsx",
+        "src/components/ScheduleModal.tsx"
+      ]
+    },
+    {
+      "name": "Contact Form",
+      "description": "Contact form for user inquiries with form validation",
+      "files": [
+        "src/components/ContactForm.tsx",
+        "src/components/ContactFooter.tsx"
+      ]
+    },
+    {
+      "name": "Query Management",
+      "description": "Admin interface for managing user queries and contact form submissions",
+      "files": [
+        "src/pages/admin/Queries.tsx"
+      ]
+    },
+    {
+      "name": "Reports and Analytics",
+      "description": "Admin dashboard for viewing reports and analytics",
+      "files": [
+        "src/pages/admin/Reports.tsx"
+      ]
+    },
+    {
+      "name": "Settings Management",
+      "description": "Admin interface for application settings and configuration",
+      "files": [
+        "src/pages/admin/Settings.tsx"
+      ]
+    },
+    {
+      "name": "Legal Pages",
+      "description": "Terms of service, privacy policy, and refund policy pages",
+      "files": [
+        "src/pages/Terms.tsx",
+        "src/pages/Privacy.tsx",
+        "src/pages/Refund.tsx"
+      ]
+    },
+    {
+      "name": "Navigation and UI Components",
+      "description": "Navigation bar, links, and reusable UI components",
+      "files": [
+        "src/components/Navbar.tsx",
+        "src/components/NavLink.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/form.tsx",
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/card.tsx"
+      ]
+    },
+    {
+      "name": "About and FAQ Sections",
+      "description": "About section and frequently asked questions component",
+      "files": [
+        "src/components/AboutSection.tsx",
+        "src/components/FAQSection.tsx"
+      ]
+    },
+    {
+      "name": "Visual Effects and Backgrounds",
+      "description": "Animated backgrounds and visual effects for enhanced UI",
+      "files": [
+        "src/components/AtmosphericBackground.tsx",
+        "src/components/DimensionalRift.tsx",
+        "src/components/UpsideDown.tsx"
+      ]
+    },
+    {
+      "name": "Error Handling and Maintenance",
+      "description": "Error boundary component and maintenance mode guard",
+      "files": [
+        "src/components/ErrorBoundary.tsx",
+        "src/components/MaintenanceGuard.tsx",
+        "src/components/MaintenancePage.tsx",
+        "src/pages/NotFound.tsx"
+      ]
+    },
+    {
+      "name": "Performance Optimization",
+      "description": "Performance monitoring and optimization utilities",
+      "files": [
+        "src/components/PerformanceOptimizer.tsx",
+        "src/components/OptimizedImage.tsx",
+        "src/lib/preload.ts",
+        "src/lib/cache.ts"
+      ]
+    },
+    {
+      "name": "SEO and Metadata",
+      "description": "SEO head component for managing page metadata",
+      "files": [
+        "src/components/SEOHead.tsx"
+      ]
+    },
+    {
+      "name": "Statistics Display",
+      "description": "Statistics section displaying event metrics",
+      "files": [
+        "src/components/StatsSection.tsx"
+      ]
+    },
+    {
+      "name": "Supabase Integration",
+      "description": "Supabase client configuration and database types",
+      "files": [
+        "src/integrations/supabase/client.ts",
+        "src/integrations/supabase/types.ts"
+      ]
+    },
+    {
+      "name": "Admin Authentication",
+      "description": "Admin authentication hook and protected routes",
+      "files": [
+        "src/hooks/useAdminAuth.ts"
+      ]
+    },
+    {
+      "name": "Utility Functions",
+      "description": "Shared utility functions and helpers",
+      "files": [
+        "src/lib/utils.ts"
+      ]
+    }
+  ]
+}
+

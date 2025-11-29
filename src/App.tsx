@@ -14,6 +14,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
+const SchedulePage = lazy(() => import("./pages/Schedule"));
+const HorrorDramatics = lazy(() => import("./pages/HorrorDramatics"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const Events = lazy(() => import("./pages/admin/Events"));
@@ -77,6 +79,8 @@ const App = () => (
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/refund" element={<Refund />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/horror-dramatics" element={<HorrorDramatics />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLogin />} />

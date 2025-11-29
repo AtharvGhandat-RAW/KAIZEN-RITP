@@ -29,7 +29,7 @@ export default function Schedule() {
 
   useEffect(() => {
     fetchEvents();
-    
+
     // Real-time subscription
     const channel = supabase
       .channel('schema-db-changes')
@@ -85,9 +85,9 @@ export default function Schedule() {
         ...prev[id],
         [field]: value,
         // Preserve the other field if it exists in edits, otherwise take from original event
-        ...(field === 'date' 
-            ? { venue: prev[id]?.venue || events.find(e => e.id === id)?.venue || '' } 
-            : { date: prev[id]?.date || events.find(e => e.id === id)?.event_date || '' }
+        ...(field === 'date'
+          ? { venue: prev[id]?.venue || events.find(e => e.id === id)?.venue || '' }
+          : { date: prev[id]?.date || events.find(e => e.id === id)?.event_date || '' }
         )
       },
     }));
@@ -110,14 +110,14 @@ export default function Schedule() {
       if (error) throw error;
 
       toast.success('Schedule updated successfully');
-      
+
       // Clear edit state for this item
       setEdits((prev) => {
         const newEdits = { ...prev };
         delete newEdits[id];
         return newEdits;
       });
-      
+
       // Refresh local state immediately (though subscription will also catch it)
       setEvents(prev => prev.map(e => e.id === id ? { ...e, event_date: edit.date, venue: edit.venue } : e));
 
@@ -129,7 +129,7 @@ export default function Schedule() {
     }
   };
 
-  const filteredEvents = events.filter(event => 
+  const filteredEvents = events.filter(event =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.venue.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -146,7 +146,7 @@ export default function Schedule() {
   const sortedDates = Object.keys(groupedEvents).sort();
 
   return (
-    <ProtectedRoute roles={['super_admin', 'event_manager']}>
+    <ProtectedRoute requiredRoles={['super_admin', 'event_manager']}>
       <AdminLayout>
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -194,11 +194,10 @@ export default function Schedule() {
                                   </Badge>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-zinc-500">
-                                  <span className={`w-2 h-2 rounded-full ${
-                                    event.status === 'upcoming' ? 'bg-blue-500' :
-                                    event.status === 'ongoing' ? 'bg-green-500' :
-                                    event.status === 'completed' ? 'bg-zinc-500' : 'bg-red-500'
-                                  }`} />
+                                  <span className={`w-2 h-2 rounded-full ${event.status === 'upcoming' ? 'bg-blue-500' :
+                                      event.status === 'ongoing' ? 'bg-green-500' :
+                                        event.status === 'completed' ? 'bg-zinc-500' : 'bg-red-500'
+                                    }`} />
                                   <span className="capitalize">{event.status}</span>
                                 </div>
                               </div>

@@ -37,7 +37,6 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
                   0 0 35px rgba(255, 0, 0, 0.15)
                 `,
                 filter: 'contrast(1.1)',
-                willChange: 'transform, opacity', // Performance: Hint browser for GPU acceleration
                 animation: shouldAnimate ? `
                   letterGlitchReveal 0.8s ease-out ${index * 0.12}s forwards,
                   letterGlow 6s ease-in-out infinite ${1.2 + index * 0.12}s
@@ -189,14 +188,14 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
 
         @keyframes letterGlow {
           0%, 100% {
-            text-shadow: 
+            text-shadow:
               0 0 8px rgba(255, 69, 0, 0.4),
               0 0 15px rgba(255, 69, 0, 0.3),
               0 0 25px rgba(255, 69, 0, 0.2),
               0 0 35px rgba(255, 0, 0, 0.15);
           }
           50% {
-            text-shadow: 
+            text-shadow:
               0 0 12px rgba(255, 69, 0, 0.5),
               0 0 20px rgba(255, 69, 0, 0.4),
               0 0 30px rgba(255, 69, 0, 0.3),

@@ -6,13 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Plus, 
-  Trash2, 
-  Edit, 
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Trash2,
+  Edit,
   Loader2,
   Star,
   Coffee,
@@ -57,7 +57,7 @@ export default function ScheduleBuilder() {
 
   useEffect(() => {
     fetchScheduleItems();
-    
+
     const channel = supabase
       .channel('schedule-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_items' }, () => {
@@ -81,7 +81,7 @@ export default function ScheduleBuilder() {
 
       if (error) throw error;
       setItems((data as ScheduleItem[]) || []);
-      
+
       if (data && data.length > 0) {
         const maxDay = Math.max(...data.map((item: ScheduleItem) => item.day_number));
         setTotalDays(Math.max(maxDay, 2));
@@ -129,8 +129,8 @@ export default function ScheduleBuilder() {
                 <h1 className="text-xl sm:text-2xl font-bold text-white">Schedule Builder</h1>
                 <p className="text-zinc-400 text-sm">Create the complete event timeline</p>
               </div>
-              <Button 
-                onClick={() => navigate(`/admin/schedule-builder/new?day=${selectedDay}`)} 
+              <Button
+                onClick={() => navigate(`/admin/schedule-builder/new?day=${selectedDay}`)}
                 className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -180,8 +180,8 @@ export default function ScheduleBuilder() {
                 <p className="text-zinc-500 mb-4 text-sm text-center">
                   Start building your schedule by adding items
                 </p>
-                <Button 
-                  onClick={() => navigate(`/admin/schedule-builder/new?day=${selectedDay}`)} 
+                <Button
+                  onClick={() => navigate(`/admin/schedule-builder/new?day=${selectedDay}`)}
                   className="bg-red-600 hover:bg-red-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />

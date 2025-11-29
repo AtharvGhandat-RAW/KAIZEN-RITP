@@ -24,19 +24,19 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
   const [revealStage, setRevealStage] = useState(0); // 0-5 for staggered reveal
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Scene timeline configuration (in milliseconds) - OPTIMIZED: Reduced from 34s to 18s
+  // Scene timeline configuration (in milliseconds) - READABLE: Users can see contributors
   const sceneTimeline = useMemo(() => ({
-    darkAwakening: { start: 0, duration: 1200 },
-    festCoordinators: { start: 1200, duration: 2000 },
-    operationsUnit: { start: 3200, duration: 1800 },
-    managementUnit: { start: 5000, duration: 1800 },
-    digitalMediaUnit: { start: 6800, duration: 1800 },
-    techProductionUnit: { start: 8600, duration: 1800 },
-    partnershipUnit: { start: 10400, duration: 1800 },
-    ambienceDesignUnit: { start: 12200, duration: 1800 },
-    preReveal: { start: 14000, duration: 1500 },
-    finalReveal: { start: 15500, duration: 2500 },
-    enterButton: { start: 18000, duration: 1500 }
+    darkAwakening: { start: 0, duration: 1800 },
+    festCoordinators: { start: 1800, duration: 3500 },
+    operationsUnit: { start: 5300, duration: 3000 },
+    managementUnit: { start: 8300, duration: 3000 },
+    digitalMediaUnit: { start: 11300, duration: 3000 },
+    techProductionUnit: { start: 14300, duration: 3000 },
+    partnershipUnit: { start: 17300, duration: 3000 },
+    ambienceDesignUnit: { start: 20300, duration: 3000 },
+    preReveal: { start: 23300, duration: 2000 },
+    finalReveal: { start: 25300, duration: 3000 },
+    enterButton: { start: 28300, duration: 2000 }
   }), []);
 
   // Trigger glitch effects with proper visual distortion
@@ -70,22 +70,22 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
       }
     });
 
-    // Staggered reveal stages for final reveal - faster
-    timers.push(setTimeout(() => setRevealStage(1), 15600));
-    timers.push(setTimeout(() => setRevealStage(2), 15900));
-    timers.push(setTimeout(() => setRevealStage(3), 16300));
-    timers.push(setTimeout(() => setRevealStage(4), 16700));
-    timers.push(setTimeout(() => setRevealStage(5), 17100));
+    // Staggered reveal stages for final reveal - smooth timing
+    timers.push(setTimeout(() => setRevealStage(1), 25500));
+    timers.push(setTimeout(() => setRevealStage(2), 25900));
+    timers.push(setTimeout(() => setRevealStage(3), 26400));
+    timers.push(setTimeout(() => setRevealStage(4), 26900));
+    timers.push(setTimeout(() => setRevealStage(5), 27400));
 
-    // Reduced glitch effects - only 3 for performance
-    const glitchIntervals = [3000, 8000, 14000];
+    // Glitch effects for atmosphere
+    const glitchIntervals = [5000, 12000, 20000];
     glitchIntervals.forEach(time => {
       timers.push(setTimeout(triggerGlitch, time));
     });
 
-    // Lightning flashes - reduced to 2
-    timers.push(setTimeout(triggerLightning, 14500));
-    timers.push(setTimeout(triggerLightning, 16000));
+    // Lightning flashes for dramatic effect
+    timers.push(setTimeout(triggerLightning, 23500));
+    timers.push(setTimeout(triggerLightning, 26000));
 
     return () => timers.forEach(timer => clearTimeout(timer));
   }, [sceneTimeline, triggerGlitch, triggerLightning]);
@@ -343,8 +343,8 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
 
       {/* Optimized CSS */}
       <style>{`
-        /* === FONTS === */
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;600&display=swap');
+        /* === FONTS - Professional Stranger Things Style === */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Raleway:wght@300;400;600&display=swap');
 
         /* === BASE CONTAINER === */
         .intro-container {
@@ -353,16 +353,14 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           z-index: 100;
           background: #000;
           overflow: hidden;
-          font-family: 'Cinzel', serif;
-          transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
-          will-change: opacity, transform; /* Performance hint */
+          font-family: 'Raleway', sans-serif;
+          transition: opacity 0.8s ease-out;
+          will-change: opacity;
         }
 
         .intro-container.exiting {
           opacity: 0;
-          transform: scale(2); /* Zoom through effect */
           pointer-events: none;
-          filter: blur(10px);
         }
 
         /* === FILM GRAIN - Disabled for cleaner look === */
@@ -623,7 +621,7 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           display: flex;
           flex-direction: column;
           align-items: center;
-          animation: sceneIn 0.7s ease-out, sceneOut 0.7s ease-out 2.3s forwards;
+          animation: sceneIn 0.8s ease-out, sceneOut 0.6s ease-out 2.4s forwards;
         }
 
         .credit-label {
@@ -653,17 +651,16 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         }
 
         .credit-name {
-          font-family: 'Cinzel', serif;
-          font-size: clamp(0.9rem, 2vw, 1.3rem);
-          font-weight: 400;
-          letter-spacing: 0.1em;
-          color: rgba(255, 255, 255, 0.9);
+          font-family: 'Libre Baskerville', 'Georgia', serif;
+          font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: rgba(255, 255, 255, 0.95);
           text-shadow: 0 0 20px rgba(255, 26, 26, 0.5);
         }
 
         .credit-name.primary {
-          font-size: clamp(1.1rem, 2.5vw, 1.6rem);
-          font-weight: 700;
+          font-size: clamp(1.5rem, 3.5vw, 2.2rem);
           text-shadow: 0 0 30px rgba(255, 26, 26, 0.7);
         }
 
@@ -758,38 +755,34 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         }
 
         .st-letter {
-          font-family: 'Cinzel', serif;
-          font-size: clamp(3rem, 12vw, 10rem);
-          font-weight: 900;
+          font-family: 'Cinzel', 'Libre Baskerville', serif;
+          font-size: clamp(3.5rem, 14vw, 10rem);
+          font-weight: 700;
           color: transparent;
-          -webkit-text-stroke: 2px #ed1c24;
-          text-stroke: 2px #ed1c24;
+          -webkit-text-stroke: 1.5px #dc2626;
+          text-stroke: 1.5px #dc2626;
           display: inline-block;
           position: relative;
-          will-change: transform, opacity;
+          will-change: opacity, transform;
+          letter-spacing: 0.12em;
           
           /* Initial State */
           opacity: 0;
-          transform: scale(3);
           
-          animation: stLetterReveal 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          animation: stLetterReveal 1s ease-out forwards;
         }
 
         @keyframes stLetterReveal {
           0% {
             opacity: 0;
-            transform: scale(3);
-            margin: 0 2vw;
-          }
-          20% {
-            opacity: 1;
+            transform: translateY(40px);
           }
           100% {
             opacity: 1;
-            transform: scale(1);
-            margin: 0 0.1vw;
-            -webkit-text-stroke: 2px #ed1c24;
-            text-shadow: 0 0 15px rgba(237, 28, 36, 0.5);
+            transform: translateY(0);
+            text-shadow: 
+              0 0 10px rgba(220, 38, 38, 0.8),
+              0 0 25px rgba(220, 38, 38, 0.4);
           }
         }
 
@@ -807,32 +800,30 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         }
 
         .st-letter-sub {
-          font-family: 'Cinzel', serif;
-          font-size: clamp(1.2rem, 4vw, 3rem); /* Increased size */
-          font-weight: 700;
-          color: #ed1c24;
-          -webkit-text-stroke: 1px #ed1c24;
+          font-family: 'Cinzel', 'Libre Baskerville', serif;
+          font-size: clamp(1.2rem, 4vw, 3rem);
+          font-weight: 600;
+          color: #dc2626;
           display: inline-block;
-          will-change: transform, opacity;
+          will-change: opacity, transform;
           letter-spacing: 0.5em;
           
           opacity: 0;
-          transform: scale(1.5);
           
-          animation: stSubtitleReveal 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          animation: stSubtitleReveal 0.8s ease-out forwards;
         }
 
         @keyframes stSubtitleReveal {
           0% {
             opacity: 0;
-            transform: scale(1.5);
-            letter-spacing: 1em;
+            transform: translateY(20px);
           }
           100% {
             opacity: 1;
-            transform: scale(1);
-            letter-spacing: 0.5em;
-            text-shadow: 0 0 10px rgba(237, 28, 36, 0.6);
+            transform: translateY(0);
+            text-shadow: 
+              0 0 8px rgba(220, 38, 38, 0.6),
+              0 0 20px rgba(220, 38, 38, 0.3);
           }
         }
 
@@ -840,44 +831,43 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
         .st-bar {
           position: absolute;
           left: 50%;
-          width: 140%; /* Fixed width relative to container */
-          height: 2px;
-          background: #ed1c24;
-          box-shadow: 0 0 15px rgba(237, 28, 36, 0.8);
+          width: 100%;
+          max-width: 600px;
+          height: 3px;
+          background: linear-gradient(90deg, transparent, #ff1a1a, transparent);
+          box-shadow: 0 0 20px rgba(255, 26, 26, 0.6);
           opacity: 0;
-          transform: translateX(-50%) scaleX(0); /* Center and start scaled down */
-          animation: stBarSlide 3s ease-out forwards 1s;
+          transform: translateX(-50%) scaleX(0);
+          animation: stBarSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s;
         }
 
         .st-bar-top {
-          top: 0;
+          top: -10px;
         }
 
         .st-bar-bottom {
-          bottom: 0;
+          bottom: -10px;
         }
 
         @keyframes stBarSlide {
           0% { opacity: 0; transform: translateX(-50%) scaleX(0); }
-          10% { opacity: 1; }
-          100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
+          100% { opacity: 1; transform: translateX(-50%) scaleX(1); }
         }
 
 
         /* Glow Background */
         .st-glow-bg {
           position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at center, rgba(237, 28, 36, 0.15) 0%, transparent 60%);
+          inset: -20%;
+          background: radial-gradient(circle at center, rgba(255, 26, 26, 0.2) 0%, transparent 50%);
           z-index: 1;
           opacity: 0;
-          animation: stBgPulse 4s ease-in-out infinite;
-          will-change: opacity, transform;
+          animation: stBgFadeIn 1s ease-out forwards 0.2s;
         }
 
-        @keyframes stBgPulse {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.05); }
+        @keyframes stBgFadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
 
         /* Responsive adjustments */
@@ -1013,17 +1003,17 @@ export function StrangerThingsIntro({ onComplete }: { onComplete: () => void }) 
           justify-content: center;
           gap: 0.5rem;
           width: 100%;
-          padding: 1rem 1.5rem;
-          background: #000;
-          border: 2px solid rgba(255, 26, 26, 0.5);
+          padding: 1rem 2rem;
+          background: transparent;
+          border: 2px solid rgba(255, 26, 26, 0.6);
           color: #fff;
-          font-family: 'Cinzel', serif;
-          font-size: clamp(0.8rem, 2vw, 0.95rem);
-          font-weight: 600;
-          letter-spacing: 0.12em;
+          font-family: 'Bebas Neue', 'Oswald', sans-serif;
+          font-size: clamp(1rem, 2.5vw, 1.25rem);
+          font-weight: 400;
+          letter-spacing: 0.2em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: all 0.25s ease;
+          transition: all 0.3s ease;
           overflow: hidden;
         }
 
