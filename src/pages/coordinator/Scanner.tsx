@@ -177,7 +177,7 @@ export default function CoordinatorScanner() {
 
         // Check if mediaDevices API is available
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            setCameraError('Camera API not supported. Please use a modern browser like Chrome.');
+            setCameraError('Camera API not supported. Please use Chrome browser.');
             setIsInitializing(false);
             return;
         }
@@ -197,93 +197,92 @@ export default function CoordinatorScanner() {
                 scannerRef.current = null;
             }
 
-            // Check camera permission status first (if supported)
-            let permissionStatus: PermissionState | null = null;
-            try {
-                if (navigator.permissions && navigator.permissions.query) {
-                    const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
-                    permissionStatus = result.state;
-                    console.log('Camera permission status:', permissionStatus);
-                }
-            } catch (e) {
-                console.log('Permission query not supported');
-            }
-
-            // IMPORTANT: Request camera permission
-            // Use different constraints to maximize compatibility on Android
-            console.log('Requesting camera access...');
-            let stream: MediaStream | null = null;
-
-            try {
-                // Try with environment facing mode first (back camera)
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: 'environment' },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
-            } catch (e1) {
-                console.log('Environment camera failed, trying any camera...');
-                try {
-                    // Fallback to any camera
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: false
-                    });
-                } catch (e2) {
-                    console.error('All camera attempts failed:', e2);
-                    throw e2;
-                }
-            }
-
-            // If we got here, we have camera permission
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                console.log('Camera permission granted, proceeding with scanner');
-            }
-
             // Create new scanner instance
             const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
 
-            // Get available cameras
-            const cameras = await Html5Qrcode.getCameras();
-            if (!cameras || cameras.length === 0) {
-                throw new Error('No cameras found on this device');
+            console.log('Starting scanner directly with facingMode...');
+
+            // Start scanner directly using facingMode constraint
+            // This is more reliable on Android than pre-requesting permission
+            try {
+                await html5QrCode.start(
+                    { facingMode: 'environment' }, // Use back camera
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0,
+                    },
+                    handleScanSuccess,
+                    handleScanError
+                );
+
+                setIsScanning(true);
+                setIsInitializing(false);
+                toast.success('Scanner ready!');
+                return;
+            } catch (envError) {
+                console.log('Back camera failed, trying front camera...', envError);
+
+                // Try front camera
+                try {
+                    await html5QrCode.start(
+                        { facingMode: 'user' },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0,
+                        },
+                        handleScanSuccess,
+                        handleScanError
+                    );
+
+                    setIsScanning(true);
+                    setIsInitializing(false);
+                    toast.success('Scanner ready (front camera)!');
+                    return;
+                } catch (userError) {
+                    console.log('Front camera also failed, trying camera list...', userError);
+                }
             }
 
-            console.log('Available cameras:', cameras);
+            // Fallback: Try to get camera list and use first available
+            try {
+                const cameras = await Html5Qrcode.getCameras();
+                console.log('Available cameras:', cameras);
 
-            // Prefer back camera
-            let cameraId = cameras[0].id;
-            const backCamera = cameras.find(
-                (c) =>
-                    c.label.toLowerCase().includes('back') ||
-                    c.label.toLowerCase().includes('rear') ||
-                    c.label.toLowerCase().includes('environment')
-            );
-            if (backCamera) {
-                cameraId = backCamera.id;
+                if (cameras && cameras.length > 0) {
+                    // Try each camera until one works
+                    for (const camera of cameras) {
+                        try {
+                            console.log('Trying camera:', camera.label || camera.id);
+                            await html5QrCode.start(
+                                camera.id,
+                                {
+                                    fps: 10,
+                                    qrbox: { width: 250, height: 250 },
+                                    aspectRatio: 1.0,
+                                },
+                                handleScanSuccess,
+                                handleScanError
+                            );
+
+                            setIsScanning(true);
+                            setIsInitializing(false);
+                            toast.success('Scanner ready!');
+                            return;
+                        } catch (camError) {
+                            console.log(`Camera ${camera.id} failed:`, camError);
+                        }
+                    }
+                }
+            } catch (listError) {
+                console.error('Could not get camera list:', listError);
             }
 
-            // Start scanner with optimized config
-            await html5QrCode.start(
-                cameraId,
-                {
-                    fps: 15,
-                    qrbox: { width: 280, height: 280 },
-                    aspectRatio: 1.0,
-                    disableFlip: false,
-                },
-                handleScanSuccess,
-                handleScanError
-            );
+            // If we get here, all attempts failed
+            throw new Error('Could not start any camera');
 
-            setIsScanning(true);
-            setIsInitializing(false);
-            toast.success('Scanner ready! Point at QR code');
         } catch (error) {
             console.error('Camera/Scanner error:', error);
             setIsInitializing(false);
@@ -293,12 +292,11 @@ export default function CoordinatorScanner() {
 
             // Detect specific error types
             if (errName === 'NotAllowedError' || errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
-                // Permission denied - provide Android-specific instructions
                 setCameraError('CAMERA_PERMISSION_DENIED');
             } else if (errName === 'NotFoundError' || errMsg.includes('NotFound') || errMsg.includes('No cameras')) {
                 setCameraError('No camera found on this device.');
-            } else if (errName === 'NotReadableError' || errMsg.includes('NotReadable') || errMsg.includes('in use')) {
-                setCameraError('Camera is in use by another app. Close other apps and try again.');
+            } else if (errName === 'NotReadableError' || errMsg.includes('NotReadable') || errMsg.includes('in use') || errMsg.includes('Could not start')) {
+                setCameraError('CAMERA_IN_USE');
             } else if (errName === 'OverconstrainedError') {
                 setCameraError('Camera does not meet requirements. Please try again.');
             } else {
@@ -816,8 +814,23 @@ export default function CoordinatorScanner() {
                                                     </div>
                                                 </div>
                                                 <p className="text-gray-400 text-xs mb-3 text-center">
-                                                    After enabling, tap "Try Again" or refresh the page
+                                                    After enabling, tap "Refresh Page"
                                                 </p>
+                                            </>
+                                        ) : cameraError === 'CAMERA_IN_USE' ? (
+                                            <>
+                                                <p className="text-red-400 text-center text-sm mb-3">
+                                                    Camera is busy or unavailable
+                                                </p>
+                                                <div className="bg-black/60 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
+                                                    <p className="text-yellow-400 text-sm font-semibold mb-3">🔧 Try these steps:</p>
+                                                    <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
+                                                        <li>Close other apps using camera</li>
+                                                        <li>Close other browser tabs</li>
+                                                        <li>Restart Chrome browser</li>
+                                                        <li>If still not working, restart phone</li>
+                                                    </ol>
+                                                </div>
                                             </>
                                         ) : (
                                             <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
@@ -834,8 +847,8 @@ export default function CoordinatorScanner() {
                                             <Button
                                                 onClick={() => {
                                                     setCameraError('');
-                                                    // Force page reload to reset permission state
-                                                    if (cameraError === 'CAMERA_PERMISSION_DENIED') {
+                                                    // Force page reload for permission or in-use errors
+                                                    if (cameraError === 'CAMERA_PERMISSION_DENIED' || cameraError === 'CAMERA_IN_USE') {
                                                         window.location.reload();
                                                     } else {
                                                         startScanning();
@@ -844,7 +857,7 @@ export default function CoordinatorScanner() {
                                                 size="sm"
                                             >
                                                 <RefreshCw className="w-4 h-4 mr-1" />
-                                                {cameraError === 'CAMERA_PERMISSION_DENIED' ? 'Refresh Page' : 'Try Again'}
+                                                {(cameraError === 'CAMERA_PERMISSION_DENIED' || cameraError === 'CAMERA_IN_USE') ? 'Refresh Page' : 'Try Again'}
                                             </Button>
                                             <Button
                                                 onClick={() => setActiveTab('manual')}
