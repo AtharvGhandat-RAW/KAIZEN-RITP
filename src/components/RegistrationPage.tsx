@@ -272,6 +272,23 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
 
       if (regError) throw regError;
 
+      // Send confirmation email
+      try {
+        await supabase.functions.invoke('send-registration-email', {
+          body: {
+            to: formData.email,
+            type: 'registration_confirmation',
+            data: {
+              name: formData.fullName,
+              eventName: selectedEvent?.name || 'Event',
+            }
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't block success state if email fails
+      }
+
       setSuccess(true);
       toast.success('Registration Successful!', {
         description: selectedEvent?.registration_fee === 0

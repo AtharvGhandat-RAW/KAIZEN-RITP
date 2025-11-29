@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Github, ExternalLink, ChevronUp } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Github, ExternalLink, ChevronUp, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function ContactFooter() {
+  const [email, setEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
   const [contactInfo, setContactInfo] = useState([
     { icon: Mail, label: 'Email Us', value: 'info@kaizentechfest.com', link: 'mailto:info@kaizentechfest.com' },
     { icon: Phone, label: 'Call Us', value: '+91 1234 567 890', link: 'tel:+911234567890' },
@@ -86,6 +89,37 @@ export function ContactFooter() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setSubscribing(true);
+    try {
+      const { error } = await supabase
+        .from('subscribers')
+        .insert({ email });
+
+      if (error) {
+        if (error.code === '23505') { // Unique violation
+          toast.error('You are already subscribed!');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Successfully subscribed to updates!');
+        setEmail('');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      toast.error('Failed to subscribe. Please try again.');
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   const quickLinks = [
@@ -202,16 +236,31 @@ export function ContactFooter() {
               <p className="text-white/50 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
                 Subscribe to get the latest updates about events and activities.
               </p>
-              <div className="relative group">
+              <form onSubmit={handleSubscribe} className="relative group">
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="w-full bg-black/40 border border-red-900/40 px-3 py-2.5 sm:px-4 sm:py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-red-700/60 transition-all duration-300 text-sm sm:text-base"
+                  required
+                  disabled={subscribing}
+                  className="w-full bg-black/40 border border-red-900/40 px-3 py-2.5 sm:px-4 sm:py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-red-700/60 transition-all duration-300 text-sm sm:text-base disabled:opacity-50"
                 />
-                <button className="w-full mt-3 sm:mt-4 px-4 py-2.5 sm:px-6 sm:py-3 border border-red-600/60 bg-red-950/20 text-red-500 hover:bg-red-900/30 hover:border-red-500 transition-all duration-300 uppercase tracking-wider text-xs sm:text-sm">
-                  Subscribe
+                <button 
+                  type="submit"
+                  disabled={subscribing}
+                  className="w-full mt-3 sm:mt-4 px-4 py-2.5 sm:px-6 sm:py-3 border border-red-600/60 bg-red-950/20 text-red-500 hover:bg-red-900/30 hover:border-red-500 transition-all duration-300 uppercase tracking-wider text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {subscribing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Subscribing...
+                    </>
+                  ) : (
+                    'Subscribe'
+                  )}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
