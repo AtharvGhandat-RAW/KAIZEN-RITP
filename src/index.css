@@ -50,13 +50,15 @@ html {
 }
 
 /* Battery saver mode - detect low power preference */
-@media (prefers-reduced-motion: reduce), (update: slow) {
+@media (prefers-reduced-motion: reduce),
+(update: slow) {
+
   .animate-pulse,
   .animate-spin,
   .animate-bounce {
     animation: none !important;
   }
-  
+
   .backdrop-blur-sm,
   .backdrop-blur-md,
   .backdrop-blur-lg {

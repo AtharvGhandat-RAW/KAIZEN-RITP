@@ -76,7 +76,7 @@ export default function CoordinatorScanner() {
     const [verificationCode, setVerificationCode] = useState('');
     const [verifyingCode, setVerifyingCode] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('scan');
-    
+
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const lastScannedRef = useRef<string>('');
     const scannerContainerId = 'qr-reader-container';
@@ -128,7 +128,7 @@ export default function CoordinatorScanner() {
 
             if (error) throw error;
             setEvents(data || []);
-            
+
             if (data && data.length === 1) {
                 setSelectedEvent(data[0].id);
             }
@@ -267,7 +267,7 @@ export default function CoordinatorScanner() {
     const handleScanSuccess = async (decodedText: string) => {
         // Prevent duplicate scans of same QR
         if (processing || decodedText === lastScannedRef.current) return;
-        
+
         lastScannedRef.current = decodedText;
         setProcessing(true);
 
@@ -288,7 +288,7 @@ export default function CoordinatorScanner() {
         try {
             console.log('Scanned data length:', decodedText.length);
             console.log('Scanned data preview:', decodedText.substring(0, 50) + '...');
-            
+
             // Decrypt QR data
             const payload = decryptQRData(decodedText);
 
@@ -629,8 +629,8 @@ export default function CoordinatorScanner() {
                                 <p className="text-yellow-400 text-sm">No events assigned</p>
                             </div>
                         ) : (
-                            <Select 
-                                value={selectedEvent} 
+                            <Select
+                                value={selectedEvent}
                                 onValueChange={(value) => {
                                     setSelectedEvent(value);
                                     setScanResult(null);
@@ -653,8 +653,8 @@ export default function CoordinatorScanner() {
                 </Card>
 
                 {/* Verification Tabs */}
-                <Tabs 
-                    value={activeTab} 
+                <Tabs
+                    value={activeTab}
                     onValueChange={(value) => {
                         setActiveTab(value);
                         if (value === 'manual' && isScanning) {
@@ -680,8 +680,8 @@ export default function CoordinatorScanner() {
                         <Card className="bg-black/40 border-red-600/30 overflow-hidden relative">
                             <CardContent className="p-0">
                                 {/* Scanner Container */}
-                                <div 
-                                    id={scannerContainerId} 
+                                <div
+                                    id={scannerContainerId}
                                     className={`w-full ${!isScanning ? 'hidden' : ''}`}
                                     style={{ minHeight: isScanning ? '320px' : '0' }}
                                 />
@@ -739,9 +739,9 @@ export default function CoordinatorScanner() {
                                                 <RefreshCw className="w-4 h-4 mr-1" />
                                                 Try Again
                                             </Button>
-                                            <Button 
-                                                onClick={() => setActiveTab('manual')} 
-                                                size="sm" 
+                                            <Button
+                                                onClick={() => setActiveTab('manual')}
+                                                size="sm"
                                                 variant="outline"
                                             >
                                                 <Keyboard className="w-4 h-4 mr-1" />
@@ -772,13 +772,12 @@ export default function CoordinatorScanner() {
                                 {/* Scan Result */}
                                 {scanResult && (
                                     <div
-                                        className={`p-6 text-center ${
-                                            scanResult.success
+                                        className={`p-6 text-center ${scanResult.success
                                                 ? 'bg-green-900/30'
                                                 : scanResult.alreadyMarked
-                                                ? 'bg-yellow-900/30'
-                                                : 'bg-red-900/30'
-                                        }`}
+                                                    ? 'bg-yellow-900/30'
+                                                    : 'bg-red-900/30'
+                                            }`}
                                     >
                                         {scanResult.success ? (
                                             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
@@ -789,19 +788,18 @@ export default function CoordinatorScanner() {
                                         )}
 
                                         <h3
-                                            className={`text-xl font-bold mb-2 ${
-                                                scanResult.success
+                                            className={`text-xl font-bold mb-2 ${scanResult.success
                                                     ? 'text-green-400'
                                                     : scanResult.alreadyMarked
-                                                    ? 'text-yellow-400'
-                                                    : 'text-red-400'
-                                            }`}
+                                                        ? 'text-yellow-400'
+                                                        : 'text-red-400'
+                                                }`}
                                         >
                                             {scanResult.success
                                                 ? 'Success!'
                                                 : scanResult.alreadyMarked
-                                                ? 'Already Checked In'
-                                                : 'Error'}
+                                                    ? 'Already Checked In'
+                                                    : 'Error'}
                                         </h3>
 
                                         {scanResult.attendeeName && (
@@ -860,13 +858,12 @@ export default function CoordinatorScanner() {
                                     </div>
                                 ) : (
                                     <div
-                                        className={`p-6 text-center rounded-lg ${
-                                            scanResult.success
+                                        className={`p-6 text-center rounded-lg ${scanResult.success
                                                 ? 'bg-green-900/30'
                                                 : scanResult.alreadyMarked
-                                                ? 'bg-yellow-900/30'
-                                                : 'bg-red-900/30'
-                                        }`}
+                                                    ? 'bg-yellow-900/30'
+                                                    : 'bg-red-900/30'
+                                            }`}
                                     >
                                         {scanResult.success ? (
                                             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
@@ -877,19 +874,18 @@ export default function CoordinatorScanner() {
                                         )}
 
                                         <h3
-                                            className={`text-xl font-bold mb-2 ${
-                                                scanResult.success
+                                            className={`text-xl font-bold mb-2 ${scanResult.success
                                                     ? 'text-green-400'
                                                     : scanResult.alreadyMarked
-                                                    ? 'text-yellow-400'
-                                                    : 'text-red-400'
-                                            }`}
+                                                        ? 'text-yellow-400'
+                                                        : 'text-red-400'
+                                                }`}
                                         >
                                             {scanResult.success
                                                 ? 'Success!'
                                                 : scanResult.alreadyMarked
-                                                ? 'Already Checked In'
-                                                : 'Error'}
+                                                    ? 'Already Checked In'
+                                                    : 'Error'}
                                         </h3>
 
                                         {scanResult.attendeeName && (

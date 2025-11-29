@@ -22,6 +22,7 @@ const AttendanceVerification = lazy(() => import("./pages/AttendanceVerification
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminEvents = lazy(() => import("./pages/admin/Events"));
+const EventForm = lazy(() => import("./pages/admin/EventForm"));
 const Registrations = lazy(() => import("./pages/admin/Registrations"));
 const RegistrationDetails = lazy(() => import("./pages/admin/RegistrationDetails"));
 const Queries = lazy(() => import("./pages/admin/Queries"));
@@ -96,6 +97,8 @@ const App = () => (
                 <Route path="/admin" element={<AdminLogin />} />
                 <Route path="/admin/dashboard" element={<Dashboard />} />
                 <Route path="/admin/events" element={<AdminEvents />} />
+                <Route path="/admin/events/new" element={<EventForm />} />
+                <Route path="/admin/events/:id" element={<EventForm />} />
                 <Route path="/admin/registrations" element={<Registrations />} />
                 <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
                 <Route path="/admin/queries" element={<Queries />} />

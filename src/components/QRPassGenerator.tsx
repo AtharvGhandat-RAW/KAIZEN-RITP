@@ -110,7 +110,7 @@ export const QRPassGenerator: React.FC<QRPassGeneratorProps> = ({
                             />
                         </div>
                     </div>
-                    
+
                     {/* KAIZEN 2026 branding below QR */}
                     <div className="text-center">
                         <span className="text-red-500 font-bold text-sm tracking-wider">KAIZEN 2026</span>

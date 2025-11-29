@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
@@ -30,7 +31,6 @@ import {
   IndianRupee, Search, Filter, Star, Clock, CheckCircle,
   AlertCircle, TrendingUp, Copy, ExternalLink, RefreshCw
 } from 'lucide-react';
-import { EventDialog } from '@/components/admin/EventDialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface Event {
@@ -48,9 +48,8 @@ interface Event {
 }
 
 export default function Events() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -193,10 +192,7 @@ export default function Events() {
                 Refresh
               </Button>
               <Button
-                onClick={() => {
-                  setSelectedEvent(null);
-                  setDialogOpen(true);
-                }}
+                onClick={() => navigate('/admin/events/new')}
                 className="bg-red-600 hover:bg-red-700 flex-1 sm:flex-none shadow-lg shadow-red-900/20 transition-all hover:scale-105"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -451,10 +447,7 @@ export default function Events() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
-                              setSelectedEvent(event);
-                              setDialogOpen(true);
-                            }}
+                            onClick={() => navigate(`/admin/events/${event.id}`)}
                             className="text-blue-500 hover:bg-blue-600/10"
                             title="Edit event"
                             aria-label={`Edit ${event.name}`}
@@ -479,16 +472,6 @@ export default function Events() {
               </>
             )}
           </div>
-
-          <EventDialog
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-            event={selectedEvent}
-            onSuccess={() => {
-              setDialogOpen(false);
-              fetchEvents();
-            }}
-          />
 
           {/* Delete Confirmation Dialog */}
           <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

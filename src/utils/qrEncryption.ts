@@ -35,14 +35,14 @@ export function encryptQRData(payload: QRPayload): string {
         t: payload.timestamp,
         s: '' // will be set below
     };
-    
+
     // Create short signature
     const sigData = `${compact.r}|${compact.e}|${compact.t}`;
     compact.s = CryptoJS.HmacSHA256(sigData, SECRET_KEY).toString().substring(0, 16);
-    
+
     // Simple encoding - JSON + base64 (no AES for shorter result)
     const jsonStr = JSON.stringify(compact);
-    
+
     // Use URL-safe base64
     return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
@@ -58,20 +58,20 @@ export function decryptQRData(encryptedData: string): QRPayload | null {
         while (base64.length % 4) {
             base64 += '=';
         }
-        
+
         // Decode
         const jsonStr = atob(base64);
         const compact: CompactQRData = JSON.parse(jsonStr);
-        
+
         // Verify signature
         const sigData = `${compact.r}|${compact.e}|${compact.t}`;
         const expectedSig = CryptoJS.HmacSHA256(sigData, SECRET_KEY).toString().substring(0, 16);
-        
+
         if (compact.s !== expectedSig) {
             console.error('QR signature verification failed');
             return null;
         }
-        
+
         // Convert to full payload
         return {
             registrationId: compact.r,
@@ -85,7 +85,7 @@ export function decryptQRData(encryptedData: string): QRPayload | null {
         };
     } catch (error) {
         console.error('Error decrypting QR data:', error);
-        
+
         // Try legacy format (old encrypted QR codes)
         return decryptLegacyQRData(encryptedData);
     }
@@ -106,7 +106,7 @@ function decryptLegacyQRData(encryptedData: string): QRPayload | null {
 
         const { data, sig } = JSON.parse(decryptedString);
         const expectedSignature = CryptoJS.HmacSHA256(data, SECRET_KEY).toString();
-        
+
         if (sig !== expectedSignature) {
             return null;
         }
