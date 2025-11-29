@@ -315,7 +315,7 @@ export default function CoordinatorScanner() {
                     } catch (camError) {
                         const e = camError as Error;
                         addLog(`Camera failed: ${e.name} - ${e.message}`);
-                        try { html5QrCode.clear(); } catch { }
+                        try { html5QrCode.clear(); } catch (clearErr) { console.log('Clear error:', clearErr); }
                         scannerRef.current = new Html5Qrcode(scannerContainerId, { verbose: true });
                     }
                 }
@@ -341,7 +341,7 @@ export default function CoordinatorScanner() {
                 } catch (fmError) {
                     const e = fmError as Error;
                     addLog(`FacingMode ${facingMode} failed: ${e.name} - ${e.message}`);
-                    try { html5QrCode.clear(); } catch { }
+                    try { html5QrCode.clear(); } catch (clearErr) { console.log('Clear error:', clearErr); }
                     scannerRef.current = new Html5Qrcode(scannerContainerId, { verbose: true });
                 }
             }
@@ -875,26 +875,41 @@ export default function CoordinatorScanner() {
                                                     Camera permission required
                                                 </p>
                                                 <div className="bg-black/60 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
-                                                    <p className="text-yellow-400 text-sm font-semibold mb-3">📱 For Android Chrome:</p>
-                                                    <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
-                                                        <li>Tap the <span className="text-white font-bold">⋮ three dots</span> menu (top right)</li>
-                                                        <li>Tap <span className="text-white font-bold">"Settings"</span></li>
-                                                        <li>Tap <span className="text-white font-bold">"Site settings"</span></li>
+                                                    {/* Step 1: Android App Permission */}
+                                                    <p className="text-red-500 text-sm font-bold mb-3">🔴 STEP 1: Android Permission</p>
+                                                    <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside mb-4">
+                                                        <li>Go to <span className="text-white font-bold">Phone Settings</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Apps"</span> or <span className="text-white font-bold">"Applications"</span></li>
+                                                        <li>Find and tap <span className="text-white font-bold">"Chrome"</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Permissions"</span></li>
                                                         <li>Tap <span className="text-white font-bold">"Camera"</span></li>
-                                                        <li>Find <span className="text-blue-400">kaizen-ritp.in</span> and tap it</li>
                                                         <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
                                                     </ol>
+                                                    
+                                                    {/* Step 2: Chrome Site Settings */}
+                                                    <div className="pt-3 border-t border-gray-700">
+                                                        <p className="text-yellow-400 text-sm font-bold mb-3">🟡 STEP 2: Chrome Site Permission</p>
+                                                        <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
+                                                            <li>Tap <span className="text-white font-bold">⋮</span> menu in Chrome</li>
+                                                            <li>Tap <span className="text-white font-bold">"Settings" → "Site settings" → "Camera"</span></li>
+                                                            <li>Find <span className="text-blue-400">kaizen-ritp.in</span></li>
+                                                            <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
+                                                        </ol>
+                                                    </div>
+                                                    
+                                                    {/* Alternative */}
                                                     <div className="mt-3 pt-3 border-t border-gray-700">
-                                                        <p className="text-yellow-400 text-sm font-semibold mb-2">⚡ Quick method:</p>
+                                                        <p className="text-cyan-400 text-sm font-bold mb-2">💡 Alternative: Clear Site Data</p>
                                                         <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
                                                             <li>Tap <span className="text-white font-bold">ⓘ</span> icon left of URL</li>
-                                                            <li>Tap <span className="text-white font-bold">"Permissions"</span></li>
-                                                            <li>Enable <span className="text-green-400 font-bold">"Camera"</span></li>
+                                                            <li>Tap <span className="text-white font-bold">"Site settings"</span></li>
+                                                            <li>Tap <span className="text-white font-bold">"Clear & reset"</span></li>
+                                                            <li>Reload page and allow camera when prompted</li>
                                                         </ol>
                                                     </div>
                                                 </div>
                                                 <p className="text-gray-400 text-xs mb-3 text-center">
-                                                    After enabling, tap "Refresh Page"
+                                                    After enabling BOTH permissions, tap "Refresh Page"
                                                 </p>
                                             </>
                                         ) : cameraError === 'CAMERA_IN_USE' ? (
