@@ -78,6 +78,7 @@ export default function CoordinatorScanner() {
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [showDebug, setShowDebug] = useState(false);
     const [permissionState, setPermissionState] = useState<'unknown' | 'prompt' | 'granted' | 'denied'>('unknown');
+    const [requestingPermission, setRequestingPermission] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -114,6 +115,54 @@ export default function CoordinatorScanner() {
         };
         checkPermission();
     }, []);
+
+    // Manual permission request - forces browser to show permission prompt
+    const requestCameraPermission = async () => {
+        setRequestingPermission(true);
+        setCameraError('');
+        setDebugLogs([]);
+        
+        addLog('=== MANUAL PERMISSION REQUEST ===' );
+        addLog('Directly requesting camera access...');
+        
+        try {
+            // This is the most direct way to trigger permission prompt
+            // Using minimal constraints to maximize success
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: true, 
+                audio: false 
+            });
+            
+            addLog('SUCCESS! Camera permission granted');
+            setPermissionState('granted');
+            
+            // Stop the test stream immediately
+            stream.getTracks().forEach(track => {
+                addLog(`Stopping test track: ${track.label}`);
+                track.stop();
+            });
+            
+            toast.success('Camera permission granted! You can now start scanning.');
+            setRequestingPermission(false);
+            
+        } catch (err) {
+            const error = err as Error;
+            addLog(`Permission request failed: ${error.name}`);
+            addLog(`Message: ${error.message}`);
+            
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                setPermissionState('denied');
+                setCameraError('CAMERA_PERMISSION_DENIED');
+                addLog('User denied permission or system blocked it');
+            } else if (error.name === 'NotFoundError') {
+                setCameraError('No camera found on this device.');
+            } else {
+                setCameraError(`Error: ${error.message}`);
+            }
+            
+            setRequestingPermission(false);
+        }
+    };
 
     useEffect(() => {
         const coordinatorData = localStorage.getItem('coordinator');
@@ -857,6 +906,36 @@ export default function CoordinatorScanner() {
                                     </div>
                                 )}
 
+                                {/* Permission Request State - Show before trying scanner */}
+                                {!isScanning && !isInitializing && !cameraError && !scanResult && permissionState === 'denied' && (
+                                    <div className="flex flex-col items-center justify-center bg-yellow-900/20 p-4 min-h-[280px]">
+                                        <AlertCircle className="w-10 h-10 text-yellow-500 mb-3" />
+                                        <p className="text-yellow-400 text-center text-sm mb-3">
+                                            Camera permission is currently blocked
+                                        </p>
+                                        <p className="text-gray-400 text-xs text-center mb-4">
+                                            Click the button below to request permission again
+                                        </p>
+                                        <Button
+                                            onClick={requestCameraPermission}
+                                            disabled={requestingPermission}
+                                            className="bg-yellow-600 hover:bg-yellow-700"
+                                        >
+                                            {requestingPermission ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Requesting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera className="w-4 h-4 mr-2" />
+                                                    Request Camera Permission
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {/* Error State */}
                                 {!isScanning && !isInitializing && cameraError && !scanResult && (
                                     <div className="flex flex-col items-center justify-center bg-red-900/20 p-4 min-h-[280px]">
@@ -911,6 +990,24 @@ export default function CoordinatorScanner() {
                                         )}
 
                                         <div className="flex gap-2 flex-wrap justify-center">
+                                            <Button
+                                                onClick={requestCameraPermission}
+                                                disabled={requestingPermission}
+                                                size="sm"
+                                                className="bg-green-600 hover:bg-green-700"
+                                            >
+                                                {requestingPermission ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                                                        Requesting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Camera className="w-4 h-4 mr-1" />
+                                                        Request Permission
+                                                    </>
+                                                )}
+                                            </Button>
                                             <Button
                                                 onClick={() => window.location.reload()}
                                                 size="sm"
