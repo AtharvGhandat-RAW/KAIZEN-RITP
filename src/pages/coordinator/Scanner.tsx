@@ -135,6 +135,17 @@ export default function CoordinatorScanner() {
         }
     };
 
+    // Check if Permissions Policy is blocking camera
+    const checkPermissionsPolicy = () => {
+        // Check if camera is allowed by Permissions Policy
+        if (document.featurePolicy) {
+            const allowed = (document as any).featurePolicy.allowsFeature('camera');
+            return allowed;
+        }
+        // If API not available, assume allowed
+        return true;
+    };
+
     // Manual permission request - forces browser to show permission prompt
     const requestCameraPermission = async () => {
         const isAndroid = /Android/i.test(navigator.userAgent);
@@ -145,11 +156,47 @@ export default function CoordinatorScanner() {
         
         addLog('=== MANUAL PERMISSION REQUEST ===' );
         addLog(`Platform: ${isAndroid ? 'Android' : 'Other'}`);
-        addLog('Directly requesting camera access...');
+        addLog(`Location: ${window.location.href}`);
+        addLog(`Protocol: ${window.location.protocol}`);
+        addLog(`Secure context: ${window.isSecureContext}`);
+        
+        // Check Permissions Policy
+        const policyAllowed = checkPermissionsPolicy();
+        addLog(`Permissions Policy allows camera: ${policyAllowed}`);
+        
+        // Check navigator.permissions
+        try {
+            if (navigator.permissions && navigator.permissions.query) {
+                const permResult = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                addLog(`Permission API state: ${permResult.state}`);
+            } else {
+                addLog('Permission API not available');
+            }
+        } catch (e) {
+            addLog(`Permission API error: ${(e as Error).message}`);
+        }
+        
+        // Check if mediaDevices exists
+        addLog(`navigator.mediaDevices: ${!!navigator.mediaDevices}`);
+        addLog(`getUserMedia: ${!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)}`);
+        
+        // Try to enumerate devices first (this sometimes triggers permission)
+        try {
+            addLog('Enumerating devices...');
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const cameras = devices.filter(d => d.kind === 'videoinput');
+            addLog(`Found ${cameras.length} camera(s)`);
+            cameras.forEach((cam, i) => {
+                addLog(`  ${i}: ${cam.label || '(no label - permission needed)'} [${cam.deviceId.substring(0,8)}]`);
+            });
+        } catch (enumErr) {
+            addLog(`Enumerate failed: ${(enumErr as Error).message}`);
+        }
+        
+        addLog('Requesting camera with { video: true }...');
         
         try {
             // This is the most direct way to trigger permission prompt
-            // Using minimal constraints to maximize success
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: true, 
                 audio: false 
@@ -160,7 +207,7 @@ export default function CoordinatorScanner() {
             
             // Stop the test stream immediately
             stream.getTracks().forEach(track => {
-                addLog(`Stopping test track: ${track.label}`);
+                addLog(`Got track: ${track.label}`);
                 track.stop();
             });
             
@@ -169,8 +216,13 @@ export default function CoordinatorScanner() {
             
         } catch (err) {
             const error = err as Error;
-            addLog(`Permission request failed: ${error.name}`);
+            addLog(`FAILED: ${error.name}`);
             addLog(`Message: ${error.message}`);
+            
+            // Log additional error properties
+            if ('constraint' in error) {
+                addLog(`Constraint: ${(error as any).constraint}`);
+            }
             
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 setPermissionState('denied');
@@ -178,15 +230,28 @@ export default function CoordinatorScanner() {
                 // On Android, show special message about Chrome settings
                 if (isAndroid) {
                     addLog('Android detected - Chrome has blocked camera');
-                    addLog('User must enable in Chrome site settings');
+                    addLog('This usually means:');
+                    addLog('  1. User previously denied permission');
+                    addLog('  2. Chrome Site Settings has camera blocked');
+                    addLog('  3. Android system denied Chrome camera access');
                     setCameraError('ANDROID_CHROME_BLOCKED');
                 } else {
                     setCameraError('CAMERA_PERMISSION_DENIED');
                 }
-                
-                addLog('User denied permission or system blocked it');
             } else if (error.name === 'NotFoundError') {
                 setCameraError('No camera found on this device.');
+            } else if (error.name === 'NotReadableError') {
+                addLog('Camera is in use by another app');
+                setCameraError('CAMERA_IN_USE');
+            } else if (error.name === 'OverconstrainedError') {
+                addLog('Camera constraints could not be satisfied');
+                setCameraError('Camera constraints error. Try refreshing.');
+            } else if (error.name === 'SecurityError') {
+                addLog('Security error - possibly Permissions Policy');
+                setCameraError('Camera blocked by security policy.');
+            } else if (error.name === 'AbortError') {
+                addLog('Request was aborted');
+                setCameraError('Camera request was cancelled.');
             } else {
                 setCameraError(`Error: ${error.message}`);
             }
