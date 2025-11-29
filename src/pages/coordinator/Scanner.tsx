@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -12,6 +13,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
 import {
     QrCode,
     Camera,
@@ -22,8 +29,13 @@ import {
     LogOut,
     RefreshCw,
     History,
+    Keyboard,
+    Search,
 } from 'lucide-react';
-import { decryptQRData, QRPayload, isValidQRPayload } from '@/utils/qrEncryption';
+import { decryptQRData, QRPayload, isValidQRPayload, generateVerificationCode } from '@/utils/qrEncryption';
+import CryptoJS from 'crypto-js';
+
+const SECRET_KEY = import.meta.env.VITE_QR_SECRET_KEY || 'kaizen-ritp-2025-secret-key';
 
 interface Coordinator {
     id: string;
@@ -64,8 +76,12 @@ export default function CoordinatorScanner() {
     const [todayCount, setTodayCount] = useState(0);
     const [cameraError, setCameraError] = useState<string>('');
     const [isInitializing, setIsInitializing] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [verifyingCode, setVerifyingCode] = useState(false);
+    const [activeTab, setActiveTab] = useState<string>('scan');
     
     const scannerRef = useRef<Html5Qrcode | null>(null);
+    const lastScannedRef = useRef<string>('');
     const scannerContainerId = 'qr-reader-container';
 
     useEffect(() => {
@@ -153,6 +169,7 @@ export default function CoordinatorScanner() {
         setCameraError('');
         setIsInitializing(true);
         setScanResult(null);
+        lastScannedRef.current = '';
 
         // Check for HTTPS
         if (!window.isSecureContext) {
@@ -176,8 +193,11 @@ export default function CoordinatorScanner() {
                 scannerRef.current = null;
             }
 
-            // Create new scanner instance
-            const html5QrCode = new Html5Qrcode(scannerContainerId);
+            // Create new scanner instance with QR code format
+            const html5QrCode = new Html5Qrcode(scannerContainerId, {
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                verbose: false
+            });
             scannerRef.current = html5QrCode;
 
             // Get available cameras
@@ -200,12 +220,14 @@ export default function CoordinatorScanner() {
                 cameraId = backCamera.id;
             }
 
-            // Start scanner with camera ID
+            // Start scanner with optimized config
             await html5QrCode.start(
                 cameraId,
                 {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    fps: 15,
+                    qrbox: { width: 280, height: 280 },
+                    aspectRatio: 1.0,
+                    disableFlip: false,
                 },
                 handleScanSuccess,
                 handleScanError
@@ -213,7 +235,7 @@ export default function CoordinatorScanner() {
 
             setIsScanning(true);
             setIsInitializing(false);
-            toast.success('Scanner ready!');
+            toast.success('Scanner ready! Point at QR code');
         } catch (error) {
             console.error('Scanner error:', error);
             setIsInitializing(false);
@@ -249,8 +271,16 @@ export default function CoordinatorScanner() {
     }, []);
 
     const handleScanSuccess = async (decodedText: string) => {
-        if (processing) return;
+        // Prevent duplicate scans of same QR
+        if (processing || decodedText === lastScannedRef.current) return;
+        
+        lastScannedRef.current = decodedText;
         setProcessing(true);
+
+        // Play success sound/vibration
+        if (navigator.vibrate) {
+            navigator.vibrate(100);
+        }
 
         // Pause scanner during processing
         if (scannerRef.current) {
@@ -262,24 +292,30 @@ export default function CoordinatorScanner() {
         }
 
         try {
+            console.log('Scanned data length:', decodedText.length);
+            console.log('Scanned data preview:', decodedText.substring(0, 50) + '...');
+            
             // Decrypt QR data
             const payload = decryptQRData(decodedText);
 
             if (!payload || !isValidQRPayload(payload)) {
+                console.log('Invalid payload:', payload);
                 setScanResult({
                     success: false,
-                    message: 'Invalid QR code. Not a KAIZEN pass.',
+                    message: 'Invalid QR code. Not a valid KAIZEN pass.',
                 });
                 resumeScanner();
                 return;
             }
+
+            console.log('Valid payload:', payload);
 
             // Validate event
             if (payload.eventId !== selectedEvent) {
                 const eventName = events.find((e) => e.id === payload.eventId)?.name || 'another event';
                 setScanResult({
                     success: false,
-                    message: `This pass is for ${eventName}, not the selected event.`,
+                    message: `This pass is for "${eventName}", not the selected event.`,
                     data: payload,
                     attendeeName: payload.name,
                 });
@@ -350,6 +386,7 @@ export default function CoordinatorScanner() {
 
     const resumeScanner = () => {
         setTimeout(() => {
+            lastScannedRef.current = '';
             if (scannerRef.current) {
                 try {
                     scannerRef.current.resume();
@@ -358,13 +395,115 @@ export default function CoordinatorScanner() {
                 }
             }
             setProcessing(false);
-        }, 1500);
+        }, 2000);
     };
 
     const handleScanError = (error: string) => {
-        // Ignore normal "no QR found" messages
-        if (!error.includes('No QR') && !error.includes('NotFoundException')) {
+        // Only log real errors, not "no QR found" messages
+        if (!error.includes('No QR') && !error.includes('NotFoundException') && !error.includes('No MultiFormat')) {
             console.log('Scan error:', error);
+        }
+    };
+
+    // Manual verification code lookup
+    const verifyByCode = async () => {
+        if (!selectedEvent) {
+            toast.error('Please select an event first');
+            return;
+        }
+
+        const code = verificationCode.trim().toUpperCase();
+        if (code.length !== 8) {
+            toast.error('Verification code must be 8 characters');
+            return;
+        }
+
+        setVerifyingCode(true);
+        setScanResult(null);
+
+        try {
+            // Get all registrations for this event
+            const { data: registrations, error } = await supabase
+                .from('registrations')
+                .select('id, name, email, phone, event_id')
+                .eq('event_id', selectedEvent);
+
+            if (error) throw error;
+
+            // Find registration matching verification code
+            let matchedRegistration = null;
+            for (const reg of registrations || []) {
+                const regCode = generateVerificationCode(reg.id);
+                if (regCode === code) {
+                    matchedRegistration = reg;
+                    break;
+                }
+            }
+
+            if (!matchedRegistration) {
+                setScanResult({
+                    success: false,
+                    message: 'Invalid verification code. No matching registration found.',
+                });
+                return;
+            }
+
+            // Check if already marked
+            const { data: existing } = await supabase
+                .from('attendance')
+                .select('id')
+                .eq('registration_id', matchedRegistration.id)
+                .eq('event_id', selectedEvent)
+                .maybeSingle();
+
+            if (existing) {
+                setScanResult({
+                    success: false,
+                    message: 'Already checked in!',
+                    attendeeName: matchedRegistration.name,
+                    alreadyMarked: true,
+                });
+                return;
+            }
+
+            // Mark attendance
+            const { error: insertError } = await supabase.from('attendance').insert({
+                registration_id: matchedRegistration.id,
+                event_id: selectedEvent,
+                marked_by: coordinator?.id,
+                marked_at: new Date().toISOString(),
+            });
+
+            if (insertError) throw insertError;
+
+            // Success!
+            setScanResult({
+                success: true,
+                message: 'Attendance marked successfully!',
+                attendeeName: matchedRegistration.name,
+            });
+
+            setRecentScans((prev) => [
+                {
+                    timestamp: new Date(),
+                    name: matchedRegistration.name,
+                    event: events.find((e) => e.id === selectedEvent)?.name || 'Unknown',
+                    success: true,
+                },
+                ...prev.slice(0, 9),
+            ]);
+
+            setTodayCount((prev) => prev + 1);
+            setVerificationCode('');
+            toast.success(`✓ ${matchedRegistration.name} checked in!`);
+        } catch (error) {
+            console.error('Verification error:', error);
+            setScanResult({
+                success: false,
+                message: 'An error occurred. Please try again.',
+            });
+        } finally {
+            setVerifyingCode(false);
         }
     };
 
@@ -376,16 +515,18 @@ export default function CoordinatorScanner() {
 
     const resetScanner = async () => {
         setScanResult(null);
-        if (scannerRef.current) {
-            try {
-                scannerRef.current.resume();
-            } catch {
-                // If resume fails, restart scanner
-                await stopScanning();
+        lastScannedRef.current = '';
+        if (activeTab === 'scan') {
+            if (scannerRef.current) {
+                try {
+                    scannerRef.current.resume();
+                } catch {
+                    await stopScanning();
+                    await startScanning();
+                }
+            } else {
                 await startScanning();
             }
-        } else {
-            await startScanning();
         }
     };
 
@@ -399,11 +540,9 @@ export default function CoordinatorScanner() {
 
     return (
         <div className="min-h-screen bg-gray-950 text-white">
-            {/* Optimized CSS for battery saving */}
+            {/* Optimized CSS */}
             <style>{`
-                * {
-                    -webkit-tap-highlight-color: transparent;
-                }
+                * { -webkit-tap-highlight-color: transparent; }
                 #${scannerContainerId} {
                     width: 100% !important;
                     border: none !important;
@@ -411,7 +550,7 @@ export default function CoordinatorScanner() {
                 #${scannerContainerId} video {
                     width: 100% !important;
                     height: auto !important;
-                    min-height: 300px !important;
+                    min-height: 320px !important;
                     object-fit: cover !important;
                     border-radius: 8px !important;
                 }
@@ -429,7 +568,7 @@ export default function CoordinatorScanner() {
                     display: none !important;
                 }
                 #qr-shaded-region {
-                    border-color: rgba(239, 68, 68, 0.7) !important;
+                    border-color: rgba(239, 68, 68, 0.8) !important;
                 }
             `}</style>
 
@@ -486,7 +625,10 @@ export default function CoordinatorScanner() {
                         ) : (
                             <Select 
                                 value={selectedEvent} 
-                                onValueChange={setSelectedEvent}
+                                onValueChange={(value) => {
+                                    setSelectedEvent(value);
+                                    setScanResult(null);
+                                }}
                                 disabled={isScanning}
                             >
                                 <SelectTrigger className="bg-black/40 border-red-600/30">
@@ -504,138 +646,262 @@ export default function CoordinatorScanner() {
                     </CardContent>
                 </Card>
 
-                {/* Scanner Area */}
-                <Card className="bg-black/40 border-red-600/30 mb-4 overflow-hidden relative">
-                    <CardContent className="p-0">
-                        {/* Scanner Container - Always present */}
-                        <div 
-                            id={scannerContainerId} 
-                            className={`w-full ${!isScanning ? 'hidden' : ''}`}
-                            style={{ minHeight: isScanning ? '320px' : '0' }}
-                        />
+                {/* Verification Tabs */}
+                <Tabs 
+                    value={activeTab} 
+                    onValueChange={(value) => {
+                        setActiveTab(value);
+                        if (value === 'manual' && isScanning) {
+                            stopScanning();
+                        }
+                        setScanResult(null);
+                    }}
+                    className="mb-4"
+                >
+                    <TabsList className="grid w-full grid-cols-2 bg-black/40">
+                        <TabsTrigger value="scan" className="data-[state=active]:bg-red-600">
+                            <Camera className="w-4 h-4 mr-2" />
+                            Scan QR
+                        </TabsTrigger>
+                        <TabsTrigger value="manual" className="data-[state=active]:bg-red-600">
+                            <Keyboard className="w-4 h-4 mr-2" />
+                            Enter Code
+                        </TabsTrigger>
+                    </TabsList>
 
-                        {/* Scanning Overlay */}
-                        {isScanning && !scanResult && (
-                            <div className="p-3 bg-black/60 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                    <span className="text-green-400 text-sm">Scanning...</span>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={stopScanning}
-                                >
-                                    <CameraOff className="w-4 h-4 mr-1" />
-                                    Stop
-                                </Button>
-                            </div>
-                        )}
+                    {/* QR Scanner Tab */}
+                    <TabsContent value="scan" className="mt-4">
+                        <Card className="bg-black/40 border-red-600/30 overflow-hidden relative">
+                            <CardContent className="p-0">
+                                {/* Scanner Container */}
+                                <div 
+                                    id={scannerContainerId} 
+                                    className={`w-full ${!isScanning ? 'hidden' : ''}`}
+                                    style={{ minHeight: isScanning ? '320px' : '0' }}
+                                />
 
-                        {/* Processing Overlay */}
-                        {processing && (
-                            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
-                                <div className="text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-2"></div>
-                                    <p className="text-white text-sm">Processing...</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Initializing State */}
-                        {isInitializing && (
-                            <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
-                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mb-3"></div>
-                                <p className="text-gray-400 text-sm">Starting camera...</p>
-                            </div>
-                        )}
-
-                        {/* Error State */}
-                        {!isScanning && !isInitializing && cameraError && (
-                            <div className="aspect-video flex flex-col items-center justify-center bg-red-900/20 p-4">
-                                <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
-                                <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
-                                {!window.isSecureContext && (
-                                    <div className="bg-black/40 rounded p-2 mb-3 text-center">
-                                        <p className="text-green-400 text-xs font-mono">
-                                            https://kaizen-ritp.in/coordinator/scan
-                                        </p>
+                                {/* Scanning Overlay */}
+                                {isScanning && !scanResult && (
+                                    <div className="p-3 bg-black/60 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                            <span className="text-green-400 text-sm">Scanning...</span>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={stopScanning}
+                                        >
+                                            <CameraOff className="w-4 h-4 mr-1" />
+                                            Stop
+                                        </Button>
                                     </div>
                                 )}
-                                <Button onClick={() => { setCameraError(''); startScanning(); }} size="sm">
-                                    <RefreshCw className="w-4 h-4 mr-1" />
-                                    Try Again
-                                </Button>
-                            </div>
-                        )}
 
-                        {/* Idle State */}
-                        {!isScanning && !isInitializing && !cameraError && !scanResult && (
-                            <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
-                                <Camera className="w-12 h-12 text-gray-600 mb-3" />
-                                <p className="text-gray-400 text-center text-sm mb-4">
-                                    {!selectedEvent ? 'Select an event first' : 'Ready to scan'}
-                                </p>
-                                <Button
-                                    onClick={startScanning}
-                                    disabled={!selectedEvent || events.length === 0}
-                                    className="bg-red-600 hover:bg-red-700"
-                                >
-                                    <Camera className="w-4 h-4 mr-2" />
-                                    Start Scanner
-                                </Button>
-                            </div>
-                        )}
+                                {/* Processing Overlay */}
+                                {processing && (
+                                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-2"></div>
+                                            <p className="text-white text-sm">Processing...</p>
+                                        </div>
+                                    </div>
+                                )}
 
-                        {/* Scan Result */}
-                        {scanResult && (
-                            <div
-                                className={`p-6 text-center ${
-                                    scanResult.success
-                                        ? 'bg-green-900/30'
-                                        : scanResult.alreadyMarked
-                                        ? 'bg-yellow-900/30'
-                                        : 'bg-red-900/30'
-                                }`}
-                            >
-                                {scanResult.success ? (
-                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
-                                ) : scanResult.alreadyMarked ? (
-                                    <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-3" />
+                                {/* Initializing State */}
+                                {isInitializing && (
+                                    <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
+                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mb-3"></div>
+                                        <p className="text-gray-400 text-sm">Starting camera...</p>
+                                    </div>
+                                )}
+
+                                {/* Error State */}
+                                {!isScanning && !isInitializing && cameraError && !scanResult && (
+                                    <div className="aspect-video flex flex-col items-center justify-center bg-red-900/20 p-4">
+                                        <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+                                        <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
+                                        {!window.isSecureContext && (
+                                            <div className="bg-black/40 rounded p-2 mb-3 text-center">
+                                                <p className="text-green-400 text-xs font-mono">
+                                                    https://kaizen-ritp.in/coordinator/scan
+                                                </p>
+                                            </div>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <Button onClick={() => { setCameraError(''); startScanning(); }} size="sm">
+                                                <RefreshCw className="w-4 h-4 mr-1" />
+                                                Try Again
+                                            </Button>
+                                            <Button 
+                                                onClick={() => setActiveTab('manual')} 
+                                                size="sm" 
+                                                variant="outline"
+                                            >
+                                                <Keyboard className="w-4 h-4 mr-1" />
+                                                Use Code
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Idle State */}
+                                {!isScanning && !isInitializing && !cameraError && !scanResult && (
+                                    <div className="aspect-video flex flex-col items-center justify-center bg-gray-900/50 p-6">
+                                        <Camera className="w-12 h-12 text-gray-600 mb-3" />
+                                        <p className="text-gray-400 text-center text-sm mb-4">
+                                            {!selectedEvent ? 'Select an event first' : 'Ready to scan QR codes'}
+                                        </p>
+                                        <Button
+                                            onClick={startScanning}
+                                            disabled={!selectedEvent || events.length === 0}
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            <Camera className="w-4 h-4 mr-2" />
+                                            Start Scanner
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Scan Result */}
+                                {scanResult && (
+                                    <div
+                                        className={`p-6 text-center ${
+                                            scanResult.success
+                                                ? 'bg-green-900/30'
+                                                : scanResult.alreadyMarked
+                                                ? 'bg-yellow-900/30'
+                                                : 'bg-red-900/30'
+                                        }`}
+                                    >
+                                        {scanResult.success ? (
+                                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                                        ) : scanResult.alreadyMarked ? (
+                                            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-3" />
+                                        ) : (
+                                            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-3" />
+                                        )}
+
+                                        <h3
+                                            className={`text-xl font-bold mb-2 ${
+                                                scanResult.success
+                                                    ? 'text-green-400'
+                                                    : scanResult.alreadyMarked
+                                                    ? 'text-yellow-400'
+                                                    : 'text-red-400'
+                                            }`}
+                                        >
+                                            {scanResult.success
+                                                ? 'Success!'
+                                                : scanResult.alreadyMarked
+                                                ? 'Already Checked In'
+                                                : 'Error'}
+                                        </h3>
+
+                                        {scanResult.attendeeName && (
+                                            <p className="text-white text-lg mb-2">{scanResult.attendeeName}</p>
+                                        )}
+
+                                        <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
+
+                                        <Button onClick={resetScanner} className="bg-red-600 hover:bg-red-700">
+                                            <RefreshCw className="w-4 h-4 mr-2" />
+                                            Scan Next
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Manual Code Entry Tab */}
+                    <TabsContent value="manual" className="mt-4">
+                        <Card className="bg-black/40 border-red-600/30">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm text-gray-400">Enter Verification Code</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {!scanResult ? (
+                                    <div className="space-y-4">
+                                        <p className="text-gray-400 text-sm">
+                                            Enter the 8-character code shown on the attendee's pass
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="text"
+                                                placeholder="e.g., A1B2C3D4"
+                                                value={verificationCode}
+                                                onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+                                                maxLength={8}
+                                                className="bg-black/40 border-red-600/30 text-center text-lg font-mono tracking-widest uppercase"
+                                                disabled={verifyingCode || !selectedEvent}
+                                            />
+                                            <Button
+                                                onClick={verifyByCode}
+                                                disabled={verifyingCode || verificationCode.length !== 8 || !selectedEvent}
+                                                className="bg-red-600 hover:bg-red-700"
+                                            >
+                                                {verifyingCode ? (
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                                                ) : (
+                                                    <Search className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                        {!selectedEvent && (
+                                            <p className="text-yellow-400 text-xs">Please select an event first</p>
+                                        )}
+                                    </div>
                                 ) : (
-                                    <XCircle className="w-16 h-16 text-red-500 mx-auto mb-3" />
+                                    <div
+                                        className={`p-6 text-center rounded-lg ${
+                                            scanResult.success
+                                                ? 'bg-green-900/30'
+                                                : scanResult.alreadyMarked
+                                                ? 'bg-yellow-900/30'
+                                                : 'bg-red-900/30'
+                                        }`}
+                                    >
+                                        {scanResult.success ? (
+                                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                                        ) : scanResult.alreadyMarked ? (
+                                            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-3" />
+                                        ) : (
+                                            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-3" />
+                                        )}
+
+                                        <h3
+                                            className={`text-xl font-bold mb-2 ${
+                                                scanResult.success
+                                                    ? 'text-green-400'
+                                                    : scanResult.alreadyMarked
+                                                    ? 'text-yellow-400'
+                                                    : 'text-red-400'
+                                            }`}
+                                        >
+                                            {scanResult.success
+                                                ? 'Success!'
+                                                : scanResult.alreadyMarked
+                                                ? 'Already Checked In'
+                                                : 'Error'}
+                                        </h3>
+
+                                        {scanResult.attendeeName && (
+                                            <p className="text-white text-lg mb-2">{scanResult.attendeeName}</p>
+                                        )}
+
+                                        <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
+
+                                        <Button onClick={() => setScanResult(null)} className="bg-red-600 hover:bg-red-700">
+                                            <RefreshCw className="w-4 h-4 mr-2" />
+                                            Verify Another
+                                        </Button>
+                                    </div>
                                 )}
-
-                                <h3
-                                    className={`text-xl font-bold mb-2 ${
-                                        scanResult.success
-                                            ? 'text-green-400'
-                                            : scanResult.alreadyMarked
-                                            ? 'text-yellow-400'
-                                            : 'text-red-400'
-                                    }`}
-                                >
-                                    {scanResult.success
-                                        ? 'Success!'
-                                        : scanResult.alreadyMarked
-                                        ? 'Already Checked In'
-                                        : 'Error'}
-                                </h3>
-
-                                {scanResult.attendeeName && (
-                                    <p className="text-white text-lg mb-2">{scanResult.attendeeName}</p>
-                                )}
-
-                                <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
-
-                                <Button onClick={resetScanner} className="bg-red-600 hover:bg-red-700">
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Scan Next
-                                </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
 
                 {/* Recent Scans */}
                 {recentScans.length > 0 && (
@@ -643,7 +909,7 @@ export default function CoordinatorScanner() {
                         <CardHeader className="pb-2 pt-3">
                             <CardTitle className="text-sm text-gray-400 flex items-center gap-2">
                                 <History className="w-4 h-4" />
-                                Recent Scans
+                                Recent Check-ins
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pb-3">
