@@ -190,6 +190,33 @@ export default function CoordinatorScanner() {
                 scannerRef.current = null;
             }
 
+            // IMPORTANT: Explicitly request camera permission first
+            // This triggers the browser's permission prompt on Android
+            console.log('Requesting camera permission...');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                // Stop the stream immediately - we just needed to trigger permission
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Camera permission granted');
+            } catch (permError) {
+                console.error('Permission error:', permError);
+                const errMsg = permError instanceof Error ? permError.message : String(permError);
+                
+                if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
+                    setCameraError('Camera permission denied. Please tap the lock icon in address bar, enable Camera, and refresh the page.');
+                } else if (errMsg.includes('NotFound')) {
+                    setCameraError('No camera found on this device.');
+                } else if (errMsg.includes('NotReadable') || errMsg.includes('in use')) {
+                    setCameraError('Camera is in use by another app. Close other apps and try again.');
+                } else {
+                    setCameraError(`Camera access error: ${errMsg}. Please check site settings and allow camera.`);
+                }
+                setIsInitializing(false);
+                return;
+            }
+
             // Create new scanner instance - no format restriction for better detection
             const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
@@ -237,7 +264,7 @@ export default function CoordinatorScanner() {
             const errMsg = error instanceof Error ? error.message : String(error);
 
             if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
-                setCameraError('Camera permission denied. Please allow camera access and refresh.');
+                setCameraError('Camera permission denied. Please allow camera access in browser settings and refresh.');
             } else if (errMsg.includes('NotFound') || errMsg.includes('No cameras')) {
                 setCameraError('No camera found on this device.');
             } else if (errMsg.includes('NotReadable') || errMsg.includes('in use')) {
@@ -727,6 +754,20 @@ export default function CoordinatorScanner() {
                                     <div className="aspect-video flex flex-col items-center justify-center bg-red-900/20 p-4">
                                         <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
                                         <p className="text-red-400 text-center text-sm mb-3">{cameraError}</p>
+                                        
+                                        {/* Help for camera permission */}
+                                        {cameraError.includes('permission') && (
+                                            <div className="bg-black/60 rounded-lg p-3 mb-3 text-left w-full max-w-xs">
+                                                <p className="text-yellow-400 text-xs font-semibold mb-2">To enable camera:</p>
+                                                <ol className="text-gray-300 text-xs space-y-1 list-decimal list-inside">
+                                                    <li>Tap the <span className="text-white font-bold">🔒 lock icon</span> in address bar</li>
+                                                    <li>Find <span className="text-white font-bold">"Camera"</span> setting</li>
+                                                    <li>Change to <span className="text-green-400 font-bold">"Allow"</span></li>
+                                                    <li>Tap <span className="text-white font-bold">"Try Again"</span> below</li>
+                                                </ol>
+                                            </div>
+                                        )}
+                                        
                                         {!window.isSecureContext && (
                                             <div className="bg-black/40 rounded p-2 mb-3 text-center">
                                                 <p className="text-green-400 text-xs font-mono">
