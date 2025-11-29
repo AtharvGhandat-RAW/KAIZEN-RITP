@@ -15,10 +15,11 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
 const SchedulePage = lazy(() => import("./pages/Schedule"));
+const EventsPage = lazy(() => import("./pages/Events"));
 const HorrorDramatics = lazy(() => import("./pages/HorrorDramatics"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
-const Events = lazy(() => import("./pages/admin/Events"));
+const AdminEvents = lazy(() => import("./pages/admin/Events"));
 const Registrations = lazy(() => import("./pages/admin/Registrations"));
 const RegistrationDetails = lazy(() => import("./pages/admin/RegistrationDetails"));
 const Queries = lazy(() => import("./pages/admin/Queries"));
@@ -80,12 +81,13 @@ const App = () => (
                 <Route path="/refund" element={<Refund />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/events" element={<EventsPage />} />
                 <Route path="/horror-dramatics" element={<HorrorDramatics />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLogin />} />
                 <Route path="/admin/dashboard" element={<Dashboard />} />
-                <Route path="/admin/events" element={<Events />} />
+                <Route path="/admin/events" element={<AdminEvents />} />
                 <Route path="/admin/registrations" element={<Registrations />} />
                 <Route path="/admin/registrations/:id" element={<RegistrationDetails />} />
                 <Route path="/admin/queries" element={<Queries />} />

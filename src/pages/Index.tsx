@@ -153,13 +153,13 @@ const Index = () => {
   // Memoized handlers
   const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
   const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
-  const handleShowExploreEvents = useCallback(() => setShowExploreEvents(true), []);
+  const handleShowExploreEvents = useCallback(() => navigate('/events'), [navigate]);
   const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);
 
   const handleShowEventDetails = useCallback((eventId: string) => {
-    setSelectedEventId(eventId);
-    setShowEventDetails(true);
-  }, []);
+    // Navigate to events page with event details
+    navigate('/events');
+  }, [navigate]);
   const handleCloseEventDetails = useCallback(() => {
     setShowEventDetails(false);
     setSelectedEventId(undefined);

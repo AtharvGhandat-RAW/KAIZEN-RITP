@@ -10,6 +10,19 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
+// UUID fallback for browsers that don't support crypto.randomUUID
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback implementation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const registrationSchema = z.object({
   eventId: z.string().min(1, "Please select an event"),
   fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100).regex(/^[a-zA-Z\s]+$/, "Name should only contain letters"),
@@ -18,6 +31,7 @@ const registrationSchema = z.object({
   college: z.string().trim().min(2, "College name required").max(200),
   year: z.string().min(1, "Please select your year"),
   branch: z.string().trim().min(2, "Branch required").max(100),
+  educationType: z.string().min(1, "Please select your education type"),
   teamName: z.string().trim().max(100).optional().or(z.literal("")),
   declaration: z.boolean().refine(val => val === true, "You must agree to the terms"),
 });
@@ -59,6 +73,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     college: '',
     year: '',
     branch: '',
+    educationType: '',
     eventId: initialEventId || '',
     teamName: '',
     declaration: false,
@@ -172,12 +187,49 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     setLoading(true);
 
     try {
+      // Check if user already registered for this event
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.email)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Check if already registered for this specific event
+        const { data: existingReg } = await supabase
+          .from('registrations')
+          .select('id, payment_status')
+          .eq('profile_id', existingProfile.id)
+          .eq('event_id', formData.eventId)
+          .maybeSingle();
+
+        if (existingReg) {
+          // Allow re-registration if previous was rejected or failed
+          if (existingReg.payment_status === 'rejected') {
+            // Delete old registration to allow fresh one
+            await supabase
+              .from('registrations')
+              .delete()
+              .eq('id', existingReg.id);
+          } else {
+            // Already registered with pending/completed status
+            const statusMsg = existingReg.payment_status === 'completed' 
+              ? 'You are already registered for this event!' 
+              : 'You have a pending registration for this event. Please wait for payment verification.';
+            toast.info(statusMsg);
+            setError(statusMsg);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       let paymentProofUrl = null;
 
       if (formData.paymentProof) {
         setUploading(true);
         const fileExt = formData.paymentProof.name.split('.').pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const fileName = `${generateUUID()}.${fileExt}`;
         const filePath = `payment-proofs/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -199,16 +251,19 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         setUploading(false);
       }
 
-      // Check for existing profile
-      const { data: existingProfile } = await supabase
+      // Check for existing profile (reuse from earlier check)
+      let profileId: string;
+      const profileEmail = formData.email.toLowerCase().trim();
+
+      // Re-fetch profile to ensure we have latest data
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('id')
-        .eq('email', formData.email)
-        .single();
+        .eq('email', profileEmail)
+        .maybeSingle();
 
-      let profileId: string;
-
-      if (existingProfile) {
+      if (profileData) {
+        // Update existing profile
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
@@ -218,17 +273,21 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
             year: formData.year,
             branch: formData.branch,
           })
-          .eq('id', existingProfile.id);
+          .eq('id', profileData.id);
 
-        if (updateError) throw updateError;
-        profileId = existingProfile.id;
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          throw new Error('Failed to update your profile. Please try again.');
+        }
+        profileId = profileData.id;
       } else {
+        // Create new profile
         const { data: newProfile, error: profileError } = await supabase
           .from('profiles')
           .insert({
             // user_id is optional for public registrations
             full_name: formData.fullName,
-            email: formData.email,
+            email: profileEmail,
             phone: formData.phone,
             college: formData.college,
             year: formData.year,
@@ -237,7 +296,14 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
           .select('id')
           .single();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          // Check if it's a duplicate email error
+          if (profileError.code === '23505') {
+            throw new Error('An account with this email already exists. Please use a different email or try again.');
+          }
+          throw new Error('Failed to create your profile. Please try again.');
+        }
         profileId = newProfile.id;
       }
 
@@ -561,6 +627,30 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 className="bg-black/40 border-white/10 text-white h-12 focus:border-purple-500/50 focus:ring-purple-500/20"
                                 placeholder="Institution Name"
                               />
+                            </div>
+
+                            {/* Education Type Field */}
+                            <div className="space-y-2">
+                              <Label className="text-purple-300/80 text-sm font-medium">Education Type <span className="text-red-500">*</span></Label>
+                              <Select value={formData.educationType} onValueChange={(value) => handleChange('educationType', value)}>
+                                <SelectTrigger className="bg-black/60 border-purple-800/40 text-white h-12 hover:border-purple-600/60 transition-all">
+                                  <SelectValue placeholder="Select Education Type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-950 border-purple-800/50 text-white shadow-xl" position="popper" sideOffset={8}>
+                                  <SelectItem value="diploma" className="focus:bg-purple-900/30 hover:bg-purple-900/20 cursor-pointer py-3">
+                                    Diploma
+                                  </SelectItem>
+                                  <SelectItem value="degree" className="focus:bg-purple-900/30 hover:bg-purple-900/20 cursor-pointer py-3">
+                                    Degree (B.Tech / B.E. / B.Sc)
+                                  </SelectItem>
+                                  <SelectItem value="pg" className="focus:bg-purple-900/30 hover:bg-purple-900/20 cursor-pointer py-3">
+                                    Post Graduate (M.Tech / M.E. / M.Sc)
+                                  </SelectItem>
+                                  <SelectItem value="other" className="focus:bg-purple-900/30 hover:bg-purple-900/20 cursor-pointer py-3">
+                                    Other
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

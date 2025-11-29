@@ -8,6 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// UUID fallback for browsers that don't support crypto.randomUUID
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 interface EventData {
   id?: string;
   name?: string;
@@ -100,7 +112,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess }: EventDialo
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `${generateUUID()}.${fileExt}`;
       const filePath = `upi-qr/${fileName}`;
 
       const { error: uploadError } = await supabase.storage

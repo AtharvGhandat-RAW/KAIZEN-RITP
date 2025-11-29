@@ -24,9 +24,8 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
 
   const menuItems: MenuItem[] = [
     { label: 'Home', href: '#home' },
-    { label: 'Events', href: '#events' },
+    { label: 'Events', href: '/events', isRoute: true },
     { label: 'Schedule', href: '/schedule', isRoute: true },
-    { label: 'Horror Dramatics', href: '/horror-dramatics', isRoute: true },
     { label: 'About', href: '#about' },
     { label: 'Contact', href: '#contact' },
   ];
