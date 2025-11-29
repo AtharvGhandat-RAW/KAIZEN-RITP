@@ -983,44 +983,70 @@ export default function CoordinatorScanner() {
                                                     📱 Android Chrome Has Blocked Camera
                                                 </p>
                                                 <div className="bg-black/80 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
-                                                    <p className="text-yellow-400 text-sm font-bold mb-3">⚠️ Chrome won't show permission popup again!</p>
-                                                    <p className="text-gray-300 text-xs mb-4">You must manually enable camera in Chrome settings:</p>
+                                                    <p className="text-yellow-400 text-sm font-bold mb-3">⚠️ Chrome won't show permission popup!</p>
                                                     
-                                                    <div className="bg-blue-900/40 rounded-lg p-3 mb-4">
-                                                        <p className="text-cyan-400 text-sm font-bold mb-2">📋 Quick Steps:</p>
+                                                    {/* Method 1: Lock icon */}
+                                                    <div className="bg-green-900/40 rounded-lg p-3 mb-3">
+                                                        <p className="text-green-400 text-sm font-bold mb-2">✅ Method 1 (Easiest):</p>
                                                         <ol className="text-white text-sm space-y-2 list-decimal list-inside">
-                                                            <li>Tap the <span className="bg-gray-700 px-1 rounded">⋮</span> menu (top right)</li>
-                                                            <li>Tap <span className="text-cyan-300 font-bold">Settings</span></li>
-                                                            <li>Tap <span className="text-cyan-300 font-bold">Site settings</span></li>
-                                                            <li>Tap <span className="text-cyan-300 font-bold">Camera</span></li>
-                                                            <li>Find <span className="text-blue-400">kaizen-ritp.in</span></li>
-                                                            <li>Change to <span className="text-green-400 font-bold">Allow</span></li>
+                                                            <li>Look at the <span className="text-cyan-300 font-bold">address bar</span> at the top</li>
+                                                            <li>Tap the <span className="bg-gray-700 px-1 rounded">🔒</span> lock icon (left of URL)</li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">"Permissions"</span></li>
+                                                            <li>Find <span className="text-cyan-300 font-bold">"Camera"</span> and tap it</li>
+                                                            <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">"Try Again"</span> below</li>
                                                         </ol>
                                                     </div>
                                                     
-                                                    <p className="text-gray-400 text-xs text-center">Then come back and tap "Try Again"</p>
+                                                    {/* Method 2: Chrome settings */}
+                                                    <div className="bg-blue-900/40 rounded-lg p-3 mb-3">
+                                                        <p className="text-cyan-400 text-sm font-bold mb-2">📋 Method 2 (If Method 1 doesn't work):</p>
+                                                        <ol className="text-white text-sm space-y-2 list-decimal list-inside">
+                                                            <li>Tap <span className="bg-gray-700 px-1 rounded">⋮</span> menu → <span className="text-cyan-300">Settings</span></li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">Site settings</span></li>
+                                                            <li>Tap <span className="text-cyan-300 font-bold">Camera</span></li>
+                                                            <li>Make sure Camera is set to <span className="text-green-400 font-bold">"Ask first"</span></li>
+                                                            <li>Go back and tap <span className="text-cyan-300 font-bold">"Try Again"</span></li>
+                                                        </ol>
+                                                    </div>
+                                                    
+                                                    {/* Method 3: Clear site data */}
+                                                    <div className="bg-orange-900/40 rounded-lg p-3">
+                                                        <p className="text-orange-400 text-sm font-bold mb-2">🔄 Method 3 (Nuclear option):</p>
+                                                        <ol className="text-white text-xs space-y-1 list-decimal list-inside">
+                                                            <li>Tap 🔒 lock icon → "Site settings"</li>
+                                                            <li>Tap <span className="text-red-400 font-bold">"Clear & reset"</span></li>
+                                                            <li>Page will refresh, try scanner again</li>
+                                                        </ol>
+                                                    </div>
                                                 </div>
                                                 
                                                 <div className="flex gap-2 flex-wrap justify-center mb-3">
                                                     <Button
-                                                        onClick={() => {
-                                                            // Copy the URL path to help user find it
-                                                            navigator.clipboard?.writeText('chrome://settings/content/camera');
-                                                            toast.info('Open Chrome menu (⋮) → Settings → Site settings → Camera');
-                                                        }}
-                                                        size="sm"
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                    >
-                                                        <Settings className="w-4 h-4 mr-1" />
-                                                        Open Chrome Menu
-                                                    </Button>
-                                                    <Button
                                                         onClick={requestCameraPermission}
+                                                        disabled={requestingPermission}
                                                         size="sm"
                                                         className="bg-green-600 hover:bg-green-700"
                                                     >
+                                                        {requestingPermission ? (
+                                                            <>
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                                                                Trying...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <RefreshCw className="w-4 h-4 mr-1" />
+                                                                Try Again
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => window.location.reload()}
+                                                        size="sm"
+                                                        variant="secondary"
+                                                    >
                                                         <RefreshCw className="w-4 h-4 mr-1" />
-                                                        Try Again
+                                                        Refresh Page
                                                     </Button>
                                                 </div>
                                                 
