@@ -76,10 +76,19 @@ export default function CoordinatorScanner() {
     const [verificationCode, setVerificationCode] = useState('');
     const [verifyingCode, setVerifyingCode] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('scan');
+    const [debugLogs, setDebugLogs] = useState<string[]>([]);
+    const [showDebug, setShowDebug] = useState(false);
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const lastScannedRef = useRef<string>('');
     const scannerContainerId = 'qr-reader-container';
+
+    // Debug logger function
+    const addLog = useCallback((message: string) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`[${timestamp}] ${message}`);
+        setDebugLogs(prev => [...prev.slice(-20), `[${timestamp}] ${message}`]);
+    }, []);
 
     useEffect(() => {
         const coordinatorData = localStorage.getItem('coordinator');
@@ -167,6 +176,11 @@ export default function CoordinatorScanner() {
         setIsInitializing(true);
         setScanResult(null);
         lastScannedRef.current = '';
+        setDebugLogs([]); // Clear previous logs
+
+        addLog('Starting camera initialization...');
+        addLog(`Secure context: ${window.isSecureContext}`);
+        addLog(`UserAgent: ${navigator.userAgent.substring(0, 50)}...`);
 
         // Check for HTTPS
         if (!window.isSecureContext) {
@@ -177,14 +191,17 @@ export default function CoordinatorScanner() {
 
         // Check if mediaDevices API is available
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            addLog('ERROR: mediaDevices API not available');
             setCameraError('Camera API not supported. Please use Chrome browser.');
             setIsInitializing(false);
             return;
         }
+        addLog('mediaDevices API available');
 
         try {
             // Clean up any existing scanner
             if (scannerRef.current) {
+                addLog('Cleaning up existing scanner...');
                 try {
                     const state = scannerRef.current.getState();
                     if (state === Html5QrcodeScannerState.SCANNING) {
@@ -192,141 +209,172 @@ export default function CoordinatorScanner() {
                     }
                     scannerRef.current.clear();
                 } catch (e) {
-                    console.log('Cleanup error (ignored):', e);
+                    addLog(`Cleanup error (ignored): ${e}`);
                 }
                 scannerRef.current = null;
             }
 
-            // CRITICAL: On Android, we MUST request getUserMedia first to trigger permission prompt
-            // This is the only reliable way to get camera permission on Android Chrome
-            console.log('Requesting camera permission via getUserMedia...');
-            let stream: MediaStream | null = null;
-            
+            // First check camera permission status (if supported)
+            let permissionStatus: PermissionState | null = null;
             try {
-                // Request with minimal constraints first - this triggers the permission dialog
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true,
-                    audio: false 
-                });
-                console.log('Camera permission granted!');
-                
-                // Important: Stop the stream before starting Html5Qrcode
-                // Html5Qrcode needs to create its own stream
-                stream.getTracks().forEach(track => {
-                    console.log('Stopping track:', track.label);
-                    track.stop();
-                });
-                stream = null;
-                
-                // Small delay to ensure camera is released
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-            } catch (permError: unknown) {
-                console.error('getUserMedia failed:', permError);
-                const err = permError as Error;
-                
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    setCameraError('CAMERA_PERMISSION_DENIED');
-                    setIsInitializing(false);
-                    return;
-                } else if (err.name === 'NotFoundError') {
-                    setCameraError('No camera found on this device.');
-                    setIsInitializing(false);
-                    return;
-                } else if (err.name === 'NotReadableError' || err.name === 'AbortError') {
-                    setCameraError('CAMERA_IN_USE');
-                    setIsInitializing(false);
-                    return;
-                }
-                // For other errors, continue and let Html5Qrcode try
-                console.log('Continuing despite getUserMedia error...');
+                const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                permissionStatus = result.state;
+                addLog(`Permission API status: ${permissionStatus}`);
+            } catch (e) {
+                addLog('Permission API not supported');
             }
 
-            // Now create scanner and start
-            console.log('Creating Html5Qrcode scanner...');
-            const html5QrCode = new Html5Qrcode(scannerContainerId, { verbose: false });
+            // Get available cameras first - this helps on Android
+            addLog('Enumerating cameras...');
+            let cameras: { id: string; label: string }[] = [];
+            try {
+                cameras = await Html5Qrcode.getCameras();
+                addLog(`Found ${cameras.length} cameras`);
+                cameras.forEach((c, i) => addLog(`Camera ${i}: ${c.label || c.id}`));
+            } catch (e) {
+                addLog(`Camera enumeration failed: ${e}`);
+            }
+
+            // If no cameras found and permission not granted, we need to request it
+            if (cameras.length === 0 && permissionStatus !== 'granted') {
+                addLog('No cameras found, requesting via getUserMedia...');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: 'environment' } },
+                        audio: false
+                    });
+                    addLog(`Got stream with ${stream.getTracks().length} tracks`);
+                    
+                    stream.getTracks().forEach(track => {
+                        addLog(`Stopping track: ${track.kind} - ${track.label}`);
+                        track.stop();
+                    });
+                    
+                    addLog('Waiting for camera release...');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    cameras = await Html5Qrcode.getCameras();
+                    addLog(`After permission: ${cameras.length} cameras found`);
+                    
+                } catch (permError: unknown) {
+                    const err = permError as Error;
+                    addLog(`getUserMedia ERROR: ${err.name} - ${err.message}`);
+
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        setCameraError('CAMERA_PERMISSION_DENIED');
+                        setIsInitializing(false);
+                        return;
+                    } else if (err.name === 'NotFoundError') {
+                        setCameraError('No camera found on this device.');
+                        setIsInitializing(false);
+                        return;
+                    } else if (err.name === 'NotReadableError' || err.name === 'AbortError') {
+                        setCameraError('CAMERA_IN_USE');
+                        setIsInitializing(false);
+                        return;
+                    }
+                    addLog('Continuing despite error...');
+                }
+            }
+
+            // Create scanner
+            addLog('Creating Html5Qrcode scanner...');
+            const html5QrCode = new Html5Qrcode(scannerContainerId, { verbose: true });
             scannerRef.current = html5QrCode;
 
-            // Try back camera first (most common for scanning)
             const cameraConfig = {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
             };
 
+            // Strategy 1: If we have cameras, try them directly by ID
+            if (cameras.length > 0) {
+                addLog('Strategy 1: Trying cameras by ID...');
+                const backCamera = cameras.find(c => 
+                    c.label.toLowerCase().includes('back') || 
+                    c.label.toLowerCase().includes('rear') ||
+                    c.label.toLowerCase().includes('environment') ||
+                    c.id === '0'
+                ) || cameras[cameras.length - 1];
+
+                for (const camera of [backCamera, ...cameras.filter(c => c !== backCamera)]) {
+                    try {
+                        addLog(`Trying camera: ${camera.label || camera.id}`);
+                        await html5QrCode.start(
+                            camera.id,
+                            cameraConfig,
+                            handleScanSuccess,
+                            handleScanError
+                        );
+                        addLog('SUCCESS! Scanner started');
+                        setIsScanning(true);
+                        setIsInitializing(false);
+                        toast.success('Scanner ready!');
+                        return;
+                    } catch (camError) {
+                        const e = camError as Error;
+                        addLog(`Camera failed: ${e.name} - ${e.message}`);
+                        try { html5QrCode.clear(); } catch { }
+                        scannerRef.current = new Html5Qrcode(scannerContainerId, { verbose: true });
+                    }
+                }
+            }
+
+            // Strategy 2: Try facingMode constraints
+            addLog('Strategy 2: Trying facingMode constraints...');
+            const facingModes = ['environment', 'user'];
+            for (const facingMode of facingModes) {
+                try {
+                    addLog(`Trying facingMode: ${facingMode}`);
+                    await html5QrCode.start(
+                        { facingMode: facingMode },
+                        cameraConfig,
+                        handleScanSuccess,
+                        handleScanError
+                    );
+                    addLog('SUCCESS! Scanner started');
+                    setIsScanning(true);
+                    setIsInitializing(false);
+                    toast.success(`Scanner ready (${facingMode === 'environment' ? 'back' : 'front'} camera)!`);
+                    return;
+                } catch (fmError) {
+                    const e = fmError as Error;
+                    addLog(`FacingMode ${facingMode} failed: ${e.name} - ${e.message}`);
+                    try { html5QrCode.clear(); } catch { }
+                    scannerRef.current = new Html5Qrcode(scannerContainerId, { verbose: true });
+                }
+            }
+
+            // Strategy 3: Try exact constraints
+            addLog('Strategy 3: Trying exact environment...');
             try {
-                console.log('Attempting to start with back camera...');
                 await html5QrCode.start(
-                    { facingMode: 'environment' },
+                    { facingMode: { exact: 'environment' } },
                     cameraConfig,
                     handleScanSuccess,
                     handleScanError
                 );
+                addLog('SUCCESS! Scanner started');
                 setIsScanning(true);
                 setIsInitializing(false);
                 toast.success('Scanner ready!');
                 return;
-            } catch (backCamError) {
-                console.log('Back camera start failed:', backCamError);
-            }
-
-            // Try front camera
-            try {
-                console.log('Attempting to start with front camera...');
-                await html5QrCode.start(
-                    { facingMode: 'user' },
-                    cameraConfig,
-                    handleScanSuccess,
-                    handleScanError
-                );
-                setIsScanning(true);
-                setIsInitializing(false);
-                toast.success('Scanner ready (front camera)!');
-                return;
-            } catch (frontCamError) {
-                console.log('Front camera start failed:', frontCamError);
-            }
-
-            // Last resort: get camera list and try each one
-            try {
-                console.log('Getting camera list...');
-                const cameras = await Html5Qrcode.getCameras();
-                console.log('Found cameras:', cameras.map(c => c.label || c.id));
-                
-                if (cameras && cameras.length > 0) {
-                    for (let i = 0; i < cameras.length; i++) {
-                        const camera = cameras[i];
-                        try {
-                            console.log(`Trying camera ${i + 1}/${cameras.length}: ${camera.label || camera.id}`);
-                            await html5QrCode.start(
-                                camera.id,
-                                cameraConfig,
-                                handleScanSuccess,
-                                handleScanError
-                            );
-                            setIsScanning(true);
-                            setIsInitializing(false);
-                            toast.success('Scanner ready!');
-                            return;
-                        } catch (camError) {
-                            console.log(`Camera ${camera.id} failed, trying next...`);
-                            // Clear scanner state before trying next camera
-                            try { html5QrCode.clear(); } catch {}
-                        }
-                    }
-                }
-            } catch (listError) {
-                console.log('Could not enumerate cameras:', listError);
+            } catch (e) {
+                const err = e as Error;
+                addLog(`Exact environment failed: ${err.name} - ${err.message}`);
             }
 
             // If we reach here, nothing worked
-            throw new Error('Could not start camera. Please ensure camera permission is granted.');
+            addLog('ALL STRATEGIES FAILED');
+            throw new Error('Could not start camera. Please check camera permissions.');
 
         } catch (error) {
-            console.error('Scanner initialization error:', error);
+            const err = error as Error;
+            addLog(`FATAL ERROR: ${err.name} - ${err.message}`);
             setIsInitializing(false);
-            
-            const errMsg = error instanceof Error ? error.message : String(error);
-            
+
+            const errMsg = err.message || '';
             if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
                 setCameraError('CAMERA_PERMISSION_DENIED');
             } else if (errMsg.includes('not found') || errMsg.includes('NotFound')) {
@@ -900,6 +948,26 @@ export default function CoordinatorScanner() {
                                                 Use Code Instead
                                             </Button>
                                         </div>
+                                        
+                                        {/* Debug Toggle Button */}
+                                        <Button
+                                            onClick={() => setShowDebug(!showDebug)}
+                                            size="sm"
+                                            variant="ghost"
+                                            className="mt-3 text-gray-500"
+                                        >
+                                            {showDebug ? 'Hide' : 'Show'} Debug Logs
+                                        </Button>
+                                        
+                                        {/* Debug Logs Panel */}
+                                        {showDebug && debugLogs.length > 0 && (
+                                            <div className="mt-3 bg-black/80 rounded-lg p-3 text-left w-full max-w-sm max-h-48 overflow-y-auto">
+                                                <p className="text-yellow-400 text-xs font-semibold mb-2">🔧 Debug Logs:</p>
+                                                {debugLogs.map((log, i) => (
+                                                    <p key={i} className="text-gray-400 text-xs font-mono">{log}</p>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
