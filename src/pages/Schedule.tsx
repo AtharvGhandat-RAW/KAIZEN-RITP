@@ -109,7 +109,7 @@ export default function SchedulePage() {
             <div className="fixed inset-0 bg-gradient-to-b from-red-950/20 via-black to-black pointer-events-none" />
 
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-black/80 border-b border-red-900/30">
+            <header className="sticky top-0 z-[60] bg-black/95 backdrop-blur-sm border-b border-red-900/30">
                 <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
                     <Link
                         to="/"

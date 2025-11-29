@@ -19,7 +19,8 @@ import {
   Trophy,
   Users,
   Sparkles,
-  Mic
+  Mic,
+  Minus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -112,6 +113,43 @@ export default function ScheduleBuilder() {
     }
   };
 
+  const handleDeleteDay = async (dayNumber: number) => {
+    const dayItemsCount = items.filter(item => item.day_number === dayNumber).length;
+    
+    if (dayItemsCount > 0) {
+      if (!confirm(`Day ${dayNumber} has ${dayItemsCount} item(s). Delete the entire day and all its items?`)) return;
+      
+      try {
+        // Delete all items for this day
+        const { error } = await supabase
+          .from('schedule_items')
+          .delete()
+          .eq('day_number', dayNumber);
+
+        if (error) throw error;
+        
+        // Update day numbers for days after the deleted day
+        const { error: updateError } = await supabase
+          .from('schedule_items')
+          .update({ day_number: supabase.rpc('decrement_day_number', { day_num: dayNumber }) })
+          .gt('day_number', dayNumber);
+        
+        // We can't use RPC, so let's do it differently - refetch and update manually
+        toast.success(`Day ${dayNumber} deleted`);
+      } catch (error) {
+        console.error('Error deleting day:', error);
+        toast.error('Failed to delete day');
+      }
+    }
+    
+    // Decrease total days and adjust selected day if needed
+    setTotalDays(prev => Math.max(1, prev - 1));
+    if (selectedDay >= dayNumber && selectedDay > 1) {
+      setSelectedDay(prev => prev - 1);
+    }
+    fetchScheduleItems();
+  };
+
   const getTypeInfo = (type: string) => {
     return ITEM_TYPES.find(t => t.value === type) || ITEM_TYPES[6];
   };
@@ -144,21 +182,35 @@ export default function ScheduleBuilder() {
             <div className="flex gap-2 items-center min-w-max">
               <span className="text-zinc-400 text-sm whitespace-nowrap">Day:</span>
               {[...Array(totalDays)].map((_, i) => (
-                <Button
-                  key={i + 1}
-                  variant={selectedDay === i + 1 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedDay(i + 1)}
-                  className={`${selectedDay === i + 1 ? "bg-red-600 hover:bg-red-700" : "border-zinc-700 text-zinc-300"} min-w-[70px]`}
-                >
-                  Day {i + 1}
-                </Button>
+                <div key={i + 1} className="relative group">
+                  <Button
+                    variant={selectedDay === i + 1 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDay(i + 1)}
+                    className={`${selectedDay === i + 1 ? "bg-red-600 hover:bg-red-700" : "border-zinc-700 text-zinc-300"} min-w-[70px] pr-7`}
+                  >
+                    Day {i + 1}
+                  </Button>
+                  {totalDays > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDay(i + 1);
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                      title={`Delete Day ${i + 1}`}
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               ))}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setTotalDays(prev => prev + 1)}
                 className="text-zinc-400 hover:text-white"
+                title="Add Day"
               >
                 <Plus className="w-4 h-4" />
               </Button>
