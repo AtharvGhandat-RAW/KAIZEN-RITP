@@ -77,6 +77,7 @@ export default function CoordinatorScanner() {
     const [activeTab, setActiveTab] = useState<string>('scan');
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [showDebug, setShowDebug] = useState(false);
+    const [permissionState, setPermissionState] = useState<'unknown' | 'prompt' | 'granted' | 'denied'>('unknown');
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,6 +91,28 @@ export default function CoordinatorScanner() {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`[${timestamp}] ${message}`);
         setDebugLogs(prev => [...prev.slice(-30), `[${timestamp}] ${message}`]);
+    }, []);
+
+    // Check permission state on mount
+    useEffect(() => {
+        const checkPermission = async () => {
+            try {
+                if (navigator.permissions && navigator.permissions.query) {
+                    const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                    setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
+                    console.log('Initial permission state:', result.state);
+                    
+                    // Listen for changes
+                    result.addEventListener('change', () => {
+                        setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
+                        console.log('Permission state changed:', result.state);
+                    });
+                }
+            } catch (e) {
+                console.log('Permission API not supported');
+            }
+        };
+        checkPermission();
     }, []);
 
     useEffect(() => {
@@ -339,11 +362,15 @@ export default function CoordinatorScanner() {
         lastScannedRef.current = '';
         setDebugLogs([]);
 
+        // Detect Android
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
         addLog('=== STARTING CAMERA ===');
-        addLog(`Platform: ${navigator.platform}`);
-        addLog(`UserAgent: ${navigator.userAgent.substring(0, 60)}...`);
+        addLog(`Android: ${isAndroid}, iOS: ${isIOS}`);
+        addLog(`UserAgent: ${navigator.userAgent.substring(0, 80)}...`);
         addLog(`Secure: ${window.isSecureContext}`);
-        addLog(`URL: ${window.location.href}`);
+        addLog(`Permission state: ${permissionState}`);
 
         // Check for HTTPS
         if (!window.isSecureContext) {
@@ -354,16 +381,9 @@ export default function CoordinatorScanner() {
         }
 
         // Check if mediaDevices API is available
-        if (!navigator.mediaDevices) {
-            addLog('ERROR: navigator.mediaDevices is undefined');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            addLog('ERROR: mediaDevices API not available');
             setCameraError('Camera API not available. Please use Chrome browser.');
-            setIsInitializing(false);
-            return;
-        }
-
-        if (!navigator.mediaDevices.getUserMedia) {
-            addLog('ERROR: getUserMedia is undefined');
-            setCameraError('Camera API not supported. Please update your browser.');
             setIsInitializing(false);
             return;
         }
@@ -372,95 +392,170 @@ export default function CoordinatorScanner() {
 
         // Stop any existing stream
         stopCamera();
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Try different camera constraints
-        const constraintsList = [
-            // Most compatible - no facing mode
-            { video: true, audio: false },
-            // Try back camera
-            { video: { facingMode: 'environment' }, audio: false },
-            // Try with ideal
-            { video: { facingMode: { ideal: 'environment' } }, audio: false },
-            // Try front camera as fallback
-            { video: { facingMode: 'user' }, audio: false },
-        ];
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         let stream: MediaStream | null = null;
         let lastError: Error | null = null;
 
+        // For Android, we need to be more careful with constraints
+        // Many Android devices fail with exact constraints
+        const getConstraints = () => {
+            if (isAndroid) {
+                // Android: Start simple, then get more specific
+                return [
+                    // Simple constraints work best on Android
+                    { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                    { video: { facingMode: 'environment' }, audio: false },
+                    { video: true, audio: false },
+                ];
+            } else {
+                // iOS and others
+                return [
+                    { video: { facingMode: { exact: 'environment' } }, audio: false },
+                    { video: { facingMode: { ideal: 'environment' } }, audio: false },
+                    { video: { facingMode: 'environment' }, audio: false },
+                    { video: true, audio: false },
+                ];
+            }
+        };
+
+        const constraintsList = getConstraints();
+        addLog(`Will try ${constraintsList.length} constraint options`);
+
         for (let i = 0; i < constraintsList.length; i++) {
             const constraints = constraintsList[i];
-            addLog(`Attempt ${i + 1}/${constraintsList.length}: ${JSON.stringify(constraints.video)}`);
+            const constraintStr = JSON.stringify(constraints.video).substring(0, 50);
+            addLog(`Attempt ${i + 1}: ${constraintStr}...`);
 
             try {
+                // This is the critical call that needs camera permission
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
-                addLog(`SUCCESS! Got stream with ${stream.getTracks().length} tracks`);
-                stream.getTracks().forEach(track => {
-                    addLog(`Track: ${track.kind} - ${track.label} - ${track.readyState}`);
-                });
+                
+                const tracks = stream.getVideoTracks();
+                addLog(`Got ${tracks.length} video track(s)`);
+                
+                if (tracks.length > 0) {
+                    const track = tracks[0];
+                    const settings = track.getSettings();
+                    addLog(`Track: ${track.label || 'unnamed'}`);
+                    addLog(`Settings: ${settings.width}x${settings.height}, facing: ${settings.facingMode || 'N/A'}`);
+                    
+                    // On Android, try to switch to back camera if we got front
+                    if (isAndroid && i === 0) {
+                        const isFront = track.label.toLowerCase().includes('front') || 
+                                       track.label.includes('0') ||
+                                       settings.facingMode === 'user';
+                        if (isFront) {
+                            addLog('Got front camera on Android, trying to get back...');
+                            // Try to enumerate and find back camera
+                            try {
+                                const devices = await navigator.mediaDevices.enumerateDevices();
+                                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                                addLog(`Found ${videoDevices.length} cameras`);
+                                
+                                const backCamera = videoDevices.find(d => 
+                                    d.label.toLowerCase().includes('back') ||
+                                    d.label.toLowerCase().includes('rear') ||
+                                    d.label.includes('1')
+                                );
+                                
+                                if (backCamera) {
+                                    addLog(`Switching to: ${backCamera.label}`);
+                                    stream.getTracks().forEach(t => t.stop());
+                                    stream = await navigator.mediaDevices.getUserMedia({
+                                        video: { deviceId: { exact: backCamera.deviceId } },
+                                        audio: false
+                                    });
+                                    addLog('Switched to back camera!');
+                                }
+                            } catch (switchErr) {
+                                addLog(`Camera switch failed: ${(switchErr as Error).message}`);
+                            }
+                        }
+                    }
+                }
+                
+                addLog('SUCCESS!');
                 break;
+                
             } catch (err) {
                 const error = err as Error;
                 lastError = error;
-                addLog(`Failed: ${error.name} - ${error.message}`);
+                addLog(`FAILED: ${error.name}: ${error.message}`);
                 
-                // If permission denied, don't try other constraints
+                // Permission denied - stop trying
                 if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                    addLog('Permission denied - stopping attempts');
+                    setPermissionState('denied');
+                    addLog('Permission denied by user or system');
                     break;
                 }
+                
+                // Continue to next constraint
+                continue;
             }
         }
 
         if (!stream) {
-            addLog('ALL ATTEMPTS FAILED');
+            addLog('=== ALL ATTEMPTS FAILED ===');
             setIsInitializing(false);
             
             if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
                 setCameraError('CAMERA_PERMISSION_DENIED');
-            } else if (lastError?.name === 'NotFoundError' || lastError?.name === 'DevicesNotFoundError') {
+            } else if (lastError?.name === 'NotFoundError') {
                 setCameraError('No camera found on this device.');
-            } else if (lastError?.name === 'NotReadableError' || lastError?.name === 'TrackStartError') {
+            } else if (lastError?.name === 'NotReadableError') {
                 setCameraError('CAMERA_IN_USE');
             } else {
-                setCameraError(`Camera error: ${lastError?.message || 'Unknown error'}`);
+                setCameraError(`Camera error: ${lastError?.message || 'Unknown'}`);
             }
             return;
         }
 
-        // Connect stream to video element
+        // Success - connect to video element
+        setPermissionState('granted');
         streamRef.current = stream;
 
         if (videoRef.current) {
-            addLog('Connecting stream to video element...');
-            videoRef.current.srcObject = stream;
-            videoRef.current.setAttribute('playsinline', 'true');
-            videoRef.current.setAttribute('autoplay', 'true');
-            videoRef.current.muted = true;
+            addLog('Connecting stream to video...');
+            
+            // Important video element attributes for mobile
+            const video = videoRef.current;
+            video.srcObject = stream;
+            video.setAttribute('playsinline', 'true');
+            video.setAttribute('webkit-playsinline', 'true');
+            video.setAttribute('autoplay', 'true');
+            video.muted = true;
+            video.playsInline = true;
 
             try {
-                await videoRef.current.play();
-                addLog(`Video playing: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`);
+                await video.play();
                 
-                // Wait a moment for video to stabilize
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Wait for video to be ready
+                await new Promise<void>((resolve) => {
+                    if (video.videoWidth > 0) {
+                        resolve();
+                    } else {
+                        video.onloadedmetadata = () => resolve();
+                        setTimeout(resolve, 2000); // Timeout fallback
+                    }
+                });
                 
-                addLog(`Video dimensions: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`);
+                addLog(`Video ready: ${video.videoWidth}x${video.videoHeight}`);
                 
                 setIsScanning(true);
                 setIsInitializing(false);
                 scanningRef.current = true;
                 
-                // Start QR scanning loop
-                addLog('Starting QR scan loop...');
+                // Start QR scanning
+                addLog('Starting QR scan loop');
                 animationRef.current = requestAnimationFrame(scanQRCode);
                 
-                toast.success('Camera ready! Point at QR code.');
+                toast.success('Camera ready!');
+                
             } catch (playError) {
                 const err = playError as Error;
-                addLog(`Video play error: ${err.name} - ${err.message}`);
-                setCameraError('Could not start video. Please try again.');
+                addLog(`Video play failed: ${err.message}`);
+                setCameraError('Could not start video preview.');
                 setIsInitializing(false);
                 stopCamera();
             }
@@ -773,22 +868,27 @@ export default function CoordinatorScanner() {
                                                     Camera permission denied
                                                 </p>
                                                 <div className="bg-black/60 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
-                                                    <p className="text-red-500 text-sm font-bold mb-3">🔴 STEP 1: Android App Permission</p>
+                                                    <p className="text-red-500 text-sm font-bold mb-3">🔴 Android: Allow Camera for Chrome</p>
                                                     <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside mb-4">
-                                                        <li>Go to <span className="text-white font-bold">Phone Settings</span></li>
-                                                        <li>Tap <span className="text-white font-bold">"Apps"</span></li>
-                                                        <li>Find <span className="text-white font-bold">"Chrome"</span></li>
-                                                        <li>Tap <span className="text-white font-bold">"Permissions" → "Camera"</span></li>
+                                                        <li><span className="text-white font-bold">Long press</span> Chrome icon on home screen</li>
+                                                        <li>Tap <span className="text-white font-bold">"App info"</span> or <span className="text-white font-bold">ⓘ</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Permissions"</span></li>
+                                                        <li>Tap <span className="text-white font-bold">"Camera"</span></li>
                                                         <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
                                                     </ol>
                                                     
                                                     <div className="pt-3 border-t border-gray-700">
-                                                        <p className="text-yellow-400 text-sm font-bold mb-3">🟡 STEP 2: Reset Site Permission</p>
-                                                        <ol className="text-gray-300 text-sm space-y-2 list-decimal list-inside">
-                                                            <li>Tap <span className="text-white font-bold">ⓘ</span> icon left of URL</li>
-                                                            <li>Tap <span className="text-white font-bold">"Site settings"</span></li>
-                                                            <li>Tap <span className="text-white font-bold">"Clear & reset"</span></li>
-                                                            <li>Reload and allow camera</li>
+                                                        <p className="text-cyan-400 text-sm font-bold mb-2">📱 For Moto phones:</p>
+                                                        <p className="text-gray-300 text-xs">Settings → Apps → Chrome → Permissions → Camera → Allow</p>
+                                                    </div>
+                                                    
+                                                    <div className="pt-3 mt-3 border-t border-gray-700">
+                                                        <p className="text-yellow-400 text-sm font-bold mb-2">🟡 Then in Chrome:</p>
+                                                        <ol className="text-gray-300 text-sm space-y-1 list-decimal list-inside">
+                                                            <li>Tap <span className="text-white font-bold">⋮</span> menu → Settings</li>
+                                                            <li>Site settings → Camera</li>
+                                                            <li>Delete <span className="text-blue-400">kaizen-ritp.in</span> if blocked</li>
+                                                            <li>Refresh this page</li>
                                                         </ol>
                                                     </div>
                                                 </div>
