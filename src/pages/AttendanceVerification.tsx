@@ -177,7 +177,7 @@ export default function AttendanceVerification() {
             <div className="fixed inset-0 bg-gradient-to-b from-green-950/20 via-black to-black pointer-events-none" />
 
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-black/90 border-b border-green-900/50">
+            <header className="sticky top-0 z-[60] bg-black/95 backdrop-blur-sm border-b border-green-900/50">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     <Link
                         to="/"

@@ -77,9 +77,9 @@ interface EventDetails {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white overflow-hidden">
+        <div className="min-h-screen bg-black text-white">
             {/* Animated Background */}
-            <div className="fixed inset-0 z-0">
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-red-950/20 to-black" />
                 <div className="absolute inset-0 opacity-30">
                     {/* Floating particles */}
@@ -106,7 +106,7 @@ interface EventDetails {
             </div>
 
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-black/90 border-b border-red-900/50">
+            <header className="sticky top-0 z-[60] bg-black/95 backdrop-blur-sm border-b border-red-900/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     <Link
                         to="/"

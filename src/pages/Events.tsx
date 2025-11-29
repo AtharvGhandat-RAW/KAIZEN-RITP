@@ -93,9 +93,9 @@ export default function Events() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white overflow-hidden">
+        <div className="min-h-screen bg-black text-white">
             {/* Animated Background */}
-            <div className="fixed inset-0 z-0">
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-red-950/10 to-black" />
                 {/* Floating particles */}
                 <div className="absolute inset-0 opacity-20">
