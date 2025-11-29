@@ -287,24 +287,34 @@ export default function CoordinatorScanner() {
             setCameraPermission('granted');
 
             // Now start the QR scanner
-            const html5QrCode = new Html5Qrcode('qr-reader');
+            const html5QrCode = new Html5Qrcode('qr-reader', {
+                verbose: false,
+                formatsToSupport: [0] // QR_CODE format
+            });
             scannerRef.current = html5QrCode;
+
+            // Scanner configuration - optimize for mobile
+            const scannerConfig = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                disableFlip: false,
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
+            };
 
             // Try starting scanner with different configs
             try {
                 await html5QrCode.start(
                     { facingMode: 'environment' },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1,
-                    },
+                    scannerConfig,
                     onScanSuccess,
                     onScanFailure
                 );
             } catch (scannerError) {
-                console.log('Trying simpler scanner config...');
-                // Try with simpler config
+                console.log('Trying simpler scanner config...', scannerError);
+                // Try with simpler config - no qrbox constraint
                 await html5QrCode.start(
                     { facingMode: 'environment' },
                     { fps: 10, qrbox: 200 },
@@ -583,10 +593,98 @@ export default function CoordinatorScanner() {
                 <Card className="bg-black/40 border-red-600/30 mb-6 overflow-hidden">
                     <CardContent className="p-0">
                         {/* QR Scanner */}
-                        <div
-                            id="qr-reader"
-                            className={`w-full aspect-square ${!isScanning ? 'hidden' : ''}`}
-                        ></div>
+                        <div className={`relative ${!isScanning ? 'hidden' : ''}`}>
+                            <div
+                                id="qr-reader"
+                                className="w-full"
+                                style={{
+                                    minHeight: '350px',
+                                }}
+                            ></div>
+                            
+                            {/* Scanning overlay with frame */}
+                            <div className="absolute inset-0 pointer-events-none">
+                                {/* Corner brackets */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px]">
+                                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-red-500"></div>
+                                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-red-500"></div>
+                                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-red-500"></div>
+                                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-red-500"></div>
+                                </div>
+                                
+                                {/* Scanning line animation */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] overflow-hidden">
+                                    <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
+                                </div>
+                            </div>
+                            
+                            {/* Stop button */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+                                <Button
+                                    onClick={stopScanning}
+                                    className="bg-red-600/90 hover:bg-red-700 shadow-lg"
+                                >
+                                    <CameraOff className="w-4 h-4 mr-2" />
+                                    Stop Scanning
+                                </Button>
+                            </div>
+                            
+                            {/* Processing indicator */}
+                            {processing && (
+                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto mb-2"></div>
+                                        <p className="text-white text-sm">Processing...</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Custom styles for html5-qrcode */}
+                        {isScanning && (
+                            <style>{`
+                                #qr-reader {
+                                    border: none !important;
+                                    width: 100% !important;
+                                }
+                                #qr-reader video {
+                                    width: 100% !important;
+                                    height: auto !important;
+                                    min-height: 350px !important;
+                                    object-fit: cover !important;
+                                    border-radius: 0 !important;
+                                }
+                                #qr-reader__scan_region {
+                                    background: transparent !important;
+                                    min-height: 300px !important;
+                                }
+                                #qr-reader__scan_region video {
+                                    display: block !important;
+                                    width: 100% !important;
+                                }
+                                #qr-reader__dashboard {
+                                    display: none !important;
+                                }
+                                #qr-reader__dashboard_section {
+                                    display: none !important;
+                                }
+                                #qr-reader__dashboard_section_csr {
+                                    display: none !important;
+                                }
+                                #qr-reader__header_message {
+                                    display: none !important;
+                                }
+                                #qr-reader img {
+                                    display: none !important;
+                                }
+                                #qr-reader__camera_selection {
+                                    display: none !important;
+                                }
+                                #qr-shaded-region {
+                                    border-color: rgba(239, 68, 68, 0.5) !important;
+                                }
+                            `}</style>
+                        )}
 
                         {/* Camera Permission Denied */}
                         {!isScanning && !scanResult && cameraPermission === 'denied' && (
