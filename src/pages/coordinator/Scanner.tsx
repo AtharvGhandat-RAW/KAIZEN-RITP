@@ -291,7 +291,7 @@ export default function CoordinatorScanner() {
             const { data: existing } = await supabase
                 .from('attendance')
                 .select('id')
-                .eq('registration_id', payload.regId)
+                .eq('registration_id', payload.registrationId)
                 .eq('event_id', payload.eventId)
                 .maybeSingle();
 
@@ -309,7 +309,7 @@ export default function CoordinatorScanner() {
 
             // Mark attendance
             const { error: insertError } = await supabase.from('attendance').insert({
-                registration_id: payload.regId,
+                registration_id: payload.registrationId,
                 event_id: payload.eventId,
                 marked_by: coordinator?.id,
                 marked_at: new Date().toISOString(),
