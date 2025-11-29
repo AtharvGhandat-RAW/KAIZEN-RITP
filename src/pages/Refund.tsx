@@ -8,8 +8,8 @@ export default function Refund() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-24 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-8 text-foreground">Refund Policy</h1>
+      <main className="container mx-auto px-4 pt-20 sm:pt-24 pb-12 max-w-4xl">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 text-foreground">Refund Policy</h1>
         
         <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
           <section>
