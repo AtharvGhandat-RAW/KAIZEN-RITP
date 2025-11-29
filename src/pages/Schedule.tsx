@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Ghost, Star, Coffee, Trophy, Users, Sparkles, Mic, ArrowLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
 import { SEOHead } from '@/components/SEOHead';
 
 interface ScheduleItem {
@@ -26,6 +25,34 @@ const ITEM_TYPES: Record<string, { icon: React.ElementType; color: string; bgCol
     break: { icon: Coffee, color: 'text-orange-400', bgColor: 'bg-orange-500/20', label: 'Break' },
     activity: { icon: Star, color: 'text-pink-400', bgColor: 'bg-pink-500/20', label: 'Activity' },
     other: { icon: Mic, color: 'text-gray-400', bgColor: 'bg-gray-500/20', label: 'Other' },
+};
+
+// Helper function to format time without timezone conversion
+const formatTimeFromString = (timeString: string): string => {
+    if (!timeString) return '';
+    try {
+        // Extract just the time part if it's a full timestamp
+        // The time is stored as 'HH:MM:SS' or as a full ISO timestamp
+        if (timeString.includes('T')) {
+            // Full ISO timestamp - extract time part
+            const timePart = timeString.split('T')[1];
+            const [hours, minutes] = timePart.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        } else if (timeString.includes(':')) {
+            // Just time string 'HH:MM:SS'
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        }
+        return timeString;
+    } catch {
+        return timeString;
+    }
 };
 
 export default function SchedulePage() {
@@ -185,11 +212,6 @@ export default function SchedulePage() {
                                             <TypeIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${typeInfo.color}`} />
                                         </div>
 
-                                        {/* Time badge */}
-                                        <div className="absolute left-0 top-8 text-[10px] sm:text-xs text-red-400/80 font-mono font-bold writing-vertical hidden">
-                                            {item.start_time && format(new Date(item.start_time), 'HH:mm')}
-                                        </div>
-
                                         {/* Card */}
                                         <div className={`group bg-zinc-900/50 hover:bg-zinc-900/80 border border-white/5 hover:border-red-500/30 rounded-xl p-4 sm:p-5 transition-all duration-200 ${item.is_highlighted ? 'ring-1 ring-yellow-500/40 bg-yellow-500/5' : ''
                                             }`}>
@@ -224,8 +246,8 @@ export default function SchedulePage() {
                                                 <div className="flex items-center gap-1.5">
                                                     <Clock className="w-3.5 h-3.5 text-red-500/70" />
                                                     <span>
-                                                        {item.start_time && format(new Date(item.start_time), 'h:mm a')}
-                                                        {item.end_time && ` - ${format(new Date(item.end_time), 'h:mm a')}`}
+                                                        {formatTimeFromString(item.start_time)}
+                                                        {item.end_time && ` - ${formatTimeFromString(item.end_time)}`}
                                                     </span>
                                                 </div>
                                                 {item.venue && (

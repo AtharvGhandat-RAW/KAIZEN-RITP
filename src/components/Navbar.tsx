@@ -90,7 +90,7 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-sm w-full max-w-full overflow-x-hidden" style={{ contain: 'layout style' }}>
+      <nav className="fixed top-0 left-0 right-0 z-[60] bg-black/50 backdrop-blur-sm w-full max-w-full overflow-x-hidden" style={{ contain: 'layout style' }}>
         <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-8 py-2 sm:py-2.5 lg:py-3 overflow-x-hidden">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-shrink-0 z-50 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] xl:w-[220px]">
@@ -154,7 +154,7 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
 
       {isMenuOpen && (
         <div
-          className="fixed inset-0 z-40 lg:hidden bg-black/95 backdrop-blur-lg animate-fade-in"
+          className="fixed inset-0 z-[100] lg:hidden bg-black/98 backdrop-blur-lg animate-fade-in"
           style={{
             opacity: Math.max(0, 1 - (touchOffset.x / 300) - (touchOffset.y / 300)),
             transition: touchStart ? 'none' : 'opacity 0.3s ease-out'
