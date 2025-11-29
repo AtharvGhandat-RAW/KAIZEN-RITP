@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Calendar, MapPin, Users, ChevronRight, Star, Trophy, AlertCircle, RefreshCw, Skull, Ghost, Flame } from 'lucide-react';
+import { ArrowLeft, Search, Calendar, MapPin, Users, ChevronRight, Star, Trophy, AlertCircle, RefreshCw, Skull, Ghost, Flame, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { EventDetailsModal } from '@/components/EventDetailsModal';
 
 interface Event {
     id: string;
@@ -42,6 +43,7 @@ export default function Events() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
@@ -259,6 +261,7 @@ export default function Events() {
                             <EventCard
                                 key={event.id}
                                 event={event}
+                                onViewDetails={() => setSelectedEventId(event.id)}
                                 onRegister={() => handleRegister(event.id)}
                             />
                         ))}
@@ -275,6 +278,18 @@ export default function Events() {
                     </div>
                 )}
             </main>
+
+            {/* Event Details Modal */}
+            {selectedEventId && (
+                <EventDetailsModal
+                    eventId={selectedEventId}
+                    onClose={() => setSelectedEventId(null)}
+                    onRegister={(eventId) => {
+                        setSelectedEventId(null);
+                        handleRegister(eventId);
+                    }}
+                />
+            )}
 
             {/* Footer */}
             <footer className="relative z-10 border-t border-red-900/50 py-8 mt-12">
@@ -297,9 +312,12 @@ export default function Events() {
     );
 }
 
-function EventCard({ event, onRegister }: { event: Event; onRegister: () => void }) {
+function EventCard({ event, onViewDetails, onRegister }: { event: Event; onViewDetails: () => void; onRegister: () => void }) {
     return (
-        <div className="group relative bg-gradient-to-br from-red-950/20 to-black/80 border border-red-900/40 hover:border-red-600/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 rounded-xl overflow-hidden flex flex-col">
+        <div 
+            className="group relative bg-gradient-to-br from-red-950/20 to-black/80 border border-red-900/40 hover:border-red-600/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 rounded-xl overflow-hidden flex flex-col cursor-pointer"
+            onClick={onViewDetails}
+        >
             {/* Event Image */}
             <div className="relative h-48 overflow-hidden bg-black/60">
                 {event.image_url ? (
@@ -375,13 +393,23 @@ function EventCard({ event, onRegister }: { event: Event; onRegister: () => void
                     </div>
                 </div>
 
-                <Button
-                    onClick={onRegister}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20 group-hover:shadow-red-900/40 transition-all py-3"
-                >
-                    <span>Register Now</span>
-                    <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button
+                        onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
+                        variant="outline"
+                        className="w-full border-red-600/50 text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-all py-3"
+                    >
+                        <Eye className="w-4 h-4 mr-2" />
+                        <span>Details</span>
+                    </Button>
+                    <Button
+                        onClick={(e) => { e.stopPropagation(); onRegister(); }}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20 transition-all py-3"
+                    >
+                        <span>Register</span>
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                </div>
             </div>
         </div>
     );

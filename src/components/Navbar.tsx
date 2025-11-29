@@ -161,6 +161,15 @@ export const Navbar = memo(function Navbar({ onRegisterClick, onCheckStatusClick
           }}
           onClick={closeMenu}
         >
+          {/* Close Button */}
+          <button
+            onClick={closeMenu}
+            className="absolute top-4 right-4 z-[110] p-3 bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 rounded-full text-white transition-all duration-300"
+            aria-label="Close menu"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
           <div
             ref={menuRef}
             className="flex flex-col items-center justify-center min-h-screen px-6 py-20"
