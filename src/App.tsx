@@ -1,13 +1,16 @@
 // KAIZEN Event Management - Main App Router
 import React, { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { PerformanceOptimizer } from "@/components/PerformanceOptimizer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CACHE_TIME, STALE_TIME } from "@/lib/cache";
+
+// Lazy load non-critical UI components to reduce initial bundle
+const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
+const Sonner = lazy(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
+const PerformanceOptimizer = lazy(() => import("@/components/PerformanceOptimizer").then(m => ({ default: m.PerformanceOptimizer })));
+const MaintenanceGuard = lazy(() => import("@/components/MaintenanceGuard").then(m => ({ default: m.MaintenanceGuard })));
 
 // Home page loaded eagerly so intro shows immediately
 import Index from "./pages/Index";
@@ -54,8 +57,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-import { MaintenanceGuard } from "@/components/MaintenanceGuard";
-
 // Optimized QueryClient with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,20 +89,23 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Performance monitoring and optimizations */}
-        <PerformanceOptimizer />
-        <Toaster />
-        <Sonner />
+        {/* Performance monitoring and optimizations - lazy loaded */}
+        <Suspense fallback={null}>
+          <PerformanceOptimizer />
+          <Toaster />
+          <Sonner />
+        </Suspense>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Suspense fallback={<PageLoader />}>
-            <MaintenanceGuard>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/refund" element={<Refund />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/schedule" element={<SchedulePage />} />
+            <Suspense fallback={null}>
+              <MaintenanceGuard>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/refund" element={<Refund />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/horror-dramatics" element={<HorrorDramatics />} />
                 <Route path="/verify-attendance" element={<AttendanceVerification />} />
@@ -133,7 +137,8 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </MaintenanceGuard>
+              </MaintenanceGuard>
+            </Suspense>
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>

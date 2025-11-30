@@ -1,12 +1,20 @@
 import { useState, lazy, Suspense, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StrangerThingsIntro } from '@/components/StrangerThingsIntro';
 import { SEOHead } from '@/components/SEOHead';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
-import { deferWork } from '@/lib/preload';
 
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+// Lazy load the intro to reduce initial bundle size and TBT
+const StrangerThingsIntro = lazy(() =>
+  import('@/components/StrangerThingsIntro')
+    .then(m => ({ default: m.StrangerThingsIntro }))
+);
+
+// Lazy load ErrorBoundary - only needed for modals
+const ErrorBoundary = lazy(() =>
+  import('@/components/ErrorBoundary')
+    .then(m => ({ default: m.ErrorBoundary }))
+);
 
 // Lazy load background effects with lower priority - with error handling
 const AtmosphericBackground = lazy(() =>
@@ -180,11 +188,16 @@ const Index = () => {
 
   return (
     <>
-      {/* Intro with professional transition */}
+      {/* Intro with professional transition - lazy loaded */}
       {showIntro && (
-        <StrangerThingsIntro onComplete={() => {
-          // Mark intro as seen
-          localStorage.setItem('kaizenIntroSeen', 'true');
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center">
+            <div className="w-10 h-10 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
+          </div>
+        }>
+          <StrangerThingsIntro onComplete={() => {
+            // Mark intro as seen
+            localStorage.setItem('kaizenIntroSeen', 'true');
 
           // Start transition sequence - smoother timing
           setIsTransitioning(true);
@@ -203,6 +216,7 @@ const Index = () => {
             setIsTransitioning(false);
           }, 700);
         }} />
+        </Suspense>
       )}
 
       {/* Main content with optimized fade-in transition */}
