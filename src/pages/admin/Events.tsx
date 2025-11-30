@@ -45,6 +45,7 @@ interface Event {
   status: string;
   is_featured: boolean;
   description?: string;
+  registrations?: { count: number }[];
 }
 
 export default function Events() {
@@ -78,10 +79,10 @@ export default function Events() {
   const stats = useMemo(() => {
     const totalEvents = events.length;
     const upcomingEvents = events.filter(e => e.status === 'upcoming').length;
-    const totalRegistrations = events.reduce((sum, e) => sum + e.current_participants, 0);
+    const totalRegistrations = events.reduce((sum, e) => sum + (e.registrations?.[0]?.count ?? e.current_participants ?? 0), 0);
     const totalCapacity = events.reduce((sum, e) => sum + e.max_participants, 0);
     const featuredCount = events.filter(e => e.is_featured).length;
-    const expectedRevenue = events.reduce((sum, e) => sum + (e.current_participants * e.registration_fee), 0);
+    const expectedRevenue = events.reduce((sum, e) => sum + ((e.registrations?.[0]?.count ?? e.current_participants ?? 0) * e.registration_fee), 0);
     return { totalEvents, upcomingEvents, totalRegistrations, totalCapacity, featuredCount, expectedRevenue };
   }, [events]);
 
@@ -89,7 +90,7 @@ export default function Events() {
     if (!silent) setLoading(true);
     const { data } = await supabase
       .from('events')
-      .select('id, name, category, event_date, venue, registration_fee, max_participants, current_participants, status, is_featured, description')
+      .select('*, registrations(count)')
       .order('created_at', { ascending: false });
 
     if (data) setEvents(data);
@@ -350,7 +351,8 @@ export default function Events() {
                 )}
 
                 {filteredEvents.map((event) => {
-                  const capacityPercentage = (event.current_participants / event.max_participants) * 100;
+                  const currentParticipants = event.registrations?.[0]?.count ?? event.current_participants ?? 0;
+                  const capacityPercentage = (currentParticipants / event.max_participants) * 100;
                   const daysUntil = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
                   return (
@@ -416,7 +418,7 @@ export default function Events() {
                               <Users className="w-4 h-4 text-red-500/70" />
                               <div>
                                 <p className="text-white/40 text-xs">Revenue</p>
-                                <p className="text-emerald-500 text-sm font-medium">₹{(event.current_participants * event.registration_fee).toLocaleString()}</p>
+                                <p className="text-emerald-500 text-sm font-medium">₹{(currentParticipants * event.registration_fee).toLocaleString()}</p>
                               </div>
                             </div>
                           </div>
@@ -426,7 +428,7 @@ export default function Events() {
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-white/60 text-sm">Capacity</span>
                               <span className={`text-sm font-medium ${getCapacityColor(capacityPercentage)}`}>
-                                {event.current_participants}/{event.max_participants} ({Math.round(capacityPercentage)}%)
+                                {currentParticipants}/{event.max_participants} ({Math.round(capacityPercentage)}%)
                               </span>
                             </div>
                             <Progress

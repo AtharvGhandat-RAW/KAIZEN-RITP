@@ -94,8 +94,8 @@ export default function ScheduleItemForm() {
           setFormData({
             title: data.title,
             description: data.description || '',
-            start_time: data.start_time ? new Date(data.start_time).toISOString().slice(0, 16) : '',
-            end_time: data.end_time ? new Date(data.end_time).toISOString().slice(0, 16) : '',
+            start_time: data.start_time ? format(new Date(data.start_time), "yyyy-MM-dd'T'HH:mm") : '',
+            end_time: data.end_time ? format(new Date(data.end_time), "yyyy-MM-dd'T'HH:mm") : '',
             day_number: data.day_number,
             item_type: data.item_type,
             venue: data.venue || '',
@@ -136,8 +136,8 @@ export default function ScheduleItemForm() {
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
-        start_time: formData.start_time,
-        end_time: formData.end_time || null,
+        start_time: new Date(formData.start_time).toISOString(),
+        end_time: formData.end_time ? new Date(formData.end_time).toISOString() : null,
         day_number: formData.day_number,
         item_type: formData.item_type,
         venue: formData.venue.trim() || null,

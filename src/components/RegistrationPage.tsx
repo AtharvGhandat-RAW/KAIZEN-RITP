@@ -493,7 +493,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                         <div className="grid gap-6">
                           {/* Event Selection Section - Horror Theme */}
                           <div className="space-y-4 p-6 bg-gradient-to-br from-red-950/20 via-black to-red-950/10 border border-red-900/40 rounded-xl shadow-lg shadow-red-900/10 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyMjAsIDM4LCAzOCwgMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
+                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyMjAsIDM4LCAzOCwgMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50 pointer-events-none" />
                             <h3 className="text-lg font-semibold text-red-100 flex items-center gap-2 relative">
                               <Flame className="w-5 h-5 text-red-500 animate-pulse" />
                               Choose Your Fate
@@ -552,7 +552,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                             </div>
 
                             {selectedEvent?.event_type === 'team' && (
-                              <div className="space-y-2 animate-in slide-in-from-top-2">
+                              <div className="space-y-2 animate-in slide-in-from-top-2 relative">
                                 <Label className="text-zinc-400">Team Name</Label>
                                 <Input
                                   value={formData.teamName}
@@ -567,7 +567,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
 
                           {/* Personal Details Section - Horror Theme */}
                           <div className="space-y-4 p-6 bg-gradient-to-br from-zinc-900/80 via-black to-zinc-900/50 border border-zinc-800/60 rounded-xl shadow-lg relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full blur-3xl" />
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full blur-3xl pointer-events-none" />
                             <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2 relative">
                               <span className="w-1.5 h-6 bg-gradient-to-b from-red-500 to-red-700 rounded-full" />
                               Your Identity
@@ -612,7 +612,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
 
                           {/* Academic Details Section - Horror Theme */}
                           <div className="space-y-4 p-6 bg-gradient-to-br from-purple-950/20 via-black to-purple-950/10 border border-purple-900/30 rounded-xl shadow-lg relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-600/5 rounded-full blur-3xl" />
+                            <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
                             <h3 className="text-lg font-semibold text-purple-100 flex items-center gap-2 relative">
                               <span className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-700 rounded-full" />
                               Academic Realm
