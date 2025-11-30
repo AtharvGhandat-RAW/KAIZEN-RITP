@@ -136,10 +136,12 @@ export default function CoordinatorScanner() {
     };
 
     // Check if Permissions Policy is blocking camera
-    const checkPermissionsPolicy = () => {
+    const checkPermissionsPolicy = (): boolean => {
         // Check if camera is allowed by Permissions Policy
-        if (document.featurePolicy) {
-            const allowed = (document as any).featurePolicy.allowsFeature('camera');
+        // featurePolicy is a legacy API, use type assertion for compatibility
+        const doc = document as Document & { featurePolicy?: { allowsFeature: (feature: string) => boolean } };
+        if (doc.featurePolicy) {
+            const allowed = doc.featurePolicy.allowsFeature('camera');
             return allowed;
         }
         // If API not available, assume allowed
@@ -221,7 +223,7 @@ export default function CoordinatorScanner() {
             
             // Log additional error properties
             if ('constraint' in error) {
-                addLog(`Constraint: ${(error as any).constraint}`);
+                addLog(`Constraint: ${(error as Error & { constraint?: string }).constraint}`);
             }
             
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
