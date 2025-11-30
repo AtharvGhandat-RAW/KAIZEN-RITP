@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Clock } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
-export function EventCountdown() {
+// Lazy load supabase client to reduce initial bundle
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+
+export const EventCountdown = memo(function EventCountdown() {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -10,9 +12,13 @@ export function EventCountdown() {
     seconds: 0
   });
   const [countdownTarget, setCountdownTarget] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Defer supabase fetch to reduce TBT
   useEffect(() => {
-    const fetchCountdownTarget = async () => {
+    // Use requestIdleCallback to defer non-critical work
+    const fetchData = async () => {
+      const supabase = await getSupabase();
       const { data } = await supabase
         .from('settings')
         .select('value')
@@ -20,38 +26,24 @@ export function EventCountdown() {
         .maybeSingle();
 
       if (data?.value) {
-        // Remove quotes if present and parse
         const cleanValue = typeof data.value === 'string'
           ? data.value.replace(/"/g, '')
           : String(data.value);
         setCountdownTarget(cleanValue);
       }
+      setIsLoaded(true);
     };
 
-    fetchCountdownTarget();
+    // Defer fetch to after initial render
+    const timeoutId = setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(fetchData);
+      } else {
+        fetchData();
+      }
+    }, 100);
 
-    const channel = supabase
-      .channel('countdown-settings')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'settings',
-        filter: 'key=eq.countdown_target'
-      }, (payload) => {
-        if (payload.new && 'value' in payload.new) {
-          // Remove quotes if present and parse
-          const rawValue = payload.new.value;
-          const cleanValue = typeof rawValue === 'string'
-            ? rawValue.replace(/"/g, '')
-            : String(rawValue);
-          setCountdownTarget(cleanValue);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -144,4 +136,4 @@ export function EventCountdown() {
       `}</style>
     </section>
   );
-}
+});

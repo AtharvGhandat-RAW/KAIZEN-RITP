@@ -1,8 +1,10 @@
 import React, { useEffect, useState, memo, useCallback } from 'react';
 import { Code, Cpu, Lightbulb, Trophy, Zap, Users, ChevronRight, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+// Lazy load supabase to reduce initial bundle TBT
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 interface FeaturedEventsProps {
   onViewAll?: () => void;
@@ -38,6 +40,7 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventC
     setLoading(true);
     setError(null);
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('events')
         .select('id, name, description, category')
@@ -56,19 +59,12 @@ export const FeaturedEvents = memo(function FeaturedEvents({ onViewAll, onEventC
   }, []);
 
   useEffect(() => {
-    fetchFeaturedEvents();
+    // Defer fetch to reduce TBT
+    const timeoutId = setTimeout(() => {
+      fetchFeaturedEvents();
+    }, 50);
 
-    // Real-time listener
-    const channel = supabase
-      .channel('featured-events-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
-        fetchFeaturedEvents();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearTimeout(timeoutId);
   }, [fetchFeaturedEvents]);
 
   return (
