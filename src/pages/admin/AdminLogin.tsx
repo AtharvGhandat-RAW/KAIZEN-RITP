@@ -102,7 +102,7 @@ export default function AdminLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="bg-black/50 border-white/10 text-white focus:border-red-500 focus:ring-red-500/20 transition-all"
-                placeholder="admin@kaizen.rit.edu"
+                placeholder="admin@kaizen-ritp.in"
               />
             </div>
 
