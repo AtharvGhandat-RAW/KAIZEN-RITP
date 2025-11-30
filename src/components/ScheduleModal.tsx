@@ -35,7 +35,6 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(1);
-  const [totalDays, setTotalDays] = useState(1);
 
   useEffect(() => {
     const fetchSchedule = async () => {
@@ -52,8 +51,10 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
         setItems(scheduleData);
 
         if (scheduleData.length > 0) {
-          const maxDay = Math.max(...scheduleData.map(item => item.day_number));
-          setTotalDays(maxDay);
+          const days = Array.from(new Set(scheduleData.map(item => item.day_number))).sort((a, b) => a - b);
+          if (days.length > 0) {
+            setSelectedDay(days[0]);
+          }
         }
       } catch (err) {
         console.error('Error fetching schedule:', err);
@@ -65,6 +66,7 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
     fetchSchedule();
   }, []);
 
+  const availableDays = Array.from(new Set(items.map(item => item.day_number))).sort((a, b) => a - b);
   const dayItems = items.filter(item => item.day_number === selectedDay);
 
   const getTypeInfo = (type: string) => {
@@ -100,18 +102,18 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
           </div>
 
           {/* Day Tabs */}
-          {totalDays > 1 && (
+          {availableDays.length > 1 && (
             <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-2 -mx-1 px-1">
-              {[...Array(totalDays)].map((_, i) => (
+              {availableDays.map((dayNum) => (
                 <button
-                  key={i + 1}
-                  onClick={() => setSelectedDay(i + 1)}
-                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${selectedDay === i + 1
+                  key={dayNum}
+                  onClick={() => setSelectedDay(dayNum)}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${selectedDay === dayNum
                     ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
                     : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
                     }`}
                 >
-                  Day {i + 1}
+                  Day {dayNum}
                 </button>
               ))}
             </div>

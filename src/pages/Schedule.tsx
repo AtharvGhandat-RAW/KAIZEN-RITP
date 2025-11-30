@@ -59,7 +59,6 @@ export default function SchedulePage() {
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState(1);
-    const [totalDays, setTotalDays] = useState(2); // Default 2 days for fest
 
     useEffect(() => {
         const fetchSchedule = async () => {
@@ -76,8 +75,10 @@ export default function SchedulePage() {
                 setItems(scheduleData);
 
                 if (scheduleData.length > 0) {
-                    const maxDay = Math.max(...scheduleData.map(item => item.day_number));
-                    setTotalDays(Math.max(maxDay, 2));
+                    const days = Array.from(new Set(scheduleData.map(item => item.day_number))).sort((a, b) => a - b);
+                    if (days.length > 0) {
+                        setSelectedDay(days[0]);
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching schedule:', err);
@@ -88,6 +89,8 @@ export default function SchedulePage() {
 
         fetchSchedule();
     }, []);
+
+    const availableDays = Array.from(new Set(items.map(item => item.day_number))).sort((a, b) => a - b);
 
     const dayItems = useMemo(() =>
         items.filter(item => item.day_number === selectedDay),
@@ -134,24 +137,26 @@ export default function SchedulePage() {
             </header>
 
             {/* Day Selector */}
-            <div className="sticky top-[73px] z-40 bg-black/90 border-b border-red-900/20 py-3">
-                <div className="max-w-6xl mx-auto px-4">
-                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                        {[...Array(totalDays)].map((_, i) => (
-                            <button
-                                key={i + 1}
-                                onClick={() => setSelectedDay(i + 1)}
-                                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${selectedDay === i + 1
-                                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
-                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
-                                    }`}
-                            >
-                                Day {i + 1}
-                            </button>
-                        ))}
+            {availableDays.length > 1 && (
+                <div className="sticky top-[73px] z-40 bg-black/90 border-b border-red-900/20 py-3">
+                    <div className="max-w-6xl mx-auto px-4">
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                            {availableDays.map((dayNum) => (
+                                <button
+                                    key={dayNum}
+                                    onClick={() => setSelectedDay(dayNum)}
+                                    className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${selectedDay === dayNum
+                                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
+                                        : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
+                                        }`}
+                                >
+                                    Day {dayNum}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Content */}
             <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
