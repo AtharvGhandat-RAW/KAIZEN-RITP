@@ -215,8 +215,8 @@ export default function AttendanceVerification() {
                                 key={type}
                                 onClick={() => setSearchType(type)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${searchType === type
-                                        ? 'bg-green-600 text-white'
-                                        : 'bg-black/50 border border-green-900/40 text-green-400 hover:border-green-600/60'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-black/50 border border-green-900/40 text-green-400 hover:border-green-600/60'
                                     }`}
                             >
                                 By {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -269,8 +269,8 @@ export default function AttendanceVerification() {
                             <div
                                 key={result.id}
                                 className={`bg-black/60 border rounded-xl p-6 transition-all ${markedAttendance.has(result.id)
-                                        ? 'border-green-500 bg-green-950/20'
-                                        : 'border-green-900/40 hover:border-green-600/50'
+                                    ? 'border-green-500 bg-green-950/20'
+                                    : 'border-green-900/40 hover:border-green-600/50'
                                     }`}
                             >
                                 {/* Student Info */}
@@ -290,10 +290,10 @@ export default function AttendanceVerification() {
 
                                     {/* Status Badge */}
                                     <div className={`px-4 py-2 rounded-full text-sm font-semibold ${markedAttendance.has(result.id)
-                                            ? 'bg-green-500 text-white'
-                                            : result.payment_status === 'completed'
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/40'
-                                                : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40'
+                                        ? 'bg-green-500 text-white'
+                                        : result.payment_status === 'completed'
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40'
                                         }`}>
                                         {markedAttendance.has(result.id) ? '✓ Attendance Marked' : result.payment_status === 'completed' ? '✓ Payment Verified' : 'Payment Pending'}
                                     </div>

@@ -1,7 +1,9 @@
 import React, { memo } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const HeroSection = memo(function HeroSection({ onExploreEvents, animateIn = true }: { onExploreEvents?: () => void; animateIn?: boolean }) {
   const title = "KAIZEN";
+  const isMobile = useIsMobile();
   const [shouldAnimate, setShouldAnimate] = React.useState(animateIn);
 
   React.useEffect(() => {
@@ -9,6 +11,9 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
       setShouldAnimate(true);
     }
   }, [animateIn]);
+
+  // Disable complex animations on mobile for performance
+  const enableAnimations = shouldAnimate && !isMobile;
 
   return (
     <div className="hero-section relative pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 md:pb-24 px-4 sm:px-6 md:px-8 lg:px-12 flex items-center justify-center min-h-screen w-full max-w-[1440px] mx-auto">
@@ -29,20 +34,13 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
               className="inline-block kaizen-letter"
               style={{
                 color: 'transparent',
-                WebkitTextStroke: '1.0px #ff4500',
-                textShadow: `
-                  0 0 8px rgba(255, 69, 0, 0.4),
-                  0 0 15px rgba(255, 69, 0, 0.3),
-                  0 0 25px rgba(255, 69, 0, 0.2),
-                  0 0 35px rgba(255, 0, 0, 0.15)
-                `,
-                filter: 'contrast(1.1)',
-                animation: shouldAnimate ? `
-                  letterGlitchReveal 0.8s ease-out ${index * 0.12}s forwards,
-                  letterGlow 6s ease-in-out infinite ${1.2 + index * 0.12}s
-                ` : 'none',
-                opacity: shouldAnimate ? 0 : 1,
-                transform: shouldAnimate ? 'scale(0.9) translateY(20px)' : 'none'
+                WebkitTextStroke: isMobile ? '0.8px #ff4500' : '1.0px #ff4500',
+                textShadow: isMobile
+                  ? '0 0 8px rgba(255, 69, 0, 0.4)'
+                  : `0 0 8px rgba(255, 69, 0, 0.4), 0 0 15px rgba(255, 69, 0, 0.3), 0 0 25px rgba(255, 69, 0, 0.2)`,
+                animation: enableAnimations ? `letterReveal 0.6s ease-out ${index * 0.1}s forwards` : 'none',
+                opacity: enableAnimations ? 0 : 1,
+                transform: enableAnimations ? 'translateY(10px)' : 'none'
               }}
             >
               {char}
@@ -56,8 +54,8 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
           style={{
             textShadow: '0 2px 10px rgba(0, 0, 0, 0.8)',
             letterSpacing: '0.02em',
-            animation: shouldAnimate ? 'subtitleEntrance 1.5s ease-out 1.2s forwards' : 'none',
-            opacity: shouldAnimate ? 0 : 1
+            animation: enableAnimations ? 'fadeInUp 0.8s ease-out 0.8s forwards' : 'none',
+            opacity: enableAnimations ? 0 : 1
           }}
         >
           The Official Tech Fest of RIT —<br />
@@ -68,8 +66,8 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
         <div
           className="cta-buttons flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-4"
           style={{
-            animation: shouldAnimate ? 'buttonsEntrance 1.5s ease-out 1.5s forwards' : 'none',
-            opacity: shouldAnimate ? 0 : 1
+            animation: enableAnimations ? 'fadeInUp 0.8s ease-out 1s forwards' : 'none',
+            opacity: enableAnimations ? 0 : 1
           }}
         >
           <button
@@ -95,7 +93,7 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
         </div>
       </div>
 
-      {/* CSS Animations & Responsive Styles */}
+      {/* CSS Animations & Responsive Styles - Optimized for Mobile Performance */}
       <style>{`
         /* Responsive Font Sizes */
         .kaizen-title {
@@ -153,125 +151,26 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
           }
         }
 
-        @keyframes letterGlitchReveal {
+        /* Lightweight animations - NO blur or filter for performance */
+        @keyframes letterReveal {
           0% {
             opacity: 0;
-            transform: scale(0.85) translateY(30px);
-            filter: blur(8px) contrast(1.1);
-          }
-          20% {
-            opacity: 0.3;
-            transform: scale(0.92) translateY(20px) translateX(-3px);
-            filter: blur(6px) contrast(1.1);
-          }
-          40% {
-            opacity: 0.6;
-            transform: scale(1.05) translateY(10px) translateX(3px);
-            filter: blur(4px) contrast(1.1);
-          }
-          60% {
-            opacity: 0.8;
-            transform: scale(0.98) translateY(5px) translateX(-2px);
-            filter: blur(2px) contrast(1.1);
-          }
-          80% {
-            opacity: 0.95;
-            transform: scale(1.02) translateY(0px) translateX(1px);
-            filter: blur(1px) contrast(1.1);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0px) translateX(0px);
-            filter: blur(0px) contrast(1.1);
-          }
-        }
-
-        @keyframes letterGlow {
-          0%, 100% {
-            text-shadow:
-              0 0 8px rgba(255, 69, 0, 0.4),
-              0 0 15px rgba(255, 69, 0, 0.3),
-              0 0 25px rgba(255, 69, 0, 0.2),
-              0 0 35px rgba(255, 0, 0, 0.15);
-          }
-          50% {
-            text-shadow:
-              0 0 12px rgba(255, 69, 0, 0.5),
-              0 0 20px rgba(255, 69, 0, 0.4),
-              0 0 30px rgba(255, 69, 0, 0.3),
-              0 0 40px rgba(255, 0, 0, 0.2);
-          }
-        }
-
-        @keyframes subtitleEntrance {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-            filter: blur(5px);
+            transform: translateY(10px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
-            filter: blur(0px);
           }
         }
 
-        @keyframes buttonsEntrance {
+        @keyframes fadeInUp {
           0% {
             opacity: 0;
-            transform: translateY(20px);
-            filter: blur(5px);
+            transform: translateY(15px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
-            filter: blur(0px);
-          }
-        }
-
-        @keyframes lineExpand {
-          0% {
-            width: 0px;
-            opacity: 0;
-          }
-          100% {
-            width: 60px;
-            opacity: 1;
-          }
-        }
-
-        @media (min-width: 640px) {
-          @keyframes lineExpand {
-            0% {
-              width: 0px;
-              opacity: 0;
-            }
-            100% {
-              width: 80px;
-              opacity: 1;
-            }
-          }
-        }
-
-        @media (min-width: 768px) {
-          @keyframes lineExpand {
-            0% {
-              width: 0px;
-              opacity: 0;
-            }
-            100% {
-              width: 96px;
-              opacity: 1;
-            }
-          }
-        }
-
-        @keyframes dangerPulse {
-          0%, 100% { 
-            box-shadow: inset 0 0 25px rgba(255, 69, 0, 0.4), 0 0 25px rgba(255, 69, 0, 0.3);
-          }
-          50% { 
-            box-shadow: inset 0 0 30px rgba(255, 69, 0, 0.5), 0 0 30px rgba(255, 69, 0, 0.4);
           }
         }
       `}</style>

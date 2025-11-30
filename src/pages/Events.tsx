@@ -193,8 +193,8 @@ export default function Events() {
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedCategory === category
-                                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
-                                        : 'bg-black/50 border border-red-900/40 text-red-400 hover:border-red-600/60 hover:text-red-300'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                                    : 'bg-black/50 border border-red-900/40 text-red-400 hover:border-red-600/60 hover:text-red-300'
                                     }`}
                             >
                                 {category === 'all' ? 'All Events' : category}
@@ -314,7 +314,7 @@ export default function Events() {
 
 function EventCard({ event, onViewDetails, onRegister }: { event: Event; onViewDetails: () => void; onRegister: () => void }) {
     return (
-        <div 
+        <div
             className="group relative bg-gradient-to-br from-red-950/20 to-black/80 border border-red-900/40 hover:border-red-600/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 rounded-xl overflow-hidden flex flex-col cursor-pointer"
             onClick={onViewDetails}
         >

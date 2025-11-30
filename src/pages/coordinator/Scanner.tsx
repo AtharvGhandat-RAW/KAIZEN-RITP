@@ -104,7 +104,7 @@ export default function CoordinatorScanner() {
                     const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
                     setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
                     console.log('Initial permission state:', result.state);
-                    
+
                     // Listen for changes
                     result.addEventListener('change', () => {
                         setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
@@ -124,7 +124,7 @@ export default function CoordinatorScanner() {
         // This intent URL opens Chrome's site settings for the current domain
         // Works on Android Chrome
         const settingsUrl = `intent://settings/content/camera#Intent;scheme=chrome;package=com.android.chrome;end`;
-        
+
         // Try to open Chrome settings
         try {
             // Method 1: Try Chrome intent (Android)
@@ -151,21 +151,21 @@ export default function CoordinatorScanner() {
     // Manual permission request - forces browser to show permission prompt
     const requestCameraPermission = async () => {
         const isAndroid = /Android/i.test(navigator.userAgent);
-        
+
         setRequestingPermission(true);
         setCameraError('');
         setDebugLogs([]);
-        
-        addLog('=== MANUAL PERMISSION REQUEST ===' );
+
+        addLog('=== MANUAL PERMISSION REQUEST ===');
         addLog(`Platform: ${isAndroid ? 'Android' : 'Other'}`);
         addLog(`Location: ${window.location.href}`);
         addLog(`Protocol: ${window.location.protocol}`);
         addLog(`Secure context: ${window.isSecureContext}`);
-        
+
         // Check Permissions Policy
         const policyAllowed = checkPermissionsPolicy();
         addLog(`Permissions Policy allows camera: ${policyAllowed}`);
-        
+
         // Check navigator.permissions
         try {
             if (navigator.permissions && navigator.permissions.query) {
@@ -177,11 +177,11 @@ export default function CoordinatorScanner() {
         } catch (e) {
             addLog(`Permission API error: ${(e as Error).message}`);
         }
-        
+
         // Check if mediaDevices exists
         addLog(`navigator.mediaDevices: ${!!navigator.mediaDevices}`);
         addLog(`getUserMedia: ${!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)}`);
-        
+
         // Try to enumerate devices first (this sometimes triggers permission)
         try {
             addLog('Enumerating devices...');
@@ -189,46 +189,46 @@ export default function CoordinatorScanner() {
             const cameras = devices.filter(d => d.kind === 'videoinput');
             addLog(`Found ${cameras.length} camera(s)`);
             cameras.forEach((cam, i) => {
-                addLog(`  ${i}: ${cam.label || '(no label - permission needed)'} [${cam.deviceId.substring(0,8)}]`);
+                addLog(`  ${i}: ${cam.label || '(no label - permission needed)'} [${cam.deviceId.substring(0, 8)}]`);
             });
         } catch (enumErr) {
             addLog(`Enumerate failed: ${(enumErr as Error).message}`);
         }
-        
+
         addLog('Requesting camera with { video: true }...');
-        
+
         try {
             // This is the most direct way to trigger permission prompt
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: false 
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
             });
-            
+
             addLog('SUCCESS! Camera permission granted');
             setPermissionState('granted');
-            
+
             // Stop the test stream immediately
             stream.getTracks().forEach(track => {
                 addLog(`Got track: ${track.label}`);
                 track.stop();
             });
-            
+
             toast.success('Camera permission granted! You can now start scanning.');
             setRequestingPermission(false);
-            
+
         } catch (err) {
             const error = err as Error;
             addLog(`FAILED: ${error.name}`);
             addLog(`Message: ${error.message}`);
-            
+
             // Log additional error properties
             if ('constraint' in error) {
                 addLog(`Constraint: ${(error as Error & { constraint?: string }).constraint}`);
             }
-            
+
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 setPermissionState('denied');
-                
+
                 // On Android, show special message about Chrome settings
                 if (isAndroid) {
                     addLog('Android detected - Chrome has blocked camera');
@@ -257,7 +257,7 @@ export default function CoordinatorScanner() {
             } else {
                 setCameraError(`Error: ${error.message}`);
             }
-            
+
             setRequestingPermission(false);
         }
     };
@@ -284,7 +284,7 @@ export default function CoordinatorScanner() {
         return () => {
             stopCamera();
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchAssignedEvents = async (eventIds: string[]) => {
@@ -333,12 +333,12 @@ export default function CoordinatorScanner() {
     const stopCamera = useCallback(() => {
         addLog('Stopping camera...');
         scanningRef.current = false;
-        
+
         if (animationRef.current) {
             cancelAnimationFrame(animationRef.current);
             animationRef.current = null;
         }
-        
+
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
                 track.stop();
@@ -346,11 +346,11 @@ export default function CoordinatorScanner() {
             });
             streamRef.current = null;
         }
-        
+
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
-        
+
         setIsScanning(false);
     }, [addLog]);
 
@@ -513,7 +513,7 @@ export default function CoordinatorScanner() {
         const isAndroid = /Android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const chromeVersion = navigator.userAgent.match(/Chrome\/(\d+)/)?.[1];
-        
+
         addLog('=== STARTING CAMERA ===');
         addLog(`Platform: ${isAndroid ? 'Android' : isIOS ? 'iOS' : 'Other'}`);
         addLog(`Chrome: ${chromeVersion || 'N/A'}`);
@@ -556,16 +556,16 @@ export default function CoordinatorScanner() {
         // On Android, we try the simplest possible constraint first
         // The key insight: Android Chrome often fails with ANY video constraints
         // So we try { video: true } first, then refine
-        
+
         if (isAndroid) {
             addLog('=== ANDROID MODE ===');
-            
+
             // Step 1: Try the absolute simplest request
             addLog('Step 1: Requesting with { video: true }...');
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 addLog('SUCCESS with basic video: true');
-                
+
                 // Now we have permission! Let's see what cameras we have
                 const tracks = stream.getVideoTracks();
                 if (tracks.length > 0) {
@@ -573,40 +573,40 @@ export default function CoordinatorScanner() {
                     const settings = currentTrack.getSettings();
                     addLog(`Got camera: ${currentTrack.label}`);
                     addLog(`Facing: ${settings.facingMode || 'unknown'}`);
-                    
+
                     // Check if this is front camera (we want back)
-                    const isFrontCamera = 
+                    const isFrontCamera =
                         currentTrack.label.toLowerCase().includes('front') ||
                         currentTrack.label.toLowerCase().includes('facing front') ||
                         settings.facingMode === 'user';
-                    
+
                     if (isFrontCamera) {
                         addLog('Got front camera, trying to switch to back...');
-                        
+
                         // Step 2: Enumerate devices to find back camera
                         try {
                             const devices = await navigator.mediaDevices.enumerateDevices();
                             const cameras = devices.filter(d => d.kind === 'videoinput');
                             addLog(`Found ${cameras.length} camera(s)`);
-                            
+
                             cameras.forEach((cam, idx) => {
                                 addLog(`  Camera ${idx}: ${cam.label || cam.deviceId.substring(0, 8)}`);
                             });
-                            
+
                             // Find back camera
-                            const backCamera = cameras.find(cam => 
+                            const backCamera = cameras.find(cam =>
                                 cam.label.toLowerCase().includes('back') ||
                                 cam.label.toLowerCase().includes('rear') ||
                                 cam.label.toLowerCase().includes('environment') ||
                                 cam.label.includes('0, facing back')
                             );
-                            
+
                             if (backCamera && backCamera.deviceId) {
                                 addLog(`Switching to back camera: ${backCamera.label}`);
-                                
+
                                 // Stop current stream
                                 stream.getTracks().forEach(t => t.stop());
-                                
+
                                 // Get back camera
                                 stream = await navigator.mediaDevices.getUserMedia({
                                     video: { deviceId: { exact: backCamera.deviceId } }
@@ -616,7 +616,7 @@ export default function CoordinatorScanner() {
                                 // Try the second camera (often the back camera)
                                 addLog('No labeled back camera, trying camera index 1...');
                                 stream.getTracks().forEach(t => t.stop());
-                                
+
                                 stream = await navigator.mediaDevices.getUserMedia({
                                     video: { deviceId: { exact: cameras[1].deviceId } }
                                 });
@@ -632,7 +632,7 @@ export default function CoordinatorScanner() {
                 lastError = err as Error;
                 addLog(`Basic request failed: ${lastError.name}`);
                 addLog(`Message: ${lastError.message}`);
-                
+
                 // If permission denied, show Android-specific error
                 if (lastError.name === 'NotAllowedError') {
                     setPermissionState('denied');
@@ -644,7 +644,7 @@ export default function CoordinatorScanner() {
         } else {
             // iOS and other platforms - use standard approach
             addLog('=== iOS/Standard MODE ===');
-            
+
             const constraintsList = [
                 { video: { facingMode: { exact: 'environment' } }, audio: false },
                 { video: { facingMode: 'environment' }, audio: false },
@@ -662,7 +662,7 @@ export default function CoordinatorScanner() {
                 } catch (err) {
                     lastError = err as Error;
                     addLog(`Failed: ${lastError.name}`);
-                    
+
                     if (lastError.name === 'NotAllowedError') {
                         setPermissionState('denied');
                         break;
@@ -675,7 +675,7 @@ export default function CoordinatorScanner() {
         if (!stream) {
             addLog('=== ALL ATTEMPTS FAILED ===');
             setIsInitializing(false);
-            
+
             if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
                 if (isAndroid) {
                     setCameraError('ANDROID_CHROME_BLOCKED');
@@ -708,7 +708,7 @@ export default function CoordinatorScanner() {
 
         if (videoRef.current) {
             addLog('Connecting stream to video...');
-            
+
             // Important video element attributes for mobile
             const video = videoRef.current;
             video.srcObject = stream;
@@ -720,7 +720,7 @@ export default function CoordinatorScanner() {
 
             try {
                 await video.play();
-                
+
                 // Wait for video to be ready
                 await new Promise<void>((resolve) => {
                     if (video.videoWidth > 0) {
@@ -730,19 +730,19 @@ export default function CoordinatorScanner() {
                         setTimeout(resolve, 2000); // Timeout fallback
                     }
                 });
-                
+
                 addLog(`Video ready: ${video.videoWidth}x${video.videoHeight}`);
-                
+
                 setIsScanning(true);
                 setIsInitializing(false);
                 scanningRef.current = true;
-                
+
                 // Start QR scanning
                 addLog('Starting QR scan loop');
                 animationRef.current = requestAnimationFrame(scanQRCode);
-                
+
                 toast.success('Camera ready!');
-                
+
             } catch (playError) {
                 const err = playError as Error;
                 addLog(`Video play failed: ${err.message}`);
@@ -757,7 +757,7 @@ export default function CoordinatorScanner() {
         lastScannedRef.current = '';
         setProcessing(false);
         setScanResult(null);
-        
+
         if (isScanning && videoRef.current && videoRef.current.srcObject) {
             scanningRef.current = true;
             animationRef.current = requestAnimationFrame(scanQRCode);
@@ -1090,7 +1090,7 @@ export default function CoordinatorScanner() {
                                                 </p>
                                                 <div className="bg-black/80 rounded-lg p-4 mb-4 text-left w-full max-w-sm">
                                                     <p className="text-yellow-400 text-sm font-bold mb-3">⚠️ Chrome won't show permission popup!</p>
-                                                    
+
                                                     {/* Method 1: Lock icon */}
                                                     <div className="bg-green-900/40 rounded-lg p-3 mb-3">
                                                         <p className="text-green-400 text-sm font-bold mb-2">✅ Method 1 (Easiest):</p>
@@ -1103,7 +1103,7 @@ export default function CoordinatorScanner() {
                                                             <li>Tap <span className="text-cyan-300 font-bold">"Try Again"</span> below</li>
                                                         </ol>
                                                     </div>
-                                                    
+
                                                     {/* Method 2: Chrome settings */}
                                                     <div className="bg-blue-900/40 rounded-lg p-3 mb-3">
                                                         <p className="text-cyan-400 text-sm font-bold mb-2">📋 Method 2 (If Method 1 doesn't work):</p>
@@ -1115,7 +1115,7 @@ export default function CoordinatorScanner() {
                                                             <li>Go back and tap <span className="text-cyan-300 font-bold">"Try Again"</span></li>
                                                         </ol>
                                                     </div>
-                                                    
+
                                                     {/* Method 3: Clear site data */}
                                                     <div className="bg-orange-900/40 rounded-lg p-3">
                                                         <p className="text-orange-400 text-sm font-bold mb-2">🔄 Method 3 (Nuclear option):</p>
@@ -1126,7 +1126,7 @@ export default function CoordinatorScanner() {
                                                         </ol>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex gap-2 flex-wrap justify-center mb-3">
                                                     <Button
                                                         onClick={requestCameraPermission}
@@ -1155,7 +1155,7 @@ export default function CoordinatorScanner() {
                                                         Refresh Page
                                                     </Button>
                                                 </div>
-                                                
+
                                                 <Button
                                                     onClick={() => setActiveTab('manual')}
                                                     size="sm"
@@ -1179,12 +1179,12 @@ export default function CoordinatorScanner() {
                                                         <li>Tap <span className="text-white font-bold">"Camera"</span></li>
                                                         <li>Select <span className="text-green-400 font-bold">"Allow"</span></li>
                                                     </ol>
-                                                    
+
                                                     <div className="pt-3 border-t border-gray-700">
                                                         <p className="text-cyan-400 text-sm font-bold mb-2">📱 For Moto phones:</p>
                                                         <p className="text-gray-300 text-xs">Settings → Apps → Chrome → Permissions → Camera → Allow</p>
                                                     </div>
-                                                    
+
                                                     <div className="pt-3 mt-3 border-t border-gray-700">
                                                         <p className="text-yellow-400 text-sm font-bold mb-2">🟡 Then in Chrome:</p>
                                                         <ol className="text-gray-300 text-sm space-y-1 list-decimal list-inside">
@@ -1248,7 +1248,7 @@ export default function CoordinatorScanner() {
                                                 Use Code
                                             </Button>
                                         </div>
-                                        
+
                                         {/* Debug Toggle */}
                                         <Button
                                             onClick={() => setShowDebug(!showDebug)}
@@ -1258,7 +1258,7 @@ export default function CoordinatorScanner() {
                                         >
                                             {showDebug ? 'Hide' : 'Show'} Debug Logs
                                         </Button>
-                                        
+
                                         {showDebug && debugLogs.length > 0 && (
                                             <div className="mt-3 bg-black/80 rounded-lg p-3 text-left w-full max-w-sm max-h-48 overflow-y-auto">
                                                 <p className="text-yellow-400 text-xs font-semibold mb-2">Debug Logs:</p>

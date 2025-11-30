@@ -7,10 +7,10 @@ export default function Refund() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 pt-20 sm:pt-24 pb-12 max-w-4xl">
         <h1 className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 text-foreground">Refund Policy</h1>
-        
+
         <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">1. General Refund Policy</h2>
@@ -22,7 +22,7 @@ export default function Refund() {
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">2. Refund Eligibility</h2>
-            
+
             <h3 className="text-xl font-semibold text-foreground mb-3">2.1 Full Refund (100%)</h3>
             <p>You are eligible for a full refund if:</p>
             <ul className="list-disc pl-6 space-y-2">
@@ -52,7 +52,7 @@ export default function Refund() {
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">3. Refund Process</h2>
-            
+
             <h3 className="text-xl font-semibold text-foreground mb-3">3.1 How to Request a Refund</h3>
             <ol className="list-decimal pl-6 space-y-2">
               <li>Submit a refund request through our contact form or email</li>

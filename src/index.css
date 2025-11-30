@@ -151,13 +151,22 @@ body {
     transform: none !important;
   }
 
-  /* Reduce animation complexity on mobile */
-  .animate-pulse {
+  /* Disable ALL animations on mobile for performance */
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
     animation: none !important;
   }
 
-  .animate-ping {
-    animation: none !important;
+  /* Disable expensive text-shadows on mobile */
+  .kaizen-letter,
+  .kaizen-title * {
+    text-shadow: 0 0 8px rgba(255, 69, 0, 0.4) !important;
+  }
+
+  /* Disable box-shadows on interactive elements during scroll */
+  .group:hover .group-hover\:shadow-red-900\/40 {
+    box-shadow: none !important;
   }
 }
 

@@ -142,8 +142,8 @@ export default function SchedulePage() {
                                 key={i + 1}
                                 onClick={() => setSelectedDay(i + 1)}
                                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${selectedDay === i + 1
-                                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
-                                        : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
+                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
                                     }`}
                             >
                                 Day {i + 1}

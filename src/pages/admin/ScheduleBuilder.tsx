@@ -115,10 +115,10 @@ export default function ScheduleBuilder() {
 
   const handleDeleteDay = async (dayNumber: number) => {
     const dayItemsCount = items.filter(item => item.day_number === dayNumber).length;
-    
+
     if (dayItemsCount > 0) {
       if (!confirm(`Day ${dayNumber} has ${dayItemsCount} item(s). Delete the entire day and all its items?`)) return;
-      
+
       try {
         // Delete all items for this day
         const { error } = await supabase
@@ -127,13 +127,13 @@ export default function ScheduleBuilder() {
           .eq('day_number', dayNumber);
 
         if (error) throw error;
-        
+
         // Update day numbers for days after the deleted day
         const { error: updateError } = await supabase
           .from('schedule_items')
           .update({ day_number: supabase.rpc('decrement_day_number', { day_num: dayNumber }) })
           .gt('day_number', dayNumber);
-        
+
         // We can't use RPC, so let's do it differently - refetch and update manually
         toast.success(`Day ${dayNumber} deleted`);
       } catch (error) {
@@ -141,7 +141,7 @@ export default function ScheduleBuilder() {
         toast.error('Failed to delete day');
       }
     }
-    
+
     // Decrease total days and adjust selected day if needed
     setTotalDays(prev => Math.max(1, prev - 1));
     if (selectedDay >= dayNumber && selectedDay > 1) {
