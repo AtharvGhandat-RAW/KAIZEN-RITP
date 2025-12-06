@@ -188,8 +188,6 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     };
   }, [fetchEvents, fetchRegistrationSettings]);
 
-  const selectedEvent = useMemo(() => events.find(e => e.id === formData.eventId), [events, formData.eventId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);

@@ -1,26 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://kaizen.rit.edu/</loc>
-    <lastmod>2024-12-01</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.kaizen-ritp.in/</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://kaizen.rit.edu/privacy</loc>
-    <lastmod>2024-11-01</lastmod>
+    <loc>https://www.kaizen-ritp.in/events</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.kaizen-ritp.in/schedule</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.kaizen-ritp.in/register</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.kaizen-ritp.in/horror-dramatics</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.kaizen-ritp.in/verify-attendance</loc>
+    <lastmod>2025-11-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.kaizen-ritp.in/privacy</loc>
+    <lastmod>2025-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://kaizen.rit.edu/terms</loc>
-    <lastmod>2024-11-01</lastmod>
+    <loc>https://www.kaizen-ritp.in/terms</loc>
+    <lastmod>2025-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://kaizen.rit.edu/refund</loc>
-    <lastmod>2024-11-01</lastmod>
+    <loc>https://www.kaizen-ritp.in/refund</loc>
+    <lastmod>2025-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

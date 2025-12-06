@@ -22,8 +22,8 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "KAIZEN - RIT Tech Fest",
-  "url": "https://kaizen.rit.edu",
-  "logo": "https://kaizen.rit.edu/kaizen-logo.png",
+  "url": "https://www.kaizen-ritp.in",
+  "logo": "https://www.kaizen-ritp.in/kaizen-logo.png",
   "sameAs": [
     "https://instagram.com/kaizen_rit",
     "https://twitter.com/kaizen_rit"
@@ -60,7 +60,7 @@ const eventSchema = {
   "organizer": {
     "@type": "Organization",
     "name": "KAIZEN - RIT",
-    "url": "https://kaizen.rit.edu"
+    "url": "https://www.kaizen-ritp.in"
   },
   "performer": {
     "@type": "Organization",
@@ -72,9 +72,9 @@ const eventSchema = {
     "priceCurrency": "INR",
     "availability": "https://schema.org/InStock",
     "validFrom": "2024-11-01",
-    "url": "https://kaizen.rit.edu/#register"
+    "url": "https://www.kaizen-ritp.in/#register"
   },
-  "image": "https://kaizen.rit.edu/kaizen-logo.png"
+  "image": "https://www.kaizen-ritp.in/kaizen-logo.png"
 };
 
 // Website schema for search engines
@@ -82,10 +82,10 @@ const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "KAIZEN Tech Fest",
-  "url": "https://kaizen.rit.edu",
+  "url": "https://www.kaizen-ritp.in",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://kaizen.rit.edu/events?search={search_term_string}",
+    "target": "https://www.kaizen-ritp.in/events?search={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 };
@@ -93,8 +93,8 @@ const websiteSchema = {
 export function SEOHead({
   title = 'KAIZEN 2024 - Stranger Things Edition | RIT Tech Fest',
   description = 'Join KAIZEN 2024, the premier technical festival of RIT with a Stranger Things theme. Register for exciting tech events, competitions, hackathons, and workshops. Experience innovation and creativity!',
-  image = 'https://kaizen.rit.edu/kaizen-logo.png',
-  url = typeof window !== 'undefined' ? window.location.href : 'https://kaizen.rit.edu',
+  image = 'https://www.kaizen-ritp.in/kaizen-logo.png',
+  url = typeof window !== 'undefined' ? window.location.href : 'https://www.kaizen-ritp.in',
   type = 'website',
   keywords = 'KAIZEN, tech fest, RIT, technical festival, stranger things, hackathon, coding competition, robotics, workshops, college fest, Bangalore, Karnataka, tech events 2024',
 }: SEOHeadProps) {

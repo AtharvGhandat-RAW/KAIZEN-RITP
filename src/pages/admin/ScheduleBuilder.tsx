@@ -54,7 +54,7 @@ export default function ScheduleBuilder() {
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(1);
-  const [totalDays, setTotalDays] = useState(2);
+  const [totalDays, setTotalDays] = useState(1);
 
   useEffect(() => {
     fetchScheduleItems();
@@ -85,7 +85,7 @@ export default function ScheduleBuilder() {
 
       if (data && data.length > 0) {
         const maxDay = Math.max(...data.map((item: ScheduleItem) => item.day_number));
-        setTotalDays(Math.max(maxDay, 2));
+        setTotalDays(prev => Math.max(prev, maxDay));
       }
     } catch (error) {
       console.error('Error fetching schedule:', error);
