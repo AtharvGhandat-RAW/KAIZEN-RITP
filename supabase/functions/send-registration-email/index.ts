@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+import nodemailer from "npm:nodemailer@6.9.10";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -32,86 +30,108 @@ const handler = async (req: Request): Promise<Response> => {
         let subject = "";
         let htmlContent = "";
 
+        // Using secrets from Supabase Dashboard
+        const SMTP_EMAIL = Deno.env.get("SMTP_EMAIL");
+        const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD");
+
+        if (!SMTP_EMAIL || !SMTP_PASSWORD) {
+            throw new Error("SMTP credentials not configured in Supabase Secrets");
+        }
+
+        // Create Nodemailer Transporter with explicit settings
+        const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true, // use SSL
+            auth: {
+                user: SMTP_EMAIL,
+                pass: SMTP_PASSWORD,
+            },
+        });
+
+        // Verify connection configuration
+        await new Promise((resolve, reject) => {
+            transporter.verify(function (error, success) {
+                if (error) {
+                    console.error("SMTP Connection Error:", error);
+                    reject(error);
+                } else {
+                    console.log("SMTP Server is ready to take our messages");
+                    resolve(success);
+                }
+            });
+        });
+
         switch (type) {
             case "registration_confirmation":
                 subject = `Registration Confirmed: ${data.eventName}`;
                 htmlContent = `
-          <h1>Welcome to KAIZEN!</h1>
-          <p>Hi ${data.name},</p>
-          <p>You have successfully registered for <strong>${data.eventName}</strong>.</p>
-          <p>We look forward to seeing you there!</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h1 style="color: #dc2626; text-align: center;">Welcome to KAIZEN!</h1>
+            <p>Hi ${data.name},</p>
+            <p>You have successfully registered for <strong>${data.eventName}</strong>.</p>
+            <p>We look forward to seeing you there!</p>
+          </div>
         `;
                 break;
             case "payment_update":
-                subject = `Payment Status Update: ${data.eventName}`;
-                htmlContent = `
-          <h1>Payment Update</h1>
-          <p>Hi ${data.name},</p>
-          <p>Your payment for <strong>${data.eventName}</strong> has been marked as <strong>${data.paymentStatus}</strong>.</p>
-        `;
+                if (data.paymentStatus?.toLowerCase() === 'completed') {
+                    subject = `Payment Verified - Registration Confirmed for ${data.eventName}`;
+                    htmlContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h1 style="color: #16a34a; text-align: center;">Payment Verified!</h1>
+                <p>Hi <strong>${data.name}</strong>,</p>
+                <p>Congratulations! Your payment for <strong>${data.eventName}</strong> has been successfully verified.</p>
+                
+                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #16a34a;">
+                    <h3 style="margin-top: 0; color: #166534;">Your QR Code Ticket is Ready</h3>
+                    <p style="margin-bottom: 0;">You can now access your entry pass on our website.</p>
+                </div>
+
+                <h3>How to access your QR Code:</h3>
+                <ol>
+                    <li>Visit <a href="https://www.kaizen-ritp.in" style="color: #dc2626; text-decoration: none;">www.kaizen-ritp.in</a></li>
+                    <li>Login with your registered email</li>
+                    <li>Go to your <strong>Profile / Dashboard</strong></li>
+                    <li>Click on <strong>"My Events"</strong> to view your QR Pass</li>
+                </ol>
+                
+                <p style="margin-top: 30px; font-size: 12px; color: #666;">If you have any questions, please reply to this email.</p>
+              </div>
+            `;
+                } else {
+                    subject = `Payment Status Update: ${data.eventName}`;
+                    htmlContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h1>Payment Update</h1>
+                <p>Hi ${data.name},</p>
+                <p>Your payment for <strong>${data.eventName}</strong> has been marked as <strong>${data.paymentStatus}</strong>.</p>
+              </div>
+            `;
+                }
                 break;
             default:
                 subject = "Notification from KAIZEN";
                 htmlContent = `<p>${data.message}</p>`;
         }
 
-        // Example using Resend (Preferred for Supabase)
-        if (RESEND_API_KEY) {
-            const res = await fetch("https://api.resend.com/emails", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${RESEND_API_KEY}`,
-                },
-                body: JSON.stringify({
-                    from: "KAIZEN <onboarding@resend.dev>", // Update this with your verified domain
-                    to: [to],
-                    subject: subject,
-                    html: htmlContent,
-                }),
-            });
+        // Send Email
+        const info = await transporter.sendMail({
+            from: `"KAIZEN Admin" <${SMTP_EMAIL}>`,
+            to: to,
+            subject: subject,
+            html: htmlContent,
+        });
 
-            const responseData = await res.json();
-            return new Response(JSON.stringify(responseData), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: res.status,
-            });
-        }
+        console.log("Email sent:", info.messageId);
 
-        // Example using Brevo (formerly Sendinblue)
-        if (BREVO_API_KEY) {
-            const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "api-key": BREVO_API_KEY,
-                },
-                body: JSON.stringify({
-                    sender: { name: "KAIZEN Team", email: "no-reply@kaizen-ritp.com" }, // Update this
-                    to: [{ email: to, name: data.name }],
-                    subject: subject,
-                    htmlContent: htmlContent,
-                }),
-            });
-
-            const responseData = await res.json();
-            return new Response(JSON.stringify(responseData), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: res.status,
-            });
-        }
-
-        // Mock response if no API key is configured (for development)
-        console.log("Mock Email Sent:", { to, subject });
-        return new Response(
-            JSON.stringify({ message: "Email mocked (no API key configured)", to, subject }),
-            {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 200,
-            }
-        );
+        return new Response(JSON.stringify({ success: true, id: info.messageId }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+        });
 
     } catch (error: any) {
+        console.error("Error sending email:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 500,

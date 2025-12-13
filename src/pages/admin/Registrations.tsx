@@ -188,6 +188,27 @@ export default function Registrations() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: `Updated ${selectedIds.size} registrations to ${status}` });
+      
+      // Send emails for completed payments in bulk
+      if (status === 'completed') {
+        idsToUpdate.forEach(id => {
+          const registration = registrations.find(r => r.id === id);
+          if (registration) {
+            supabase.functions.invoke('send-registration-email', {
+              body: {
+                to: registration.profiles.email,
+                type: 'payment_update',
+                data: {
+                  name: registration.profiles.full_name,
+                  eventName: registration.events.name,
+                  paymentStatus: 'completed',
+                }
+              }
+            }).catch(err => console.error(`Failed to send email to ${registration.profiles.email}`, err));
+          }
+        });
+      }
+
       setSelectedIds(new Set());
       // No need to fetchRegistrations() because of optimistic update + real-time subscription
     }
@@ -217,20 +238,41 @@ export default function Registrations() {
 
       // Send email notification if payment is completed
       if (status === 'completed' && registration) {
-        try {
-          await supabase.functions.invoke('send-registration-email', {
-            body: {
-              to: registration.profiles.email,
-              type: 'payment_update',
-              data: {
-                name: registration.profiles.full_name,
-                eventName: registration.events.name,
-                paymentStatus: 'completed',
-              }
+        console.log("Attempting to send email to:", registration.profiles.email);
+        
+        const { data, error: funcError } = await supabase.functions.invoke('send-registration-email', {
+          body: {
+            to: registration.profiles.email,
+            type: 'payment_update',
+            data: {
+              name: registration.profiles.full_name,
+              eventName: registration.events.name,
+              paymentStatus: 'completed',
             }
+          }
+        });
+
+        if (funcError) {
+          console.error('Edge Function Invocation Error:', funcError);
+          // Show the actual error message from the function or network
+          const errorMessage = funcError.message || JSON.stringify(funcError);
+          toast({ 
+            title: 'Email Failed', 
+            description: `Error: ${errorMessage}. Check Supabase Logs.`, 
+            variant: 'destructive',
+            duration: 5000
           });
-        } catch (emailError) {
-          console.error('Email sending failed:', emailError);
+        } else if (data?.error) {
+          console.error('Email Sending Error:', data.error);
+          toast({ 
+            title: 'Email Failed', 
+            description: `Server Error: ${data.error}`, 
+            variant: 'destructive',
+            duration: 5000
+          });
+        } else {
+          console.log("Email sent successfully:", data);
+          toast({ title: 'Email Sent', description: `Verification email sent to ${registration.profiles.email}` });
         }
       }
     }
