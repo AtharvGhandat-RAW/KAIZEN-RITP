@@ -97,45 +97,51 @@ export const HeroSection = memo(function HeroSection({ onExploreEvents, animateI
       <style>{`
         /* Responsive Font Sizes */
         .kaizen-title {
-          font-size: 60px;
+          font-size: 42px; /* Smaller start for mobile */
         }
 
         .kaizen-letter {
-          -webkit-text-stroke-width: 0.8px;
+          -webkit-text-stroke-width: 0.6px;
         }
 
         .subtitle {
-          font-size: 16px;
-          line-height: 1.6;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        @media (min-width: 375px) {
+          .kaizen-title {
+            font-size: 52px;
+          }
         }
 
         @media (min-width: 480px) {
           .kaizen-title {
-            font-size: 80px;
+            font-size: 70px;
           }
           .kaizen-letter {
             -webkit-text-stroke-width: 0.9px;
+          }
+          .subtitle {
+            font-size: 16px;
+          }
+        }
+
+        @media (min-width: 640px) {
+          .kaizen-title {
+            font-size: 90px;
+          }
+          .kaizen-letter {
+            -webkit-text-stroke-width: 1.0px;
           }
           .subtitle {
             font-size: 18px;
           }
         }
 
-        @media (min-width: 640px) {
-          .kaizen-title {
-            font-size: 100px;
-          }
-          .kaizen-letter {
-            -webkit-text-stroke-width: 1.0px;
-          }
-          .subtitle {
-            font-size: 19px;
-          }
-        }
-
         @media (min-width: 768px) {
           .kaizen-title {
-            font-size: 120px;
+            font-size: 110px;
           }
           .subtitle {
             font-size: 20px;

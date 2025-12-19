@@ -70,7 +70,7 @@ export function ExploreEventsPage({ onClose, onRegister }: ExploreEventsPageProp
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-red-900/50 p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-red-500" style={{
+          <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-red-500 truncate" style={{
             textShadow: '0 0 20px rgba(255, 0, 0, 0.5)',
             fontFamily: 'serif'
           }}>
@@ -79,6 +79,7 @@ export function ExploreEventsPage({ onClose, onRegister }: ExploreEventsPageProp
           <button
             onClick={onClose}
             className="p-2 border-2 border-red-600 bg-black text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all flex-shrink-0 rounded-full"
+            aria-label="Close"
           >
             <X size={20} className="sm:w-6 sm:h-6" />
           </button>
