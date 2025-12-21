@@ -37,6 +37,7 @@ interface ScheduleItem {
   speakers: string[] | null;
   is_highlighted: boolean;
   sort_order: number;
+  image_url?: string | null;
 }
 
 const ITEM_TYPES = [
@@ -77,8 +78,8 @@ export default function ScheduleBuilder() {
         .from('schedule_items')
         .select('*')
         .order('day_number', { ascending: true })
-        .order('start_time', { ascending: true })
-        .order('sort_order', { ascending: true });
+        .order('sort_order', { ascending: true })
+        .order('start_time', { ascending: true });
 
       if (error) throw error;
       setItems((data as ScheduleItem[]) || []);

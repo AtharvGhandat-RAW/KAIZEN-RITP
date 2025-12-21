@@ -25,7 +25,10 @@ import {
   Trophy,
   Users,
   Sparkles,
-  Mic
+  Mic,
+  Upload,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -42,6 +45,7 @@ interface ScheduleItem {
   speakers: string[] | null;
   is_highlighted: boolean;
   sort_order: number;
+  image_url?: string | null;
 }
 
 const ITEM_TYPES = [
@@ -64,6 +68,7 @@ export default function ScheduleItemForm() {
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [totalDays, setTotalDays] = useState(3);
 
   const [formData, setFormData] = useState({
@@ -76,6 +81,7 @@ export default function ScheduleItemForm() {
     venue: '',
     is_highlighted: false,
     sort_order: 0,
+    image_url: '',
   });
   const [speakerInput, setSpeakerInput] = useState('');
 
@@ -101,6 +107,7 @@ export default function ScheduleItemForm() {
             venue: data.venue || '',
             is_highlighted: data.is_highlighted || false,
             sort_order: data.sort_order || 0,
+            image_url: data.image_url || '',
           });
           if (data.speakers && data.speakers.length > 0) {
             setSpeakerInput(data.speakers.join(', '));
@@ -119,6 +126,39 @@ export default function ScheduleItemForm() {
       fetchItem(id);
     }
   }, [id, isEditing, navigate]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!e.target.files || e.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('schedule_images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('schedule_images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, image_url: data.publicUrl });
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
@@ -144,6 +184,7 @@ export default function ScheduleItemForm() {
         speakers: speakers.length > 0 ? speakers : null,
         is_highlighted: formData.is_highlighted,
         sort_order: formData.sort_order,
+        image_url: formData.image_url || null,
       };
 
       if (isEditing && id) {
@@ -289,15 +330,29 @@ export default function ScheduleItemForm() {
                 </div>
               </div>
 
-              {/* Venue */}
-              <div className="space-y-2">
-                <Label className="text-white">Venue</Label>
-                <Input
-                  value={formData.venue}
-                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                  placeholder="e.g., Main Auditorium"
-                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                />
+              {/* Venue & Sort Order */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white">Venue</Label>
+                  <Input
+                    value={formData.venue}
+                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                    placeholder="e.g., Main Auditorium"
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">Sort Order</Label>
+                  <Input
+                    type="number"
+                    value={formData.sort_order}
+                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 1, 2, 3"
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                  <p className="text-xs text-zinc-500">Lower numbers appear first (e.g., 1 is top)</p>
+                </div>
               </div>
 
               {/* Speakers */}
@@ -321,6 +376,53 @@ export default function ScheduleItemForm() {
                   placeholder="Brief description of this schedule item..."
                   className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 min-h-[100px]"
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label className="text-white">Event Poster</Label>
+                <div className="flex items-center gap-4">
+                  {formData.image_url && (
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => setFormData({ ...formData, image_url: '' })}
+                        className="absolute top-0 right-0 p-1 bg-black/50 text-white hover:bg-red-600/80 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="image-upload"
+                      className="flex items-center justify-center w-full h-20 px-4 transition bg-zinc-800 border-2 border-zinc-700 border-dashed rounded-lg appearance-none cursor-pointer hover:border-zinc-600 focus:outline-none"
+                    >
+                      <div className="flex flex-col items-center space-y-1">
+                        {uploading ? (
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+                        ) : (
+                          <Upload className="w-6 h-6 text-zinc-400" />
+                        )}
+                        <span className="font-medium text-zinc-400 text-xs">
+                          {uploading ? 'Uploading...' : 'Click to upload image'}
+                        </span>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                      />
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               {/* Highlight */}

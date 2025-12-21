@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Ghost, Star, Coffee, Trophy, Users, Sparkles, Mic, ArrowLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOHead } from '@/components/SEOHead';
+import { format, parseISO } from 'date-fns';
+import { ScheduleDetailsModal } from '@/components/ScheduleDetailsModal';
 
 interface ScheduleItem {
     id: string;
@@ -15,6 +17,7 @@ interface ScheduleItem {
     venue: string | null;
     speakers: string[] | null;
     is_highlighted: boolean;
+    image_url?: string | null;
 }
 
 const ITEM_TYPES: Record<string, { icon: React.ElementType; color: string; bgColor: string; label: string }> = {
@@ -27,31 +30,31 @@ const ITEM_TYPES: Record<string, { icon: React.ElementType; color: string; bgCol
     other: { icon: Mic, color: 'text-gray-400', bgColor: 'bg-gray-500/20', label: 'Other' },
 };
 
-// Helper function to format time without timezone conversion
+// Helper function to format time correctly from ISO string
 const formatTimeFromString = (timeString: string): string => {
     if (!timeString) return '';
     try {
-        // Extract just the time part if it's a full timestamp
-        // The time is stored as 'HH:MM:SS' or as a full ISO timestamp
-        if (timeString.includes('T')) {
-            // Full ISO timestamp - extract time part
-            const timePart = timeString.split('T')[1];
-            const [hours, minutes] = timePart.split(':');
-            const hour = parseInt(hours, 10);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const hour12 = hour % 12 || 12;
-            return `${hour12}:${minutes} ${ampm}`;
-        } else if (timeString.includes(':')) {
-            // Just time string 'HH:MM:SS'
-            const [hours, minutes] = timeString.split(':');
-            const hour = parseInt(hours, 10);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const hour12 = hour % 12 || 12;
-            return `${hour12}:${minutes} ${ampm}`;
-        }
-        return timeString;
+        // Parse the ISO string to a Date object (handles timezone conversion automatically)
+        const date = new Date(timeString);
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) return timeString;
+
+        // Format to local time (e.g., "9:30 AM")
+        return format(date, 'h:mm a');
     } catch {
         return timeString;
+    }
+};
+
+// Helper to get formatted date for a day (e.g., "Nov 23")
+const getDateForDay = (dayNum: number, items: ScheduleItem[]): string => {
+    const dayItem = items.find(item => item.day_number === dayNum);
+    if (!dayItem || !dayItem.start_time) return '';
+    try {
+        return format(new Date(dayItem.start_time), 'MMM d');
+    } catch {
+        return '';
     }
 };
 
@@ -59,6 +62,8 @@ export default function SchedulePage() {
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState(1);
+    const [selectedItem, setSelectedItem] = useState<ScheduleItem | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchSchedule = async () => {
@@ -67,6 +72,7 @@ export default function SchedulePage() {
                     .from('schedule_items')
                     .select('*')
                     .order('day_number', { ascending: true })
+                    .order('sort_order', { ascending: true })
                     .order('start_time', { ascending: true });
 
                 if (error) throw error;
@@ -151,6 +157,9 @@ export default function SchedulePage() {
                                         }`}
                                 >
                                     Day {dayNum}
+                                    <span className="ml-2 opacity-60 font-normal text-xs">
+                                        {getDateForDay(dayNum, items)}
+                                    </span>
                                 </button>
                             ))}
                         </div>
@@ -218,8 +227,14 @@ export default function SchedulePage() {
                                         </div>
 
                                         {/* Card */}
-                                        <div className={`group bg-zinc-900/50 hover:bg-zinc-900/80 border border-white/5 hover:border-red-500/30 rounded-xl p-4 sm:p-5 transition-all duration-200 ${item.is_highlighted ? 'ring-1 ring-yellow-500/40 bg-yellow-500/5' : ''
-                                            }`}>
+                                        <div 
+                                            onClick={() => {
+                                                setSelectedItem(item);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className={`group bg-zinc-900/50 hover:bg-zinc-900/80 border border-white/5 hover:border-red-500/30 rounded-xl p-4 sm:p-5 transition-all duration-200 cursor-pointer ${item.is_highlighted ? 'ring-1 ring-yellow-500/40 bg-yellow-500/5' : ''
+                                            }`}
+                                        >
                                             {/* Badges row */}
                                             <div className="flex items-center gap-2 flex-wrap mb-3">
                                                 <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${typeInfo.bgColor} ${typeInfo.color} font-medium`}>
@@ -285,6 +300,12 @@ export default function SchedulePage() {
                     </div>
                 )}
             </main>
+
+            <ScheduleDetailsModal 
+                item={selectedItem}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
 
             {/* CSS for animations */}
             <style>{`
