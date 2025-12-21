@@ -17,9 +17,9 @@ const ErrorBoundary = lazy(() =>
 );
 
 // Lazy load background effects with lower priority - with error handling
-const AtmosphericBackground = lazy(() =>
-  import('@/components/AtmosphericBackground')
-    .then(m => ({ default: m.AtmosphericBackground }))
+const HeroBackground = lazy(() =>
+  import('@/components/HeroBackground')
+    .then(m => ({ default: m.HeroBackground }))
     .catch(() => ({ default: () => null }))
 );
 // DimensionalRift removed - too heavy, causing performance issues
@@ -132,7 +132,7 @@ const Index = () => {
       // Use requestIdleCallback for non-critical preloading
       const preload = () => {
         Promise.all([
-          import('@/components/AtmosphericBackground'),
+          import('@/components/HeroBackground'),
           import('@/components/EventCountdown'),
         ]).catch(() => { });
       };
@@ -239,7 +239,7 @@ const Index = () => {
         {/* Background effects - deferred loading */}
         {backgroundLoaded && showMainContent && (
           <Suspense fallback={null}>
-            <AtmosphericBackground />
+            <HeroBackground />
           </Suspense>
         )}
 

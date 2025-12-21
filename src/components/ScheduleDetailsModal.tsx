@@ -57,22 +57,34 @@ export function ScheduleDetailsModal({ item, isOpen, onClose }: ScheduleDetailsM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed left-0 top-0 w-screen h-screen max-w-none m-0 rounded-none border-none bg-black p-0 translate-x-0 translate-y-0 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:slide-in-from-top-0 data-[state=open]:zoom-in-100 overflow-y-auto focus:outline-none">
+      <DialogContent className="fixed left-0 top-0 w-screen h-screen max-w-none m-0 rounded-none border-none bg-black p-0 translate-x-0 translate-y-0 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:slide-in-from-top-0 data-[state=open]:zoom-in-100 overflow-y-auto focus:outline-none z-[100]">
         
-        {/* Sticky Navigation Header */}
-        <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-black/80 backdrop-blur-md border-b border-white/10">
-            <button 
-                onClick={onClose}
-                className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
-            >
-                <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors">
+        {/* Replicated Header for seamless navigation */}
+        <div className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-red-900/30 w-full">
+            <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
+                <button
+                    onClick={onClose}
+                    className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+                >
                     <ArrowLeft className="w-5 h-5" />
+                    <span className="hidden sm:inline">Back to Event Schedule</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
+                        <Calendar className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div>
+                        <h1 className="text-base sm:text-lg font-bold tracking-wide">Event Schedule</h1>
+                        <p className="text-[10px] text-red-400/60 hidden sm:block">KAIZEN 2025</p>
+                    </div>
                 </div>
-                <span className="font-medium text-sm sm:text-base">Back to Event Schedule</span>
-            </button>
+
+                <div className="w-20" /> {/* Spacer for centering */}
+            </div>
         </div>
 
-        <div className="max-w-4xl mx-auto w-full pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
+        <div className="max-w-4xl mx-auto w-full pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4">
             <div className="px-4 sm:px-10 space-y-8 relative">
                 {/* Header Info */}
                 <div className="space-y-4">
