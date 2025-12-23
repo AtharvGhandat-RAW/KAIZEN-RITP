@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, AlertCircle, CheckCircle2, Upload, Loader2, Skull, Flame, Ghost, Zap } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle, CheckCircle2, Flame, Ghost, Loader2, Skull, Upload, X, Zap } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 // UUID fallback for browsers that don't support crypto.randomUUID
@@ -294,6 +294,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         p_college: formData.college,
         p_year: formData.year,
         p_branch: formData.branch,
+        p_education: formData.educationType,
         p_event_id: formData.eventId,
         p_team_name: formData.teamName || null,
         p_payment_proof_url: paymentProofUrl,
