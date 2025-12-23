@@ -253,7 +253,8 @@ export const HeroBackground = () => {
                 color="#220000" 
                 transparent 
                 opacity={0.1} 
-                blending={THREE.MultiplyBlending} 
+                blending={THREE.MultiplyBlending}
+                premultipliedAlpha={true}
             />
         </mesh>
       </Canvas>

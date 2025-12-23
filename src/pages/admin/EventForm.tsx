@@ -47,6 +47,8 @@ interface FormData {
     venue: string;
     event_date: string;
     registration_deadline: string;
+    registration_start_date: string;
+    registration_end_date: string;
     registration_fee: number;
     max_participants: number;
     min_team_size: number;
@@ -72,6 +74,8 @@ export default function EventForm() {
         venue: '',
         event_date: '',
         registration_deadline: '',
+        registration_start_date: '',
+        registration_end_date: '',
         registration_fee: 0,
         max_participants: 0,
         min_team_size: 1,
@@ -101,23 +105,26 @@ export default function EventForm() {
             }
 
             if (data) {
+                // Cast data to any to handle new columns not yet in types
+                const eventData = data as any;
                 setFormData({
-                    name: data.name || '',
-                    category: data.category || 'Tech',
-                    description: data.description || '',
-                    venue: data.venue || '',
-                    event_date: data.event_date?.split('T')[0] || '',
-                    registration_deadline: data.registration_deadline?.split('T')[0] || '',
-                    registration_fee: data.registration_fee || 0,
-                    max_participants: data.max_participants || 0,
-                    min_team_size: data.min_team_size || 1,
-                    max_team_size: data.max_team_size || 1,
-                    event_type: data.event_type || 'individual',
-                    status: data.status || 'upcoming',
-                    upi_qr_url: data.upi_qr_url || '',
+                    name: eventData.name || '',
+                    category: eventData.category || 'Tech',
+                    description: eventData.description || '',
+                    venue: eventData.venue || '',
+                    event_date: eventData.event_date?.split('T')[0] || '',
+                    registration_deadline: eventData.registration_deadline?.split('T')[0] || '',
+                    registration_start_date: eventData.registration_start_date?.split('T')[0] || '',
+                    registration_end_date: eventData.registration_end_date?.split('T')[0] || '',
+                    registration_fee: eventData.registration_fee || 0,
+                    max_participants: eventData.max_participants || 0,
+                    min_team_size: eventData.min_team_size || 1,
+                    max_team_size: eventData.max_team_size || 1,
+                    event_type: eventData.event_type || 'individual',
+                    status: eventData.status || 'upcoming',
+                    upi_qr_url: eventData.upi_qr_url || '',
                 });
             }
-            setFetching(false);
         };
 
         if (isEdit && id) {
@@ -365,6 +372,26 @@ export default function EventForm() {
                                             onChange={(e) =>
                                                 handleInputChange('registration_deadline', e.target.value)
                                             }
+                                            className="bg-black/40 border-gray-700"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-300">Registration Start Date</Label>
+                                        <Input
+                                            type="datetime-local"
+                                            value={formData.registration_start_date}
+                                            onChange={(e) => handleInputChange('registration_start_date', e.target.value)}
+                                            className="bg-black/40 border-gray-700"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-300">Registration End Date</Label>
+                                        <Input
+                                            type="datetime-local"
+                                            value={formData.registration_end_date}
+                                            onChange={(e) => handleInputChange('registration_end_date', e.target.value)}
                                             className="bg-black/40 border-gray-700"
                                         />
                                     </div>

@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { SEOHead } from '@/components/SEOHead';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
@@ -20,7 +21,7 @@ const ErrorBoundary = lazy(() =>
 const HeroBackground = lazy(() =>
   import('@/components/HeroBackground')
     .then(m => ({ default: m.HeroBackground }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 // DimensionalRift removed - too heavy, causing performance issues
 
@@ -28,7 +29,7 @@ const HeroBackground = lazy(() =>
 const EventCountdown = lazy(() =>
   import('@/components/EventCountdown')
     .then(m => ({ default: m.EventCountdown }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 
 const FeaturedEvents = lazy(() =>
@@ -36,7 +37,7 @@ const FeaturedEvents = lazy(() =>
     .then(m => ({ default: m.FeaturedEvents }))
     .catch((err) => {
       console.error('Failed to load FeaturedEvents', err);
-      return { default: () => <div id="events-error" className="text-red-500">Failed to load FeaturedEvents</div> };
+      return { default: () => <div id="events-error" className="text-red-500">Failed to load FeaturedEvents</div> } as any;
     })
 );
 
@@ -44,27 +45,27 @@ const FeaturedEvents = lazy(() =>
 const AboutSection = lazy(() =>
   import('@/components/AboutSection')
     .then(m => ({ default: m.AboutSection }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 const RegistrationCTA = lazy(() =>
   import('@/components/RegistrationCTA')
     .then(m => ({ default: m.RegistrationCTA }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 const ContactForm = lazy(() =>
   import('@/components/ContactForm')
     .then(m => ({ default: m.ContactForm }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 const FAQSection = lazy(() =>
   import('@/components/FAQSection')
     .then(m => ({ default: m.FAQSection }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 const ContactFooter = lazy(() =>
   import('@/components/ContactFooter')
     .then(m => ({ default: m.ContactFooter }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null } as any))
 );
 
 // Lazy load heavy modal components - only when needed
@@ -119,6 +120,17 @@ const Index = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined);
   const [showStatusChecker, setShowStatusChecker] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [globalButtonAction, setGlobalButtonAction] = useState<'fest_registration' | 'event_registration'>('fest_registration');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await (supabase.from('fest_settings' as any) as any).select('global_button_action').single();
+      if (data?.global_button_action) {
+        setGlobalButtonAction(data.global_button_action);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Preload heavy components - start immediately for returning users
   useEffect(() => {
@@ -159,7 +171,13 @@ const Index = () => {
   }, [showIntro, showRegistration, showExploreEvents, showStatusChecker, showEventDetails]);
 
   // Memoized handlers
-  const handleShowRegistration = useCallback(() => setShowRegistration(true), []);
+  const handleShowRegistration = useCallback(() => {
+    if (globalButtonAction === 'fest_registration') {
+      navigate('/fest-registration');
+    } else {
+      setShowRegistration(true);
+    }
+  }, [globalButtonAction, navigate]);
   const handleCloseRegistration = useCallback(() => setShowRegistration(false), []);
   const handleShowExploreEvents = useCallback(() => navigate('/events'), [navigate]);
   const handleCloseExploreEvents = useCallback(() => setShowExploreEvents(false), []);

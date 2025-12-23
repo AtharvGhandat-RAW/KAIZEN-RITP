@@ -78,6 +78,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     teamName: '',
     declaration: false,
     paymentProof: null as File | null,
+    festRegistrationCode: '', // New field for Fest Code
   });
 
   const [step, setStep] = useState(1);
@@ -87,10 +88,58 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     [events, formData.eventId]
   );
 
-  const nextStep = () => {
+  // Verify Fest Code before proceeding
+  const verifyFestCode = async () => {
+    if (!formData.festRegistrationCode) {
+      toast.error("Please enter your Fest Registration Code");
+      return false;
+    }
+    
+    setLoading(true);
+    try {
+      // Cast to any to avoid deep type instantiation issues with new columns
+      const { data, error } = await (supabase
+        .from('profiles') as any)
+        .select('id, full_name, email, phone, college, year, branch')
+        .eq('fest_registration_id', formData.festRegistrationCode)
+        .eq('is_fest_registered', true)
+        .single();
+
+      if (error || !data) {
+        toast.error("Invalid Fest Code. Please register for the Fest first.");
+        return false;
+      }
+
+      // Auto-fill form data from profile
+      setFormData(prev => ({
+        ...prev,
+        fullName: data.full_name,
+        email: data.email,
+        phone: data.phone || '',
+        college: data.college || '',
+        year: data.year || '',
+        branch: data.branch || '',
+      }));
+      
+      toast.success("Fest Code Verified! Details auto-filled.");
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nextStep = async () => {
     if (step === 1) {
       if (!formData.eventId) { toast.error("Please select an event"); return; }
       if (selectedEvent?.event_type === 'team' && !formData.teamName) { toast.error("Please enter a team name"); return; }
+      
+      // Verify code before moving to personal details
+      const isValid = await verifyFestCode();
+      if (!isValid) return;
+
     } else if (step === 2) {
       if (!formData.fullName || !formData.email || !formData.phone || !formData.college || !formData.year || !formData.branch || !formData.educationType) {
         toast.error("Please fill in all fields");
@@ -209,43 +258,6 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     setLoading(true);
 
     try {
-      // Check if user already registered for this event
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', formData.email)
-        .maybeSingle();
-
-      if (existingProfile) {
-        // Check if already registered for this specific event
-        const { data: existingReg } = await supabase
-          .from('registrations')
-          .select('id, payment_status')
-          .eq('profile_id', existingProfile.id)
-          .eq('event_id', formData.eventId)
-          .maybeSingle();
-
-        if (existingReg) {
-          // Allow re-registration if previous was rejected or failed
-          if (existingReg.payment_status === 'rejected') {
-            // Delete old registration to allow fresh one
-            await supabase
-              .from('registrations')
-              .delete()
-              .eq('id', existingReg.id);
-          } else {
-            // Already registered with pending/completed status
-            const statusMsg = existingReg.payment_status === 'completed'
-              ? 'You are already registered for this event!'
-              : 'You have a pending registration for this event. Please wait for payment verification.';
-            toast.info(statusMsg);
-            setError(statusMsg);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
       let paymentProofUrl = null;
 
       if (formData.paymentProof) {
@@ -273,109 +285,41 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         setUploading(false);
       }
 
-      // Check for existing profile (reuse from earlier check)
-      let profileId: string;
-      const profileEmail = formData.email.toLowerCase().trim();
+      // Call the atomic registration function
+      // @ts-ignore - RPC function not yet in types
+      const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
+        p_full_name: formData.fullName,
+        p_email: formData.email.toLowerCase().trim(),
+        p_phone: formData.phone,
+        p_college: formData.college,
+        p_year: formData.year,
+        p_branch: formData.branch,
+        p_event_id: formData.eventId,
+        p_team_name: formData.teamName || null,
+        p_payment_proof_url: paymentProofUrl,
+        p_registration_fee: selectedEvent?.registration_fee || 0
+      });
 
-      // Re-fetch profile to ensure we have latest data
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', profileEmail)
-        .maybeSingle();
+      if (rpcError) throw rpcError;
 
-      if (profileData) {
-        // Update existing profile
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: formData.fullName,
-            phone: formData.phone,
-            college: formData.college,
-            year: formData.year,
-            branch: formData.branch,
-          })
-          .eq('id', profileData.id);
+      // Cast result to expected type
+      const registrationResult = result as unknown as { success: boolean; message?: string; registration_id?: string };
 
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          throw new Error('Failed to update your profile. Please try again.');
-        }
-        profileId = profileData.id;
-      } else {
-        // Create new profile
-        const { data: newProfile, error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            // user_id is optional for public registrations
-            full_name: formData.fullName,
-            email: profileEmail,
-            phone: formData.phone,
-            college: formData.college,
-            year: formData.year,
-            branch: formData.branch,
-          })
-          .select('id')
-          .single();
+      if (registrationResult && !registrationResult.success) {
+        throw new Error(registrationResult.message || 'Registration failed');
+      }
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Check if it's a duplicate email error
-          if (profileError.code === '23505') {
-            throw new Error('An account with this email already exists. Please use a different email or try again.');
+      // Send confirmation email (fire and forget)
+      supabase.functions.invoke('send-registration-email', {
+        body: {
+          to: formData.email,
+          type: 'registration_confirmation',
+          data: {
+            name: formData.fullName,
+            eventName: selectedEvent?.name || 'Event',
           }
-          throw new Error('Failed to create your profile. Please try again.');
         }
-        profileId = newProfile.id;
-      }
-
-      const registrationType = selectedEvent?.event_type === 'team' ? 'team' : 'solo';
-
-      let teamId = null;
-      if (registrationType === 'team' && formData.teamName) {
-        const { data: team, error: teamError } = await supabase
-          .from('teams')
-          .insert({
-            name: formData.teamName,
-            event_id: formData.eventId,
-            leader_id: profileId,
-          })
-          .select('id')
-          .single();
-
-        if (teamError) throw teamError;
-        teamId = team.id;
-      }
-
-      const { error: regError } = await supabase
-        .from('registrations')
-        .insert({
-          profile_id: profileId,
-          event_id: formData.eventId,
-          team_id: teamId,
-          registration_type: registrationType,
-          payment_status: selectedEvent?.registration_fee === 0 ? 'completed' : 'pending',
-          payment_proof_url: paymentProofUrl,
-        });
-
-      if (regError) throw regError;
-
-      // Send confirmation email
-      try {
-        await supabase.functions.invoke('send-registration-email', {
-          body: {
-            to: formData.email,
-            type: 'registration_confirmation',
-            data: {
-              name: formData.fullName,
-              eventName: selectedEvent?.name || 'Event',
-            }
-          }
-        });
-      } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
-        // Don't block success state if email fails
-      }
+      }).catch(console.error);
 
       setSuccess(true);
       toast.success('Registration Successful!', {
@@ -587,6 +531,25 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                   />
                                 </div>
                               )}
+
+                              {/* Fest Code Input */}
+                              <div className="space-y-2 pt-4 border-t border-white/10">
+                                <Label className="text-purple-400 font-semibold flex items-center gap-2">
+                                  <Zap className="w-4 h-4" /> Fest Registration Code
+                                </Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={formData.festRegistrationCode}
+                                    onChange={(e) => handleChange('festRegistrationCode', e.target.value)}
+                                    required
+                                    className="bg-black/40 border-purple-500/30 text-white h-12 focus:border-purple-500 focus:ring-purple-500/20"
+                                    placeholder="Enter code (e.g. KZN-123456)"
+                                  />
+                                </div>
+                                <p className="text-xs text-zinc-500">
+                                  You must register for the Fest first to get this code.
+                                </p>
+                              </div>
                             </div>
                           )}
 
@@ -608,7 +571,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                       value={formData.fullName}
                                       onChange={(e) => handleChange('fullName', e.target.value)}
                                       required
-                                      className="bg-black/40 border-white/10 text-white h-12 focus:border-blue-500/50 focus:ring-blue-500/20"
+                                      readOnly // Auto-filled from Fest Code
+                                      className="bg-black/40 border-white/10 text-white/70 h-12 cursor-not-allowed"
                                       placeholder="John Doe"
                                     />
                                   </div>
@@ -619,7 +583,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                       value={formData.phone}
                                       onChange={(e) => handleChange('phone', e.target.value)}
                                       required
-                                      className="bg-black/40 border-white/10 text-white h-12 focus:border-blue-500/50 focus:ring-blue-500/20"
+                                      readOnly
+                                      className="bg-black/40 border-white/10 text-white/70 h-12 cursor-not-allowed"
                                       placeholder="10-digit mobile number"
                                     />
                                   </div>
@@ -632,7 +597,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                     value={formData.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     required
-                                    className="bg-black/40 border-white/10 text-white h-12 focus:border-blue-500/50 focus:ring-blue-500/20"
+                                    readOnly
+                                    className="bg-black/40 border-white/10 text-white/70 h-12 cursor-not-allowed"
                                     placeholder="john@example.com"
                                   />
                                 </div>
@@ -652,7 +618,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                     value={formData.college}
                                     onChange={(e) => handleChange('college', e.target.value)}
                                     required
-                                    className="bg-black/40 border-white/10 text-white h-12 focus:border-purple-500/50 focus:ring-purple-500/20"
+                                    readOnly
+                                    className="bg-black/40 border-white/10 text-white/70 h-12 cursor-not-allowed"
                                     placeholder="Institution Name"
                                   />
                                 </div>
@@ -811,7 +778,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 disabled={loading || uploading || !formData.declaration}
                                 className="flex-1 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white h-12 font-semibold shadow-lg shadow-red-900/20 transition-all hover:scale-[1.01] disabled:opacity-70 disabled:hover:scale-100"
                               >
-                                {uploading ? (
+                                {loading || uploading ? (
                                   <span className="flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     Registering...

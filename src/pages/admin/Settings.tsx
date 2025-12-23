@@ -97,10 +97,14 @@ export default function Settings() {
       const { data, error } = await supabase.from('settings').select('*');
       if (error) throw error;
 
+      // Fetch Fest Settings
+      const { data: festData } = await (supabase.from('fest_settings' as any) as any).select('*').single();
+
       if (data) {
         const settingsMap: Record<string, SettingValue> = {};
         const categoryMap: Record<string, string> = {};
-        data.forEach((s: { key: string; value: string; category: string }) => {
+        // Explicitly type 's' to match the expected structure from Supabase
+        data.forEach((s: any) => {
           try {
             settingsMap[s.key] = JSON.parse(String(s.value));
           } catch {
@@ -108,6 +112,25 @@ export default function Settings() {
           }
           categoryMap[s.key] = s.category;
         });
+
+        // Merge fest settings into the map with special keys
+        if (festData) {
+          settingsMap['fest_registration_live'] = festData.is_registration_live;
+          
+          // Convert UTC to local time for input display
+          const toLocalISO = (dateStr: string) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const offset = date.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16);
+            return localISOTime;
+          };
+
+          settingsMap['fest_start_time'] = toLocalISO(festData.registration_start_time);
+          settingsMap['fest_end_time'] = toLocalISO(festData.registration_end_time);
+          settingsMap['global_button_action'] = festData.global_button_action || 'fest_registration';
+        }
+
         setSettings(settingsMap);
         setCategories(categoryMap);
         setSettingsLoaded(true);
@@ -115,6 +138,59 @@ export default function Settings() {
     } catch (error) {
       console.error('Error fetching settings:', error);
       toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' });
+    }
+  };
+
+  const updateFestSetting = async (key: string, value: any) => {
+    setSaving(key);
+    try {
+      const updateData: any = {};
+      if (key === 'fest_registration_live') updateData.is_registration_live = value;
+      
+      // Convert local time input to UTC for storage
+      if (key === 'fest_start_time' || key === 'fest_end_time') {
+        const date = new Date(value);
+        const utcISO = date.toISOString();
+        if (key === 'fest_start_time') updateData.registration_start_time = utcISO;
+        if (key === 'fest_end_time') updateData.registration_end_time = utcISO;
+      }
+      
+      if (key === 'global_button_action') updateData.global_button_action = value;
+
+      // Check if row exists, if not insert
+      const { data: existing } = await (supabase.from('fest_settings' as any) as any).select('id').single();
+      
+      let error;
+      if (existing) {
+        const { error: updateError } = await (supabase
+          .from('fest_settings' as any) as any)
+          .update(updateData)
+          .eq('id', existing.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await (supabase
+          .from('fest_settings' as any) as any)
+          .insert(updateData);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      setSettings(prev => ({ ...prev, [key]: value }));
+      toast({
+        title: 'Saved',
+        description: 'Fest setting updated successfully',
+        className: 'bg-green-500 text-white border-none',
+      });
+    } catch (error) {
+      console.error('Error updating fest setting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(null);
     }
   };
 
@@ -174,6 +250,80 @@ export default function Settings() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Fest Registration Settings */}
+            <Card className="bg-black/60 border-red-600/30 p-5 xl:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-semibold text-white">Fest Registration Control</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-4 bg-purple-950/20 rounded-lg border border-purple-500/20">
+                  <div className="space-y-1">
+                    <Label className="text-white font-medium">Fest Registration Live</Label>
+                    <p className="text-white/50 text-sm">
+                      Enable to allow users to register for the Fest (Step 1).
+                    </p>
+                  </div>
+                  {settingsLoaded ? (
+                    <Switch
+                      checked={Boolean(settings['fest_registration_live'])}
+                      onCheckedChange={(checked) => updateFestSetting('fest_registration_live', checked)}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  ) : (
+                    <div className="h-6 w-11 bg-white/5 animate-pulse rounded-full" />
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-white/80">Registration Start Time</Label>
+                    {settingsLoaded ? (
+                      <Input
+                        type="datetime-local"
+                        defaultValue={String(settings['fest_start_time'] || '').replace(/"/g, '')}
+                        onBlur={(e) => updateFestSetting('fest_start_time', e.target.value)}
+                        className="bg-black/40 border-white/20 mt-1 focus:border-purple-500"
+                      />
+                    ) : (
+                      <div className="h-10 w-full bg-white/5 animate-pulse rounded mt-1" />
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-white/80">Registration End Time</Label>
+                    {settingsLoaded ? (
+                      <Input
+                        type="datetime-local"
+                        defaultValue={String(settings['fest_end_time'] || '').replace(/"/g, '')}
+                        onBlur={(e) => updateFestSetting('fest_end_time', e.target.value)}
+                        className="bg-black/40 border-white/20 mt-1 focus:border-purple-500"
+                      />
+                    ) : (
+                      <div className="h-10 w-full bg-white/5 animate-pulse rounded mt-1" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10">
+                  <Label className="text-white/80 mb-2 block">Global "Register" Button Action</Label>
+                  <p className="text-white/40 text-xs mb-2">Controls where the main "Register Now" button takes the user.</p>
+                  {settingsLoaded ? (
+                    <select
+                      value={String(settings['global_button_action'] || 'fest_registration')}
+                      onChange={(e) => updateFestSetting('global_button_action', e.target.value)}
+                      className="w-full bg-black/40 border border-white/20 rounded-md p-2 text-white focus:border-purple-500 outline-none"
+                    >
+                      <option value="fest_registration">Fest Registration Page (Step 1)</option>
+                      <option value="event_registration">Event Registration Modal (Step 2)</option>
+                    </select>
+                  ) : (
+                    <div className="h-10 w-full bg-white/5 animate-pulse rounded" />
+                  )}
+                </div>
+              </div>
+            </Card>
+
             {/* Event Countdown */}
             <Card className="bg-black/60 border-red-600/30 p-5">
               <div className="flex items-center gap-2 mb-4">
