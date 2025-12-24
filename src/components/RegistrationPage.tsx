@@ -95,7 +95,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       toast.error("Please enter your Fest Registration Code");
       return false;
     }
-    
+
     setLoading(true);
     try {
       // Cast to any to avoid deep type instantiation issues with new columns
@@ -121,7 +121,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         year: data.year || '',
         branch: data.branch || '',
       }));
-      
+
       toast.success("Fest Code Verified! Details auto-filled.");
       return true;
     } catch (err) {
@@ -136,7 +136,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     if (step === 1) {
       if (!formData.eventId) { toast.error("Please select an event"); return; }
       if (selectedEvent?.event_type === 'team' && !formData.teamName) { toast.error("Please enter a team name"); return; }
-      
+
       // Verify code before moving to personal details
       const isValid = await verifyFestCode();
       if (!isValid) return;
@@ -263,16 +263,16 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
 
         // Create Order
         const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
-          body: { 
-            action: 'create_order', 
-            amount: selectedEvent.registration_fee 
+          body: {
+            action: 'create_order',
+            amount: selectedEvent.registration_fee
           }
         });
 
         if (orderError) throw orderError;
 
         const options = {
-          key: "rzp_test_RvPFFzj61qtFye", // User provided key
+          key: orderData.key_id || "rzp_test_RvPFFzj61qtFye",
           amount: orderData.amount,
           currency: orderData.currency,
           name: "Kaizen RITP",
@@ -330,7 +330,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
             color: "#DC2626"
           },
           modal: {
-            ondismiss: function() {
+            ondismiss: function () {
               setLoading(false);
               toast('Payment Cancelled');
             }

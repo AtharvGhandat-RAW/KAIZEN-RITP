@@ -23,7 +23,7 @@ serve(async (req: Request) => {
     // Initialize Supabase Client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
+
     if (!supabaseUrl || !supabaseKey) {
       console.error("Missing Supabase credentials");
       throw new Error("Server configuration error: Missing Supabase credentials");
@@ -47,7 +47,7 @@ serve(async (req: Request) => {
 
     if (action === 'create_order') {
       const { amount, currency = 'INR' } = data
-      
+
       const options = {
         amount: Math.round(amount * 100), // amount in the smallest currency unit
         currency,
@@ -55,22 +55,142 @@ serve(async (req: Request) => {
       }
 
       const order = await razorpay.orders.create(options)
-      return new Response(JSON.stringify(order), {
+      return new Response(JSON.stringify({ ...order, key_id: keyId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (action === 'verify_fest_payment') {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        registrationData
+      } = data
+
+      // Verify Signature
+      const body = razorpay_order_id + "|" + razorpay_payment_id
+
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(keySecret);
+      const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+      const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+      const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (generated_signature !== razorpay_signature) {
+        throw new Error('Invalid payment signature')
+      }
+
+      // Check or Create Profile
+      const { email } = registrationData;
+      let profileId;
+
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingProfile) {
+        profileId = existingProfile.id;
+        // Optionally update profile details if needed
+        await supabase.from('profiles').update({
+          full_name: registrationData.fullName,
+          phone_number: registrationData.phone,
+          college: registrationData.college,
+          education: registrationData.education,
+          year: registrationData.year,
+          branch: registrationData.branch,
+        }).eq('id', profileId);
+      } else {
+        // Create new profile
+        const { data: newProfile, error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            full_name: registrationData.fullName,
+            email: email,
+            phone_number: registrationData.phone,
+            college: registrationData.college,
+            education: registrationData.education,
+            year: registrationData.year,
+            branch: registrationData.branch,
+            // user_id is null for public registration
+          })
+          .select()
+          .single();
+
+        if (createProfileError) throw createProfileError;
+        profileId = newProfile.id;
+      }
+
+      // Generate Fest ID
+      const generateFestId = () => {
+        const chars = '0123456789ABCDEF';
+        let result = 'KZN-';
+        for (let i = 0; i < 6; i++) {
+          result += chars[Math.floor(Math.random() * 16)];
+        }
+        return result;
+      };
+
+      const registrationCode = generateFestId();
+
+      // Create Fest Registration
+      const { data: festReg, error: festRegError } = await supabase
+        .from('fest_registrations')
+        .insert({
+          profile_id: profileId,
+          payment_status: 'completed',
+          payment_proof_url: 'razorpay:' + razorpay_payment_id,
+          registration_code: registrationCode
+        })
+        .select()
+        .single();
+
+      if (festRegError) throw festRegError;
+
+      // Update Profile with Fest ID
+      await supabase.from('profiles').update({
+        fest_registration_id: registrationCode,
+        is_fest_registered: true,
+        fest_payment_status: 'completed'
+      }).eq('id', profileId);
+
+      // Send Email (Fire and Forget)
+      try {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-registration-email', {
+          body: {
+            to: email,
+            type: 'fest_registration_confirmation',
+            data: {
+              name: registrationData.fullName,
+              fest_code: registrationCode
+            }
+          }
+        });
+        if (emailError) console.error("Email function error:", emailError);
+        else console.log("Email sent successfully:", emailData);
+      } catch (emailError) {
+        console.error("Failed to invoke email function:", emailError);
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'Registration successful', fest_code: registrationCode }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     if (action === 'verify_payment') {
-      const { 
-        razorpay_order_id, 
-        razorpay_payment_id, 
-        razorpay_signature, 
-        registrationData 
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        registrationData
       } = data
 
       // Verify Signature
       const body = razorpay_order_id + "|" + razorpay_payment_id
-      
+
       const encoder = new TextEncoder();
       const keyData = encoder.encode(keySecret);
       const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -91,7 +211,7 @@ serve(async (req: Request) => {
       });
 
       if (rpcError) throw rpcError;
-      
+
       // Trigger Email Function (Fire and Forget)
       console.log("Triggering email for:", rpcData.p_email);
       supabase.functions.invoke('send-registration-email', {
@@ -113,71 +233,7 @@ serve(async (req: Request) => {
       })
     }
 
-    if (action === 'verify_fest_payment') {
-      const { 
-        razorpay_order_id, 
-        razorpay_payment_id, 
-        razorpay_signature, 
-        registrationData 
-      } = data
 
-      // Verify Signature
-      const body = razorpay_order_id + "|" + razorpay_payment_id
-      
-      const encoder = new TextEncoder();
-      const keyData = encoder.encode(keySecret);
-      const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-      const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-      const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-      if (generated_signature !== razorpay_signature) {
-        throw new Error('Invalid payment signature')
-      }
-
-      // Generate Fest Code
-      const festCode = `KZN-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      // Update Profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          email: registrationData.email,
-          full_name: registrationData.fullName,
-          phone: registrationData.phone,
-          college: registrationData.college,
-          year: registrationData.year,
-          branch: registrationData.branch,
-          education: registrationData.education,
-          fest_payment_status: 'completed',
-          fest_payment_id: razorpay_payment_id,
-          is_fest_registered: true,
-          fest_registration_code: festCode
-        }, { onConflict: 'email' })
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Trigger Email Function (Fire and Forget)
-      console.log("Triggering fest email for:", registrationData.email);
-      supabase.functions.invoke('send-registration-email', {
-        body: {
-          to: registrationData.email,
-          type: 'fest_code_approval',
-          data: {
-            name: registrationData.fullName,
-            festCode: festCode
-          }
-        }
-      }).then(({ error }) => {
-        if (error) console.error("Error sending email:", error);
-        else console.log("Email trigger sent");
-      });
-
-      return new Response(JSON.stringify({ success: true, festCode }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
 
     throw new Error('Invalid action')
 

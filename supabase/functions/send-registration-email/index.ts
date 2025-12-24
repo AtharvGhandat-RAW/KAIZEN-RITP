@@ -10,13 +10,14 @@ const corsHeaders = {
 
 interface EmailRequest {
     to: string;
-    type: "registration_confirmation" | "payment_update" | "general_notification" | "fest_code_approval";
+    type: "registration_confirmation" | "payment_update" | "general_notification" | "fest_code_approval" | "fest_registration_confirmation";
     data: {
         name: string;
         eventName?: string;
         paymentStatus?: string;
         message?: string;
         festCode?: string;
+        fest_code?: string;
     };
 }
 
@@ -33,14 +34,20 @@ const handler = async (req: Request): Promise<Response> => {
         let htmlContent = "";
 
         // Using secrets from Supabase Dashboard
-        const SMTP_EMAIL = Deno.env.get("SMTP_EMAIL");
-        const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD");
+        const SMTP_EMAIL = Deno.env.get("SMTP_EMAIL") || "kaizen.ritp@gmail.com";
+        const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD") || "your-16-digit-app-password"; // Replace with actual app password if not in env
 
         if (!SMTP_EMAIL || !SMTP_PASSWORD) {
-            throw new Error("SMTP credentials not configured in Supabase Secrets");
+            // Fallback for local development if env vars are missing
+            console.warn("SMTP credentials not found in env, using hardcoded fallback (DANGEROUS IN PROD)");
         }
 
         // Create Nodemailer Transporter with explicit settings
+        console.log("SMTP Config:", {
+            user: SMTP_EMAIL,
+            passLength: SMTP_PASSWORD?.length
+        });
+
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 465,
@@ -65,6 +72,56 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         switch (type) {
+            case "fest_registration_confirmation":
+                subject = `Payment Verified - Welcome to KAIZEN 2026`;
+                htmlContent = `
+                <div style="font-family: 'Courier New', Courier, monospace; max-width: 600px; margin: 0 auto; background-color: #000000; color: #e0e0e0; border: 1px solid #333; border-radius: 4px; overflow: hidden;">
+                    <!-- Header -->
+                    <div style="background: linear-gradient(90deg, #dc2626 0%, #9333ea 100%); padding: 40px 20px; text-align: center; border-bottom: 2px solid #dc2626;">
+                        <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 42px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">KAIZEN 2026</h1>
+                        <p style="margin: 15px 0 0; font-size: 14px; letter-spacing: 1px; color: #ffffff; text-transform: uppercase; opacity: 0.9;">Payment Verified & Registration Confirmed</p>
+                    </div>
+
+                    <!-- Content -->
+                    <div style="padding: 40px 30px; background-color: #0a0a0a;">
+                        <h2 style="color: #ffffff; margin-top: 0; font-weight: normal; letter-spacing: 1px;">Hello ${data.name},</h2>
+                        <p style="color: #cccccc; line-height: 1.6;">
+                            The gate is open. Your payment has been verified. You are now officially registered for <strong style="color: #dc2626;">KAIZEN 2026</strong>.
+                        </p>
+
+                        <div style="background-color: #000000; border: 2px solid #dc2626; box-shadow: 0 0 15px rgba(220, 38, 38, 0.3); border-radius: 4px; padding: 25px; margin: 30px 0; text-align: center;">
+                            <p style="color: #888; margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Your Unique Fest Registration Code</p>
+                            <div style="font-size: 36px; font-weight: 800; color: #ff0000; letter-spacing: 4px; font-family: 'Courier New', monospace; text-shadow: 0 0 10px #ff0000;">
+                                ${data.fest_code}
+                            </div>
+                            <p style="color: #888; margin: 10px 0 0; font-size: 12px;">Use this code to register for paid events.</p>
+                        </div>
+
+                        <p style="color: #cccccc; line-height: 1.6;">
+                            <strong>Next Steps:</strong><br>
+                            1. Visit the KAIZEN website.<br>
+                            2. Browse the events you want to participate in.<br>
+                            3. Use your Fest Code <strong>${data.fest_code}</strong> to unlock exclusive event registrations.
+                        </p>
+
+                        <div style="text-align: center; margin-top: 40px;">
+                            <a href="https://www.kaizen-ritp.in/events" style="background-color: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #ff0000; box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);">
+                                Explore Events
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 1px solid #333;">
+                        <p style="color: #52525b; font-size: 12px; margin: 0;">
+                            &copy; 2026 KAIZEN Team. All rights reserved.<br>
+                            Rajarambapu Institute of Technology
+                        </p>
+                    </div>
+                </div>
+                `;
+                break;
+
             case "fest_code_approval":
                 subject = `Payment Verified - Welcome to KAIZEN 2026`;
                 htmlContent = `

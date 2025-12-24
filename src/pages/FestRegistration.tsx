@@ -64,7 +64,7 @@ export default function FestRegistration() {
         data.forEach((item: any) => {
           settings[item.key] = item.value;
         });
-        
+
         setPaymentSettings({
           upiId: settings['fest_upi_id'] ? String(settings['fest_upi_id']).replace(/"/g, '') : '',
           qrCodeUrl: settings['fest_qr_code_url'] ? String(settings['fest_qr_code_url']).replace(/"/g, '') : ''
@@ -86,7 +86,7 @@ export default function FestRegistration() {
         const now = new Date();
         const start = data.registration_start_time ? new Date(data.registration_start_time) : null;
         const end = data.registration_end_time ? new Date(data.registration_end_time) : null;
-        
+
         let live = data.is_registration_live;
         let message = '';
         let title = 'Registration Closed';
@@ -129,8 +129,8 @@ export default function FestRegistration() {
 
       // 1. Create Order
       const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
-        body: { 
-          action: 'create_order', 
+        body: {
+          action: 'create_order',
           amount: 150 // Fixed amount for Fest Registration
         }
       });
@@ -138,7 +138,7 @@ export default function FestRegistration() {
       if (orderError) throw orderError;
 
       const options = {
-        key: "rzp_test_RvPFFzj61qtFye", // User provided key
+        key: orderData.key_id || "rzp_test_RvPFFzj61qtFye", // Use key from backend or fallback
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Kaizen RITP",
@@ -172,7 +172,7 @@ export default function FestRegistration() {
             toast.success("Registration Successful!", {
               description: "Welcome to Kaizen! Check your email for your Fest Code.",
             });
-            
+
             // Reset form
             setFormData({
               fullName: '',
@@ -203,7 +203,7 @@ export default function FestRegistration() {
           color: "#DC2626"
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setLoading(false);
             toast('Payment Cancelled');
           }
@@ -238,7 +238,7 @@ export default function FestRegistration() {
           <p className="text-zinc-400">
             {statusMessage || 'Fest registration is currently not active. Please check back later or contact the coordinators.'}
           </p>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             className="mt-6 bg-white/10 hover:bg-white/20 text-white"
           >
@@ -264,7 +264,7 @@ export default function FestRegistration() {
               Once your payment is verified, you will receive an email with your unique <span className="text-red-400 font-semibold">Fest Code</span>.
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             className="mt-8 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold h-12"
           >
@@ -278,7 +278,7 @@ export default function FestRegistration() {
   return (
     <div className="min-h-screen bg-black relative overflow-y-auto">
       <AtmosphericBackground />
-      
+
       <div className="relative z-10 container mx-auto px-4 py-12 max-w-3xl">
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-600 mb-4">
@@ -291,31 +291,31 @@ export default function FestRegistration() {
 
         <div className="bg-zinc-900/60 border border-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {/* Personal Details */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <span className="w-1 h-6 bg-red-500 rounded-full"/> Personal Details
+                <span className="w-1 h-6 bg-red-500 rounded-full" /> Personal Details
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Full Name</Label>
-                  <Input 
+                  <Input
                     required
                     value={formData.fullName}
-                    onChange={e => setFormData({...formData, fullName: e.target.value})}
+                    onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                     className="bg-black/40 border-white/10 text-white focus:border-red-500"
                     placeholder="John Doe"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Phone Number</Label>
-                  <Input 
+                  <Input
                     required
                     type="tel"
                     value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     className="bg-black/40 border-white/10 text-white focus:border-red-500"
                     placeholder="9876543210"
                   />
@@ -324,11 +324,11 @@ export default function FestRegistration() {
 
               <div className="space-y-2">
                 <Label className="text-zinc-300">Email Address</Label>
-                <Input 
+                <Input
                   required
                   type="email"
                   value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="bg-black/40 border-white/10 text-white focus:border-red-500"
                   placeholder="john@example.com"
                 />
@@ -339,12 +339,12 @@ export default function FestRegistration() {
             {/* Academic Details */}
             <div className="space-y-4 pt-4 border-t border-white/10">
               <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <span className="w-1 h-6 bg-purple-500 rounded-full"/> Academic Details
+                <span className="w-1 h-6 bg-purple-500 rounded-full" /> Academic Details
               </h3>
 
               <div className="space-y-2">
                 <Label className="text-zinc-300">Education</Label>
-                <Select onValueChange={v => setFormData({...formData, education: v})}>
+                <Select onValueChange={v => setFormData({ ...formData, education: v })}>
                   <SelectTrigger className="bg-black/40 border-white/10 text-white">
                     <SelectValue placeholder="Select Education Type" />
                   </SelectTrigger>
@@ -354,13 +354,13 @@ export default function FestRegistration() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label className="text-zinc-300">College Name</Label>
-                <Input 
+                <Input
                   required
                   value={formData.college}
-                  onChange={e => setFormData({...formData, college: e.target.value})}
+                  onChange={e => setFormData({ ...formData, college: e.target.value })}
                   className="bg-black/40 border-white/10 text-white focus:border-purple-500"
                   placeholder="Institute of Technology"
                 />
@@ -369,7 +369,7 @@ export default function FestRegistration() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Year</Label>
-                  <Select onValueChange={v => setFormData({...formData, year: v})}>
+                  <Select onValueChange={v => setFormData({ ...formData, year: v })}>
                     <SelectTrigger className="bg-black/40 border-white/10 text-white">
                       <SelectValue placeholder="Select Year" />
                     </SelectTrigger>
@@ -383,10 +383,10 @@ export default function FestRegistration() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Branch</Label>
-                  <Input 
+                  <Input
                     required
                     value={formData.branch}
-                    onChange={e => setFormData({...formData, branch: e.target.value})}
+                    onChange={e => setFormData({ ...formData, branch: e.target.value })}
                     className="bg-black/40 border-white/10 text-white focus:border-purple-500"
                     placeholder="CSE, ECE, etc."
                   />
@@ -397,9 +397,9 @@ export default function FestRegistration() {
             {/* Payment Section */}
             <div className="space-y-4 pt-4 border-t border-white/10">
               <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <span className="w-1 h-6 bg-green-500 rounded-full"/> Payment
+                <span className="w-1 h-6 bg-green-500 rounded-full" /> Payment
               </h3>
-              
+
               <div className="bg-gradient-to-br from-green-900/20 to-black p-6 rounded-xl border border-green-500/20 text-center">
                 <div className="mb-6">
                   <p className="text-zinc-300 mb-2">Registration Fee</p>
@@ -418,8 +418,8 @@ export default function FestRegistration() {
             </div>
 
             <div className="pt-6">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 className="w-full h-14 text-lg font-bold bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-500 hover:to-purple-500 shadow-lg shadow-red-900/20"
               >
