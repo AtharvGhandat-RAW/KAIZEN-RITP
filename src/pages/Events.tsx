@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Calendar, MapPin, Users, ChevronRight, Star, Trophy, AlertCircle, RefreshCw, Skull, Ghost, Flame, Eye } from 'lucide-react';
+import { ArrowLeft, Search, Calendar, MapPin, Users, ChevronRight, Star, Trophy, AlertCircle, RefreshCw, Skull, Ghost, Flame, Eye, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Event {
     id: string;
@@ -21,6 +30,8 @@ interface Event {
     is_featured: boolean;
     image_url: string;
     event_type: string;
+    registration_start_date?: string;
+    registration_end_date?: string;
 }
 
 // Generate a simple UUID fallback for older browsers
@@ -44,6 +55,8 @@ export default function Events() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [showFestRegistrationAlert, setShowFestRegistrationAlert] = useState(false);
+    const [globalButtonAction, setGlobalButtonAction] = useState<string>('fest_registration');
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
@@ -58,6 +71,12 @@ export default function Events() {
 
             if (error) throw error;
             setEvents(data || []);
+
+            // Fetch fest settings for global button action
+            const { data: festData } = await (supabase.from('fest_settings' as any) as any).select('global_button_action').single();
+            if (festData?.global_button_action) {
+                setGlobalButtonAction(festData.global_button_action);
+            }
         } catch (err: unknown) {
             console.error('Error fetching events:', err);
             const errorMessage = err instanceof Error ? err.message : 'Failed to load events. Please try again.';
@@ -71,6 +90,13 @@ export default function Events() {
         // Scroll to top on mount
         window.scrollTo(0, 0);
         fetchEvents();
+        
+        // Show alert about fest registration requirement
+        const hasSeenAlert = sessionStorage.getItem('hasSeenFestRegistrationAlert');
+        if (!hasSeenAlert) {
+            setShowFestRegistrationAlert(true);
+            sessionStorage.setItem('hasSeenFestRegistrationAlert', 'true');
+        }
     }, [fetchEvents]);
 
     const categories = useMemo(() => {
@@ -89,7 +115,11 @@ export default function Events() {
     }, [events, searchQuery, selectedCategory]);
 
     const handleRegister = (eventId: string) => {
-        navigate('/register', { state: { selectedEvent: eventId } });
+        if (globalButtonAction === 'fest_registration') {
+            navigate('/fest-registration');
+        } else {
+            navigate('/register', { state: { selectedEvent: eventId } });
+        }
     };
 
     return (
@@ -291,6 +321,26 @@ export default function Events() {
                 />
             )}
 
+            <AlertDialog open={showFestRegistrationAlert} onOpenChange={setShowFestRegistrationAlert}>
+                <AlertDialogContent className="bg-black/95 border border-red-900/50 text-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-500 text-xl font-bold font-cinzel">Important Registration Info</AlertDialogTitle>
+                        <AlertDialogDescription className="text-red-200/80">
+                            To register for individual events, you must first complete the Fest Registration. 
+                            Once registered for the fest, you will be eligible to participate in all events.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction 
+                            onClick={() => setShowFestRegistrationAlert(false)}
+                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                        >
+                            Understood
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             {/* Footer */}
             <footer className="relative z-10 border-t border-red-900/50 py-8 mt-12">
                 <div className="max-w-7xl mx-auto px-4 text-center">
@@ -304,7 +354,7 @@ export default function Events() {
                         Register Now
                     </Button>
                     <p className="text-red-500/40 text-xs mt-6">
-                        © 2025 KAIZEN RITP. All rights reserved.
+                        © 2026 KAIZEN RITP. All rights reserved.
                     </p>
                 </div>
             </footer>
@@ -313,6 +363,21 @@ export default function Events() {
 }
 
 function EventCard({ event, onViewDetails, onRegister }: { event: Event; onViewDetails: () => void; onRegister: () => void }) {
+    const registrationStatus = useMemo(() => {
+        const now = new Date();
+        if (event.registration_start_date && new Date(event.registration_start_date) > now) {
+            return { 
+                status: 'upcoming', 
+                label: 'Coming Soon',
+                message: `Registration opens on ${new Date(event.registration_start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}` 
+            };
+        }
+        if (event.registration_end_date && new Date(event.registration_end_date) < now) {
+            return { status: 'closed', label: 'Closed', message: 'Registration Closed' };
+        }
+        return { status: 'open', label: 'Register', message: 'Register Now' };
+    }, [event]);
+
     return (
         <div
             className="group relative bg-gradient-to-br from-red-950/20 to-black/80 border border-red-900/40 hover:border-red-600/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 rounded-xl overflow-hidden flex flex-col cursor-pointer"
@@ -403,13 +468,29 @@ function EventCard({ event, onViewDetails, onRegister }: { event: Event; onViewD
                         <span>Details</span>
                     </Button>
                     <Button
-                        onClick={(e) => { e.stopPropagation(); onRegister(); }}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20 transition-all py-3"
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (registrationStatus.status === 'open') {
+                                onRegister();
+                            }
+                        }}
+                        disabled={registrationStatus.status === 'closed'}
+                        className={`w-full border-none shadow-lg transition-all py-3 ${
+                            registrationStatus.status === 'open' 
+                                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/20' 
+                                : 'bg-gray-800 text-gray-400 cursor-not-allowed'
+                        }`}
                     >
-                        <span>Register</span>
-                        <ChevronRight className="w-4 h-4 ml-1" />
+                        <span>{registrationStatus.label}</span>
+                        {registrationStatus.status === 'open' && <ChevronRight className="w-4 h-4 ml-1" />}
                     </Button>
                 </div>
+                {registrationStatus.status === 'upcoming' && (
+                    <div className="mt-2 text-center text-xs text-yellow-500/80 flex items-center justify-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {registrationStatus.message}
+                    </div>
+                )}
             </div>
         </div>
     );

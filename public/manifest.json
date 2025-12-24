@@ -1,5 +1,5 @@
 {
-    "name": "KAIZEN Tech Fest 2024 - Stranger Things Edition",
+    "name": "KAIZEN Tech Fest 2026 - Stranger Things Edition",
     "short_name": "KAIZEN",
     "description": "The Official Tech Festival of RIT - Experience the Stranger Things Edition with cutting-edge technology events, competitions, hackathons, and workshops.",
     "start_url": "/",
@@ -14,7 +14,7 @@
     "theme_color": "#dc2626",
     "orientation": "portrait-primary",
     "scope": "/",
-    "lang": "en-IN",
+    "lang": "IM",
     "dir": "ltr",
     "icons": [
         {

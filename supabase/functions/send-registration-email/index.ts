@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
                     console.error("SMTP Connection Error:", error);
                     reject(error);
                 } else {
-                    console.log("SMTP Server is ready to take our messages");
+                    console.log(" Server is ready to take our messages");
                     resolve(success);
                 }
             });

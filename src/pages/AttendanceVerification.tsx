@@ -169,8 +169,8 @@ export default function AttendanceVerification() {
     return (
         <div className="min-h-screen bg-black text-white">
             <SEOHead
-                title="Attendance Verification - KAIZEN 2025"
-                description="Verify student registrations and mark attendance for KAIZEN 2025 events"
+                title="Attendance Verification - KAIZEN 2026"
+                description="Verify student registrations and mark attendance for KAIZEN 2026 events"
             />
 
             {/* Background */}
@@ -192,7 +192,7 @@ export default function AttendanceVerification() {
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-wide">Attendance Verification</h1>
-                            <p className="text-[10px] sm:text-xs text-green-400/60 hidden sm:block">KAIZEN 2025</p>
+                            <p className="text-[10px] sm:text-xs text-green-400/60 hidden sm:block">KAIZEN 2026</p>
                         </div>
                     </div>
                     <div className="w-20" />
@@ -378,7 +378,7 @@ export default function AttendanceVerification() {
             <footer className="relative z-10 border-t border-green-900/50 py-6 mt-12">
                 <div className="max-w-7xl mx-auto px-4 text-center">
                     <p className="text-green-500/60 text-sm">
-                        © 2025 KAIZEN RITP. Attendance Verification System.
+                        © 2026 KAIZEN RITP. Attendance Verification System.
                     </p>
                 </div>
             </footer>

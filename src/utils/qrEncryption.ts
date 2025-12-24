@@ -1,7 +1,7 @@
 import CryptoJS from 'crypto-js';
 
 // Secret key for encryption - in production, use environment variable
-const SECRET_KEY = import.meta.env.VITE_QR_SECRET_KEY || 'kaizen-ritp-2025-secret-key';
+const SECRET_KEY = import.meta.env.VITE_QR_SECRET_KEY || 'kaizen-ritp-2026-secret-key';
 
 export interface QRPayload {
     registrationId: string;

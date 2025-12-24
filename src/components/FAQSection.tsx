@@ -3,7 +3,7 @@ import { ChevronDown, HelpCircle } from 'lucide-react';
 
 const faqs = [
     {
-        question: "How do I register for KAIZEN 2025?",
+        question: "How do I register for KAIZEN 2026?",
         answer: "Click on 'Register Now' button in the navigation or hero section. Fill in your details, select your events, and complete the payment. You'll receive a confirmation email with your registration details."
     },
     {

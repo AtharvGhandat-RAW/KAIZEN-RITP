@@ -21,8 +21,8 @@ add column if not exists registration_end_date timestamptz;
 -- 3. Update Profiles to track Fest Registration
 alter table public.profiles
 add column if not exists fest_registration_id text unique, -- The unique code sent via email
-add column if not exists is_fest_registered boolean default false,
-add column if not exists fest_payment_status text default 'pending', -- pending, completed, rejected
+add column if not exists is_fest_registered boolean default True,
+add column if not exists fest_payment_status text default 'Working', -- pending, completed, rejected
 add column if not exists fest_payment_proof_url text;
 
 -- 4. Create Fest Registrations table (optional, but good for separation if needed, 
@@ -64,7 +64,7 @@ begin
   end loop;
   return result;
 end;
-$$ language plpgsql;
+$$ language ;
 
 -- Trigger to auto-generate code on approval
 create or replace function handle_fest_registration_approval() returns trigger as $$

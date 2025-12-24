@@ -249,9 +249,9 @@ const Index = () => {
         }}
       >
         <SEOHead
-          title="Kaizen 2025 - Technical & Cultural Fest | Register Now"
-          description="Join Kaizen 2025, the premier technical and cultural festival. Register for exciting events, competitions, workshops, and win amazing prizes. Don't miss out!"
-          keywords="kaizen 2025, technical fest, cultural fest, college events, student competitions, tech workshops, innovation, prizes"
+          title="Kaizen 2026 - Technical & Cultural Fest | Register Now"
+          description="Join Kaizen 2026, the premier technical and cultural festival. Register for exciting events, competitions, workshops, and win amazing prizes. Don't miss out!"
+          keywords="kaizen 2026, technical fest, cultural fest, college events, student competitions, tech workshops, innovation, prizes"
         />
 
         {/* Background effects - deferred loading */}

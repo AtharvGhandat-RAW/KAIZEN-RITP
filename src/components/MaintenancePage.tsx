@@ -32,7 +32,7 @@ export const MaintenancePage = () => {
                 <div className="pt-12">
                     <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-red-900 to-transparent" />
                     <p className="mt-4 text-xs text-red-900/50 uppercase tracking-[0.2em]">
-                        Kaizen 2025 • System Halted
+                        Kaizen 2026 • System Halted
                     </p>
                 </div>
             </div>

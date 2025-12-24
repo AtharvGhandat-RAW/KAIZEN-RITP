@@ -318,7 +318,7 @@ export function ContactFooter() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
             {/* Copyright */}
             <div className="text-white/40 text-xs sm:text-sm text-center md:text-left">
-              © 2024 KAIZEN Tech Fest. All Rights Reserved.
+              © 2026 KAIZEN Tech Fest. All Rights Reserved.
             </div>
 
             {/* Legal Links */}

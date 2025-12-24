@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, Users, Trophy, DollarSign, Info, CheckCircle, User } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { X, Calendar, MapPin, Users, Trophy, DollarSign, Info, CheckCircle, User, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,12 +31,31 @@ interface Event {
   coordinators: string[];
   is_featured: boolean;
   status: string;
+  registration_start_date?: string;
+  registration_end_date?: string;
 }
 
 export function EventDetailsModal({ eventId, onClose, onRegister }: EventDetailsModalProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const registrationStatus = useMemo(() => {
+    if (!event) return { status: 'loading', label: 'Loading...', message: '' };
+    
+    const now = new Date();
+    if (event.registration_start_date && new Date(event.registration_start_date) > now) {
+        return { 
+            status: 'upcoming', 
+            label: 'Coming Soon',
+            message: `Registration opens on ${new Date(event.registration_start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}` 
+        };
+    }
+    if (event.registration_end_date && new Date(event.registration_end_date) < now) {
+        return { status: 'closed', label: 'Closed', message: 'Registration Closed' };
+    }
+    return { status: 'open', label: 'Register Now', message: 'Register Now' };
+  }, [event]);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -208,16 +227,33 @@ export function EventDetailsModal({ eventId, onClose, onRegister }: EventDetails
             </div>
 
             {/* Footer Action */}
-            <div className="p-6 border-t border-white/10 bg-black/50 backdrop-blur-sm flex justify-end gap-4">
-              <Button variant="outline" onClick={onClose} className="border-white/20 text-white hover:bg-white/10">
-                Close
-              </Button>
-              <Button 
-                onClick={() => onRegister(event.id)}
-                className="bg-red-600 hover:bg-red-700 text-white px-8"
-              >
-                Register Now
-              </Button>
+            <div className="p-6 border-t border-white/10 bg-black/50 backdrop-blur-sm flex flex-col sm:flex-row justify-end gap-4 items-center">
+              {registrationStatus.status === 'upcoming' && (
+                  <div className="text-yellow-500/80 text-sm flex items-center gap-2 mr-auto">
+                      <Clock className="w-4 h-4" />
+                      {registrationStatus.message}
+                  </div>
+              )}
+              <div className="flex gap-4 w-full sm:w-auto">
+                <Button variant="outline" onClick={onClose} className="border-white/20 text-white hover:bg-white/10 flex-1 sm:flex-none">
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (registrationStatus.status === 'open') {
+                      onRegister(event.id);
+                    }
+                  }}
+                  disabled={registrationStatus.status !== 'open'}
+                  className={`px-8 flex-1 sm:flex-none ${
+                    registrationStatus.status === 'open'
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-gray-800 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {registrationStatus.label}
+                </Button>
+              </div>
             </div>
           </>
         ) : null}

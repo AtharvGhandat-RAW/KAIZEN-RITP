@@ -286,7 +286,7 @@ interface EventDetails {
             <footer className="relative z-10 border-t border-red-900/50 py-6">
                 <div className="max-w-7xl mx-auto px-4 text-center">
                     <p className="text-red-500/60 text-sm">
-                        © 2025 KAIZEN RITP. All rights reserved.
+                        © 2026 KAIZEN RITP. All rights reserved.
                     </p>
                 </div>
             </footer>

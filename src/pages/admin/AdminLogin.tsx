@@ -137,7 +137,7 @@ export default function AdminLogin() {
         </div>
         
         <p className="text-center text-white/30 text-xs mt-8">
-          Authorized Personnel Only • KAIZEN 2025
+          Authorized Personnel Only • KAIZEN 2026
         </p>
       </div>
     </div>

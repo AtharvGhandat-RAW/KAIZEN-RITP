@@ -357,7 +357,7 @@ export default function Settings() {
                       defaultValue={String(settings['event_date'] || '').replace(/"/g, '')}
                       onBlur={(e) => saveSetting('event_date', e.target.value)}
                       className="bg-black/40 border-white/20 mt-1 focus:border-blue-500"
-                      placeholder="e.g. March 15-16, 2025"
+                      placeholder="e.g. March 15-16, 2026"
                     />
                   ) : (
                     <div className="h-10 w-full bg-white/5 animate-pulse rounded mt-1" />
@@ -505,7 +505,7 @@ export default function Settings() {
                     <SettingInput
                       settingKey="social_instagram"
                       label="Instagram"
-                      placeholder="https://instagram.com/kaizen2025"
+                      placeholder="https://instagram.com/kaizen2026"
                       icon={Instagram}
                       value={String(settings['social_instagram'] || '')}
                       saving={saving}
@@ -514,7 +514,7 @@ export default function Settings() {
                     <SettingInput
                       settingKey="social_facebook"
                       label="Facebook"
-                      placeholder="https://facebook.com/kaizen2025"
+                      placeholder="https://facebook.com/kaizen2026"
                       icon={Facebook}
                       value={String(settings['social_facebook'] || '')}
                       saving={saving}
@@ -523,7 +523,7 @@ export default function Settings() {
                     <SettingInput
                       settingKey="social_twitter"
                       label="Twitter / X"
-                      placeholder="https://twitter.com/kaizen2025"
+                      placeholder="https://twitter.com/kaizen2026"
                       icon={Twitter}
                       value={String(settings['social_twitter'] || '')}
                       saving={saving}
@@ -541,7 +541,7 @@ export default function Settings() {
                     <SettingInput
                       settingKey="social_youtube"
                       label="YouTube"
-                      placeholder="https://youtube.com/@kaizen2025"
+                      placeholder="https://youtube.com/@kaizen2026"
                       icon={Youtube}
                       value={String(settings['social_youtube'] || '')}
                       saving={saving}

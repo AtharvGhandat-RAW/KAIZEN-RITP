@@ -70,7 +70,7 @@ export function RegistrationCTA({ onOpen, onViewSchedule }: RegistrationCTAProps
               {[
                 { icon: Calendar, label: 'Date', value: eventDate },
                 { icon: MapPin, label: 'Venue', value: 'RIT Campus' },
-                { icon: Mail, label: 'Contact', value: 'info@kaizen.com' }
+                { icon: Mail, label: 'Contact', value: 'kaizentechfest@gmail.com' }
               ].map((info, index) => {
                 const Icon = info.icon;
                 return (

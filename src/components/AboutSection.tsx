@@ -100,7 +100,7 @@ export function AboutSection({ onDiscoverMore }: AboutSectionProps) {
                     <div className="text-4xl sm:text-5xl md:text-6xl text-white mb-2" style={{
                       textShadow: '0 0 30px rgba(255, 69, 0, 0.6)'
                     }}>
-                      2025
+                      2026
                     </div>
                     <div className="text-red-500 text-sm sm:text-base uppercase tracking-widest">
                       Tech Fest
