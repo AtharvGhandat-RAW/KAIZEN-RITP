@@ -24,6 +24,7 @@ import {
     Save,
     Users
 } from 'lucide-react';
+import { ImageCropper } from '@/components/admin/ImageCropper';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -66,6 +67,8 @@ export default function EventForm() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(isEdit);
     const [uploading, setUploading] = useState(false);
+    const [cropperOpen, setCropperOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [formData, setFormData] = useState<FormData>({
         name: '',
         category: 'Tech',
@@ -135,7 +138,7 @@ export default function EventForm() {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -148,15 +151,24 @@ export default function EventForm() {
             return;
         }
 
+        setSelectedFile(file);
+        setCropperOpen(true);
+        e.target.value = '';
+    };
+
+    const handleCropComplete = async (blob: Blob) => {
         setUploading(true);
         try {
-            const fileExt = file.name.split('.').pop();
+            const fileExt = 'jpg';
             const fileName = `${generateUUID()}.${fileExt}`;
             const filePath = `upi-qr/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('events')
-                .upload(filePath, file);
+                .upload(filePath, blob, {
+                    contentType: 'image/jpeg',
+                    upsert: true
+                });
 
             if (uploadError) throw uploadError;
 
@@ -519,7 +531,7 @@ export default function EventForm() {
                                             <Input
                                                 type="file"
                                                 accept="image/*"
-                                                onChange={handleFileUpload}
+                                                onChange={handleFileSelect}
                                                 className="bg-black/40 border-gray-700"
                                                 disabled={uploading}
                                             />
@@ -574,6 +586,13 @@ export default function EventForm() {
                         </div>
                     </form>
                 </div>
+                <ImageCropper
+                    open={cropperOpen}
+                    onOpenChange={setCropperOpen}
+                    imageFile={selectedFile}
+                    onCropComplete={handleCropComplete}
+                    aspectRatio={1}
+                />
             </AdminLayout>
         </ProtectedRoute>
     );

@@ -27,6 +27,7 @@ import {
   ImageIcon,
   QrCode
 } from 'lucide-react';
+import { ImageCropper } from '@/components/admin/ImageCropper';
 
 // UUID fallback
 function generateUUID(): string {
@@ -87,6 +88,8 @@ export default function Settings() {
   const [categories, setCategories] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -249,19 +252,28 @@ export default function Settings() {
     saveSetting(key, value);
   }, [saveSetting]);
 
-  const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
+    setCropperOpen(true);
+    // Reset input value so same file can be selected again
+    e.target.value = '';
+  };
 
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setSaving('fest_qr_code_url');
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = 'jpg';
       const fileName = `fest-qr-${generateUUID()}.${fileExt}`;
       const filePath = `upi-qr/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('events')
-        .upload(filePath, file);
+        .upload(filePath, croppedBlob, {
+            contentType: 'image/jpeg',
+            upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
@@ -277,6 +289,7 @@ export default function Settings() {
         description: 'Could not upload the image',
         variant: 'destructive',
       });
+    } finally {
       setSaving(null);
     }
   };
@@ -529,7 +542,7 @@ export default function Settings() {
                             type="file" 
                             className="hidden" 
                             accept="image/*"
-                            onChange={handleQRUpload}
+                            onChange={handleFileSelect}
                           />
                         </label>
                       </div>
@@ -540,7 +553,7 @@ export default function Settings() {
                         <Input
                           type="file"
                           accept="image/*"
-                          onChange={handleQRUpload}
+                          onChange={handleFileSelect}
                           className="bg-black/40 border-white/20 text-white/80 file:bg-white/10 file:text-white file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-white/20 cursor-pointer"
                         />
                       </div>
@@ -681,6 +694,13 @@ export default function Settings() {
             </p>
           </div>
         </div>
+        <ImageCropper
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          imageFile={selectedFile}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
       </AdminLayout>
     </ProtectedRoute>
   );
