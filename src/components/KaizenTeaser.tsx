@@ -49,7 +49,7 @@ export function KaizenTeaser({
     {
       icon: Code,
       title: "Tech & Production Unit",
-      heads: ["Athrav (AIML)", "Shravani (CO)", "Amar (AIML)"],
+      heads: ["Athrav (AIML)", , "Amar (AIML)"],
       desc: "Innovation meets execution—bringing tech excellence to life.",
     },
     {

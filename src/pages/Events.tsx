@@ -322,7 +322,7 @@ export default function Events() {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-red-500 text-xl font-bold font-cinzel">Important Registration Info</AlertDialogTitle>
                         <AlertDialogDescription className="text-red-200/80">
-                            To register for individual events, you must first complete the Fest Registration. 
+                            To register for individual and team events, you must first complete the Fest Registration. 
                             Once registered for the fest, you will be eligible to participate in all events.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
