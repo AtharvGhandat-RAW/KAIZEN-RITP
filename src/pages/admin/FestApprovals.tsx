@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { CheckCircle, Eye, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle, XCircle, Eye, Search, RefreshCw } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Profile {
   id: string;
@@ -56,7 +56,7 @@ export default function FestApprovals() {
 
   const generateFestCode = () => {
     const random = Math.floor(1000 + Math.random() * 9000);
-    return `KZN25-${random}`;
+    return `KZN26-${random}`;
   };
 
   const handleApprove = async (profile: Profile) => {

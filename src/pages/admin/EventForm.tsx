@@ -1,13 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -15,18 +11,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
     ArrowLeft,
-    Save,
     Calendar,
-    MapPin,
-    Users,
-    IndianRupee,
-    Upload,
-    Loader2,
     ImageIcon,
+    IndianRupee,
+    Loader2,
+    MapPin,
+    Save,
+    Users
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // UUID fallback
 function generateUUID(): string {
@@ -201,6 +200,8 @@ export default function EventForm() {
                 venue: formData.venue,
                 event_date: formData.event_date,
                 registration_deadline: formData.registration_deadline || formData.event_date,
+                registration_start_date: formData.registration_start_date || null,
+                registration_end_date: formData.registration_end_date || null,
                 registration_fee: Number(formData.registration_fee),
                 max_participants: Number(formData.max_participants),
                 min_team_size: Number(formData.min_team_size),

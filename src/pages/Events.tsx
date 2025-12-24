@@ -91,12 +91,8 @@ export default function Events() {
         window.scrollTo(0, 0);
         fetchEvents();
         
-        // Show alert about fest registration requirement
-        const hasSeenAlert = sessionStorage.getItem('hasSeenFestRegistrationAlert');
-        if (!hasSeenAlert) {
-            setShowFestRegistrationAlert(true);
-            sessionStorage.setItem('hasSeenFestRegistrationAlert', 'true');
-        }
+        // Show alert about fest registration requirement every time
+        setShowFestRegistrationAlert(true);
     }, [fetchEvents]);
 
     const categories = useMemo(() => {

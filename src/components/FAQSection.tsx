@@ -96,7 +96,7 @@ export const FAQSection = memo(function FAQSection() {
                     <p className="text-white/60 text-sm">
                         Contact us via WhatsApp or drop us an email at{' '}
                         <a href="mailto:info@kaizentechfest.com" className="text-red-400 hover:text-red-300 transition-colors">
-                            info@kaizentechfest.com
+                            kaizentechfest@gmail.com
                         </a>
                     </p>
                 </div>
