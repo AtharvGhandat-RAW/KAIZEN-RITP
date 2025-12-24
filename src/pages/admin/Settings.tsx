@@ -22,8 +22,23 @@ import {
   Globe,
   Loader2,
   AlertTriangle,
-  Clock
+  Clock,
+  Upload,
+  ImageIcon,
+  QrCode
 } from 'lucide-react';
+
+// UUID fallback
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 type SettingValue = string | boolean | number | null;
 
@@ -234,6 +249,38 @@ export default function Settings() {
     saveSetting(key, value);
   }, [saveSetting]);
 
+  const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSaving('fest_qr_code_url');
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `fest-qr-${generateUUID()}.${fileExt}`;
+      const filePath = `upi-qr/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('events')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('events').getPublicUrl(filePath);
+      
+      await saveSetting('fest_qr_code_url', publicUrl);
+      
+      toast({ title: 'Success', description: 'QR code uploaded successfully' });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Could not upload the image',
+        variant: 'destructive',
+      });
+      setSaving(null);
+    }
+  };
+
   return (
     <ProtectedRoute requiredRoles={['super_admin']}>
       <AdminLayout>
@@ -436,6 +483,72 @@ export default function Settings() {
                     <div className="h-20 w-full bg-white/5 animate-pulse rounded mt-1" />
                   )}
                   <p className="text-white/40 text-xs mt-1">Leave empty to hide</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Payment Settings */}
+            <Card className="bg-black/60 border-red-600/30 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <QrCode className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-semibold text-white">Payment Settings</h2>
+              </div>
+
+              <div className="space-y-6">
+                <SettingInput
+                  settingKey="fest_upi_id"
+                  label="UPI ID"
+                  placeholder="e.g. kaizen@upi"
+                  value={String(settings['fest_upi_id'] || '')}
+                  saving={saving}
+                  onBlur={handleInputBlur}
+                  hint="This UPI ID will be displayed on the Fest Registration page."
+                />
+
+                <div>
+                  <Label className="text-white/80 flex items-center gap-2 mb-2">
+                    QR Code Image
+                    {saving === 'fest_qr_code_url' && <Loader2 className="w-3 h-3 animate-spin text-green-500" />}
+                  </Label>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-32 h-32 bg-black/40 border border-white/20 rounded-lg flex items-center justify-center overflow-hidden relative group">
+                      {settings['fest_qr_code_url'] ? (
+                        <img 
+                          src={String(settings['fest_qr_code_url'])} 
+                          alt="QR Code" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-white/20" />
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <label className="cursor-pointer p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                          <Upload className="w-5 h-5 text-white" />
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleQRUpload}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleQRUpload}
+                          className="bg-black/40 border-white/20 text-white/80 file:bg-white/10 file:text-white file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-white/20 cursor-pointer"
+                        />
+                      </div>
+                      <p className="text-white/40 text-xs">
+                        Upload the QR code image for payments. This will be displayed to students during registration.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>

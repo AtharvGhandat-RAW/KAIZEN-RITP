@@ -41,10 +41,38 @@ export default function FestRegistration() {
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [statusTitle, setStatusTitle] = useState<string>('Registration Closed');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState({
+    upiId: '',
+    qrCodeUrl: ''
+  });
 
   useEffect(() => {
     checkRegistrationStatus();
+    fetchPaymentSettings();
   }, []);
+
+  const fetchPaymentSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .in('key', ['fest_upi_id', 'fest_qr_code_url']);
+
+      if (data) {
+        const settings: any = {};
+        data.forEach((item: any) => {
+          settings[item.key] = item.value;
+        });
+        
+        setPaymentSettings({
+          upiId: settings['fest_upi_id'] ? String(settings['fest_upi_id']).replace(/"/g, '') : '',
+          qrCodeUrl: settings['fest_qr_code_url'] ? String(settings['fest_qr_code_url']).replace(/"/g, '') : ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payment settings:', error);
+    }
+  };
 
   const checkRegistrationStatus = async () => {
     try {
@@ -342,11 +370,39 @@ export default function FestRegistration() {
               <div className="bg-gradient-to-br from-green-900/20 to-black p-6 rounded-xl border border-green-500/20 text-center">
                 <p className="text-zinc-300 mb-4">Scan QR to pay Registration Fee</p>
                 <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                  {/* Replace with actual QR Code URL */}
-                  <div className="w-48 h-48 bg-gray-200 flex items-center justify-center text-black font-bold">
-                    QR CODE HERE
-                  </div>
+                  {paymentSettings.qrCodeUrl ? (
+                    <img 
+                      src={paymentSettings.qrCodeUrl} 
+                      alt="Payment QR Code" 
+                      className="w-48 h-48 object-contain"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center text-black font-bold text-center p-4">
+                      QR Code not available. Please contact admin.
+                    </div>
+                  )}
                 </div>
+                
+                {paymentSettings.upiId && (
+                  <div className="mb-6 p-3 bg-white/5 rounded-lg border border-white/10 inline-block">
+                    <p className="text-zinc-400 text-sm mb-1">UPI ID</p>
+                    <div className="flex items-center gap-2 justify-center">
+                      <code className="text-green-400 font-mono text-lg">{paymentSettings.upiId}</code>
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+                        onClick={() => {
+                          navigator.clipboard.writeText(paymentSettings.upiId);
+                          toast.success("UPI ID copied to clipboard");
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="max-w-sm mx-auto">
                   <Label className="text-green-400 mb-2 block text-left">Upload Payment Screenshot</Label>
