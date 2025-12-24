@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Upload, CheckCircle2, AlertCircle, Calendar, Clock } from 'lucide-react';
+import { Loader2, Upload, CheckCircle2, AlertCircle, Calendar, Clock, Zap } from 'lucide-react';
 import { AtmosphericBackground } from '@/components/AtmosphericBackground';
+import { loadRazorpay } from '@/utils/loadRazorpay';
 
 // UUID fallback
 function generateUUID(): string {
@@ -118,72 +119,104 @@ export default function FestRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.paymentProof) {
-      toast.error("Please upload payment proof");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      // 1. Upload Payment Proof
-      setUploading(true);
-      const fileExt = formData.paymentProof.name.split('.').pop();
-      const fileName = `fest-${generateUUID()}.${fileExt}`;
-      const filePath = `fest-payments/${fileName}`;
+      const res = await loadRazorpay();
+      if (!res) {
+        throw new Error('Razorpay SDK failed to load');
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('event-payments') // Reusing existing bucket
-        .upload(filePath, formData.paymentProof);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-payments')
-        .getPublicUrl(filePath);
-
-      setUploading(false);
-
-      // 2. Create/Update Profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          email: formData.email,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          education: formData.education,
-          college: formData.college,
-          year: formData.year,
-          branch: formData.branch,
-          fest_payment_status: 'pending',
-          fest_payment_proof_url: publicUrl,
-          is_fest_registered: false // Will be true after admin approval
-        }, { onConflict: 'email' })
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      setIsSubmitted(true);
-      toast.success("Registration Submitted!");
-      
-      // Reset form
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        education: '',
-        college: '',
-        year: '',
-        branch: '',
-        paymentProof: null,
+      // 1. Create Order
+      const { data: orderData, error: orderError } = await supabase.functions.invoke('payment-process', {
+        body: { 
+          action: 'create_order', 
+          amount: 150 // Fixed amount for Fest Registration
+        }
       });
+
+      if (orderError) throw orderError;
+
+      const options = {
+        key: "rzp_test_RvPFFzj61qtFye", // User provided key
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Kaizen RITP",
+        description: "Fest Registration",
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            // 2. Verify Payment & Register
+            const { data: result, error: verifyError } = await supabase.functions.invoke('payment-process', {
+              body: {
+                action: 'verify_fest_payment',
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                registrationData: {
+                  fullName: formData.fullName,
+                  email: formData.email.toLowerCase().trim(),
+                  phone: formData.phone,
+                  education: formData.education,
+                  college: formData.college,
+                  year: formData.year,
+                  branch: formData.branch,
+                }
+              }
+            });
+
+            if (verifyError) throw verifyError;
+            if (result && !result.success) throw new Error(result.message || 'Registration failed');
+
+            setIsSubmitted(true);
+            toast.success("Registration Successful!", {
+              description: "Welcome to Kaizen! Check your email for your Fest Code.",
+            });
+            
+            // Reset form
+            setFormData({
+              fullName: '',
+              email: '',
+              phone: '',
+              education: '',
+              college: '',
+              year: '',
+              branch: '',
+              paymentProof: null,
+            });
+
+          } catch (err: any) {
+            console.error('Verification error:', err);
+            toast.error('Payment Verification Failed', {
+              description: err.message || 'Please contact support.',
+            });
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone
+        },
+        theme: {
+          color: "#DC2626"
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+            toast('Payment Cancelled');
+          }
+        }
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
 
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.message || "Registration failed");
-    } finally {
       setLoading(false);
-      setUploading(false);
     }
   };
 
@@ -368,57 +401,18 @@ export default function FestRegistration() {
               </h3>
               
               <div className="bg-gradient-to-br from-green-900/20 to-black p-6 rounded-xl border border-green-500/20 text-center">
-                <p className="text-zinc-300 mb-4">Scan QR to pay Registration Fee</p>
-                <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                  {paymentSettings.qrCodeUrl ? (
-                    <img 
-                      src={paymentSettings.qrCodeUrl} 
-                      alt="Payment QR Code" 
-                      className="w-48 h-48 object-contain"
-                    />
-                  ) : (
-                    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center text-black font-bold text-center p-4">
-                      QR Code not available. Please contact admin.
-                    </div>
-                  )}
+                <div className="mb-6">
+                  <p className="text-zinc-300 mb-2">Registration Fee</p>
+                  <div className="text-4xl font-bold text-green-500">₹150</div>
                 </div>
-                
-                {paymentSettings.upiId && (
-                  <div className="mb-6 p-3 bg-white/5 rounded-lg border border-white/10 inline-block">
-                    <p className="text-zinc-400 text-sm mb-1">UPI ID</p>
-                    <div className="flex items-center gap-2 justify-center">
-                      <code className="text-green-400 font-mono text-lg">{paymentSettings.upiId}</code>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="sm"
-                        className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
-                        onClick={() => {
-                          navigator.clipboard.writeText(paymentSettings.upiId);
-                          toast.success("UPI ID copied to clipboard");
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </Button>
-                    </div>
+
+                <div className="p-4 bg-green-950/20 border border-green-900/30 rounded-lg flex items-center gap-3 max-w-md mx-auto">
+                  <div className="p-2 bg-green-900/20 rounded-full">
+                    <Zap className="w-5 h-5 text-green-500" />
                   </div>
-                )}
-                
-                <div className="max-w-sm mx-auto">
-                  <Label className="text-green-400 mb-2 block text-left">Upload Payment Screenshot</Label>
-                  <div className="relative">
-                    <Input 
-                      type="file"
-                      accept="image/*"
-                      required
-                      onChange={e => {
-                        if (e.target.files?.[0]) {
-                          setFormData({...formData, paymentProof: e.target.files[0]});
-                        }
-                      }}
-                      className="bg-black/40 border-green-500/30 text-zinc-300 file:bg-green-500/10 file:text-green-400 file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-green-500/20 cursor-pointer"
-                    />
-                  </div>
+                  <p className="text-sm text-green-200/80 text-left">
+                    Click "Pay & Register" to complete your registration securely via Razorpay.
+                  </p>
                 </div>
               </div>
             </div>
@@ -426,15 +420,15 @@ export default function FestRegistration() {
             <div className="pt-6">
               <Button 
                 type="submit" 
-                disabled={loading || uploading}
+                disabled={loading}
                 className="w-full h-14 text-lg font-bold bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-500 hover:to-purple-500 shadow-lg shadow-red-900/20"
               >
-                {loading || uploading ? (
+                {loading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="w-5 h-5 animate-spin" /> Processing...
                   </span>
                 ) : (
-                  "Submit Registration"
+                  "Pay & Register"
                 )}
               </Button>
             </div>

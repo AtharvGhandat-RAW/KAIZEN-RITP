@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { loadRazorpay } from '@/utils/loadRazorpay';
 import { AlertCircle, CheckCircle2, Flame, Ghost, Loader2, Skull, Upload, X, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -250,84 +251,139 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       }
     }
 
-    if (selectedEvent && selectedEvent.registration_fee > 0 && !formData.paymentProof) {
-      toast.error('Payment proof required');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      let paymentProofUrl = null;
-
-      if (formData.paymentProof) {
-        setUploading(true);
-        const fileExt = formData.paymentProof.name.split('.').pop();
-        const fileName = `${generateUUID()}.${fileExt}`;
-        const filePath = `payment-proofs/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('event-payments')
-          .upload(filePath, formData.paymentProof);
-
-        if (uploadError) {
-          console.error('Payment proof upload error:', uploadError);
-          toast.error('Failed to upload payment proof. We will still save your registration.', {
-            description: 'Please keep your UPI reference ID safe and contact the coordinators if needed.',
-          });
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('event-payments')
-            .getPublicUrl(filePath);
-
-          paymentProofUrl = publicUrl;
+      // Case 1: Paid Event
+      if (selectedEvent && selectedEvent.registration_fee > 0) {
+        const res = await loadRazorpay();
+        if (!res) {
+          throw new Error('Razorpay SDK failed to load');
         }
-        setUploading(false);
-      }
 
-      // Call the atomic registration function
-      // @ts-ignore - RPC function not yet in types
-      const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
-        p_full_name: formData.fullName,
-        p_email: formData.email.toLowerCase().trim(),
-        p_phone: formData.phone,
-        p_college: formData.college,
-        p_year: formData.year,
-        p_branch: formData.branch,
-        p_education: formData.educationType,
-        p_event_id: formData.eventId,
-        p_team_name: formData.teamName || null,
-        p_payment_proof_url: paymentProofUrl,
-        p_registration_fee: selectedEvent?.registration_fee || 0
-      });
-
-      if (rpcError) throw rpcError;
-
-      // Cast result to expected type
-      const registrationResult = result as unknown as { success: boolean; message?: string; registration_id?: string };
-
-      if (registrationResult && !registrationResult.success) {
-        throw new Error(registrationResult.message || 'Registration failed');
-      }
-
-      // Send confirmation email (fire and forget)
-      supabase.functions.invoke('send-registration-email', {
-        body: {
-          to: formData.email,
-          type: 'registration_confirmation',
-          data: {
-            name: formData.fullName,
-            eventName: selectedEvent?.name || 'Event',
+        // Create Order
+        const { data: orderData, error: orderError } = await supabase.functions.invoke('payment-process', {
+          body: { 
+            action: 'create_order', 
+            amount: selectedEvent.registration_fee 
           }
-        }
-      }).catch(console.error);
+        });
 
-      setSuccess(true);
-      toast.success('Registration Successful!', {
-        description: selectedEvent?.registration_fee === 0
-          ? 'You are now registered!'
-          : 'Registration complete! Payment pending verification.',
-      });
+        if (orderError) throw orderError;
+
+        const options = {
+          key: "rzp_test_RvPFFzj61qtFye", // User provided key
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "Kaizen RITP",
+          description: `Registration for ${selectedEvent.name}`,
+          order_id: orderData.id,
+          handler: async function (response: any) {
+            try {
+              // Verify Payment & Register
+              const { data: result, error: verifyError } = await supabase.functions.invoke('payment-process', {
+                body: {
+                  action: 'verify_payment',
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  registrationData: {
+                    p_full_name: formData.fullName,
+                    p_email: formData.email.toLowerCase().trim(),
+                    p_phone: formData.phone,
+                    p_college: formData.college,
+                    p_year: formData.year,
+                    p_branch: formData.branch,
+                    p_education: formData.educationType,
+                    p_event_id: formData.eventId,
+                    p_team_name: formData.teamName || null,
+                    p_payment_proof_url: null, // No manual proof
+                    p_registration_fee: selectedEvent.registration_fee,
+                    eventName: selectedEvent.name
+                  }
+                }
+              });
+
+              if (verifyError) throw verifyError;
+              if (result && !result.success) throw new Error(result.message || 'Registration failed');
+
+              setSuccess(true);
+              toast.success('Registration Successful!', {
+                description: 'Payment verified and registration complete.',
+              });
+            } catch (err: any) {
+              console.error('Verification error:', err);
+              toast.error('Payment Verification Failed', {
+                description: err.message || 'Please contact support.',
+              });
+              setError(err.message);
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: formData.fullName,
+            email: formData.email,
+            contact: formData.phone
+          },
+          theme: {
+            color: "#DC2626"
+          },
+          modal: {
+            ondismiss: function() {
+              setLoading(false);
+              toast('Payment Cancelled');
+            }
+          }
+        };
+
+        const paymentObject = new (window as any).Razorpay(options);
+        paymentObject.open();
+
+      } else {
+        // Case 2: Free Event (Existing Logic)
+        // @ts-ignore - RPC function not yet in types
+        const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
+          p_full_name: formData.fullName,
+          p_email: formData.email.toLowerCase().trim(),
+          p_phone: formData.phone,
+          p_college: formData.college,
+          p_year: formData.year,
+          p_branch: formData.branch,
+          p_education: formData.educationType,
+          p_event_id: formData.eventId,
+          p_team_name: formData.teamName || null,
+          p_payment_proof_url: null,
+          p_registration_fee: 0
+        });
+
+        if (rpcError) throw rpcError;
+
+        const registrationResult = result as unknown as { success: boolean; message?: string; registration_id?: string };
+
+        if (registrationResult && !registrationResult.success) {
+          throw new Error(registrationResult.message || 'Registration failed');
+        }
+
+        // Send confirmation email
+        supabase.functions.invoke('send-registration-email', {
+          body: {
+            to: formData.email,
+            type: 'registration_confirmation',
+            data: {
+              name: formData.fullName,
+              eventName: selectedEvent?.name || 'Event',
+            }
+          }
+        }).catch(console.error);
+
+        setSuccess(true);
+        toast.success('Registration Successful!', {
+          description: 'You are now registered!',
+        });
+        setLoading(false);
+      }
+
     } catch (error: unknown) {
       console.error('Registration error:', error);
       const err = error as { message?: string; error_description?: string };
@@ -336,9 +392,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       toast.error('Registration Failed', {
         description: errorMessage,
       });
-    } finally {
       setLoading(false);
-      setUploading(false);
     }
   };
 
@@ -696,38 +750,13 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                     </div>
                                   </div>
 
-                                  {selectedEvent.upi_qr_url && (
-                                    <div className="flex flex-col items-center space-y-4">
-                                      <div className="p-4 bg-white rounded-xl shadow-lg">
-                                        <img src={selectedEvent.upi_qr_url} alt="UPI QR" className="w-48 h-48 object-contain" />
-                                      </div>
-                                      <p className="text-sm text-zinc-400">Scan with any UPI app to pay</p>
+                                  <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-3">
+                                    <div className="p-2 bg-red-900/20 rounded-full">
+                                      <Zap className="w-5 h-5 text-red-500" />
                                     </div>
-                                  )}
-
-                                  <div className="space-y-3">
-                                    <Label className="text-red-200 font-medium flex items-center gap-2">
-                                      <Upload size={16} />
-                                      Upload Payment Screenshot
-                                    </Label>
-                                    <div className="relative group">
-                                      <Input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) setFormData(prev => ({ ...prev, paymentProof: file }));
-                                        }}
-                                        required
-                                        className="bg-black/40 border-red-500/30 text-zinc-300 file:bg-red-500/10 file:text-red-400 file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-red-500/20 cursor-pointer h-14 pt-2"
-                                      />
-                                    </div>
-                                    {formData.paymentProof && (
-                                      <p className="text-sm text-green-400 flex items-center gap-2 animate-in fade-in">
-                                        <CheckCircle2 size={14} />
-                                        {formData.paymentProof.name}
-                                      </p>
-                                    )}
+                                    <p className="text-sm text-red-200/80">
+                                      Click "Complete Registration" to pay securely via Razorpay.
+                                    </p>
                                   </div>
                                 </div>
                               )}
