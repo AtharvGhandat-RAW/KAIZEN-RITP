@@ -262,7 +262,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         }
 
         // Create Order
-        const { data: orderData, error: orderError } = await supabase.functions.invoke('payment-process', {
+        const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
           body: { 
             action: 'create_order', 
             amount: selectedEvent.registration_fee 
@@ -281,7 +281,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
           handler: async function (response: any) {
             try {
               // Verify Payment & Register
-              const { data: result, error: verifyError } = await supabase.functions.invoke('payment-process', {
+              const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
                 body: {
                   action: 'verify_payment',
                   razorpay_order_id: response.razorpay_order_id,

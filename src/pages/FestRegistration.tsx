@@ -128,7 +128,7 @@ export default function FestRegistration() {
       }
 
       // 1. Create Order
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('payment-process', {
+      const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
         body: { 
           action: 'create_order', 
           amount: 150 // Fixed amount for Fest Registration
@@ -147,7 +147,7 @@ export default function FestRegistration() {
         handler: async function (response: any) {
           try {
             // 2. Verify Payment & Register
-            const { data: result, error: verifyError } = await supabase.functions.invoke('payment-process', {
+            const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
               body: {
                 action: 'verify_fest_payment',
                 razorpay_order_id: response.razorpay_order_id,
