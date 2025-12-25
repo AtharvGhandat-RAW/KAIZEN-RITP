@@ -55,6 +55,7 @@ interface RegistrationSettings {
   registration_enabled: boolean;
   registration_notice: string;
   razorpay_enabled: boolean;
+  enable_razorpay_test: boolean;
 }
 
 export function RegistrationPage({ onClose, initialEventId }: RegistrationPageProps) {
@@ -67,7 +68,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
   const [registrationSettings, setRegistrationSettings] = useState<RegistrationSettings>({
     registration_enabled: true,
     registration_notice: '',
-    razorpay_enabled: true
+    razorpay_enabled: true,
+    enable_razorpay_test: false
   });
   const [formData, setFormData] = useState({
     fullName: '',
@@ -162,7 +164,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       const { data, error } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['registration_enabled', 'registration_notice', 'razorpay_enabled']);
+        .in('key', ['registration_enabled', 'registration_notice', 'razorpay_enabled', 'enable_razorpay_test']);
 
       if (error) throw error;
 
@@ -178,7 +180,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         setRegistrationSettings({
           registration_enabled: settingsMap.registration_enabled !== false,
           registration_notice: String(settingsMap.registration_notice || '').replace(/"/g, ''),
-          razorpay_enabled: settingsMap.razorpay_enabled !== false
+          razorpay_enabled: settingsMap.razorpay_enabled !== false,
+          enable_razorpay_test: settingsMap.enable_razorpay_test === true
         });
       }
     } catch (err) {
