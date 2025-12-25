@@ -1,9 +1,14 @@
-// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import Razorpay from "https://esm.sh/razorpay@2.9.2?target=deno"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
+interface RpcResult {
+  success: boolean;
+  message?: string;
+  [key: string]: unknown;
+}
+
+const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
@@ -17,7 +22,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { action, ...data } = await req.json()
+    const { action, ...data } = await req.json() as { action: string; [key: string]: unknown }
     console.log(`Received request: ${action}`);
 
     // Initialize Supabase Client
@@ -56,8 +61,8 @@ serve(async (req: Request) => {
     }
 
     const razorpay = testMode ? null : new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
+      key_id: keyId as string,
+      key_secret: keySecret as string,
     })
 
     if (action === 'create_order') {
@@ -232,17 +237,30 @@ serve(async (req: Request) => {
         rpcData.p_payment_proof_url = null;
       }
 
+      console.log("Calling RPC register_user_for_event with:", JSON.stringify({
+        ...rpcData,
+        p_payment_id: razorpay_payment_id,
+        p_payment_status: 'completed'
+      }));
+
       const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
         ...rpcData,
         p_payment_id: razorpay_payment_id,
         p_payment_status: 'completed'
       });
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        console.error("RPC Error:", rpcError);
+        // Check for specific RPC errors
+        if (rpcError.message && rpcError.message.includes("function") && rpcError.message.includes("does not exist")) {
+             throw new Error("Database function signature mismatch. Please contact admin.");
+        }
+        throw new Error(rpcError.message || 'Registration failed during database update');
+      }
 
       // Defensive: if RPC returned success:false, surface as an error
-      if (result && (result as any).success === false) {
-        throw new Error((result as any).message || 'Registration RPC reported failure');
+      if (result && (result as RpcResult).success === false) {
+        throw new Error((result as RpcResult).message || 'Registration RPC reported failure');
       }
 
       // Trigger Email Function (Fire and Forget)
@@ -270,7 +288,7 @@ serve(async (req: Request) => {
 
     throw new Error('Invalid action')
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in process-payment:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
