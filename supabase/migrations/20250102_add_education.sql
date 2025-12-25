@@ -44,7 +44,7 @@ begin
     if v_existing_status = 'rejected' then
       delete from registrations where profile_id = v_profile_id and event_id = p_event_id;
     else
-      return json_build_object('success', false, 'message', 'Already registered or pending verification.');
+      RAISE EXCEPTION 'Already registered or pending verification.';
     end if;
   end if;
 
@@ -69,6 +69,6 @@ begin
 
   return json_build_object('success', true, 'registration_id', v_registration_id);
 exception when others then
-  return json_build_object('success', false, 'message', SQLERRM);
+  RAISE EXCEPTION '%', SQLERRM;
 end;
 $$ language plpgsql security definer;

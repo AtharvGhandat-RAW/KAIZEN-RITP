@@ -122,11 +122,6 @@ export default function FestRegistration() {
     setLoading(true);
 
     try {
-      const res = await loadRazorpay();
-      if (!res) {
-        throw new Error('Razorpay SDK failed to load');
-      }
-
       // 1. Create Order
       const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
         body: {
@@ -136,6 +131,66 @@ export default function FestRegistration() {
       });
 
       if (orderError) throw orderError;
+
+      // If backend returned a test order, simulate payment locally without loading Razorpay SDK
+      const isTestOrder = orderData && (orderData.key_id === 'test' || String(orderData.id || '').startsWith('order_test_'));
+
+      if (isTestOrder) {
+        // Simulate a successful payment response
+        const fakeResponse = {
+          razorpay_order_id: orderData.id,
+          razorpay_payment_id: `pay_test_${Date.now()}`,
+          razorpay_signature: 'test-signature'
+        };
+
+        // Directly call verification endpoint (server accepts test-mode without signature)
+        const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
+          body: {
+            action: 'verify_fest_payment',
+            razorpay_order_id: fakeResponse.razorpay_order_id,
+            razorpay_payment_id: fakeResponse.razorpay_payment_id,
+            razorpay_signature: fakeResponse.razorpay_signature,
+            registrationData: {
+              fullName: formData.fullName,
+              email: formData.email.toLowerCase().trim(),
+              phone: formData.phone,
+              education: formData.education,
+              college: formData.college,
+              year: formData.year,
+              branch: formData.branch,
+            }
+          }
+        });
+
+        if (verifyError) throw verifyError;
+        if (result && !result.success) throw new Error(result.message || 'Registration failed');
+
+        setIsSubmitted(true);
+        toast.success("(Test) Registration Successful!", {
+          description: "Test registration completed. Check admin dashboard for the registration.",
+        });
+
+        // Reset form
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          education: '',
+          college: '',
+          year: '',
+          branch: '',
+          paymentProof: null,
+        });
+
+        setLoading(false);
+        return;
+      }
+
+      // Real payment flow using Razorpay SDK
+      const res = await loadRazorpay();
+      if (!res) {
+        throw new Error('Razorpay SDK failed to load');
+      }
 
       const options = {
         key: orderData.key_id || "rzp_test_RvPFFzj61qtFye", // Use key from backend or fallback

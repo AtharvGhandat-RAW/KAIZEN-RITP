@@ -73,13 +73,33 @@ export function ContactFooter() {
           }
         ]);
 
+        // Helper to normalize URLs (ensure protocol for external links)
+        const normalizeUrl = (url?: string) => {
+          if (!url) return '#';
+          // Trim whitespace and remove surrounding quotes if present
+          let cleaned = String(url).trim();
+          if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+            cleaned = cleaned.slice(1, -1).trim();
+          }
+
+          if (cleaned === '#') return '#';
+
+          // Normalize duplicated protocols (e.g., "https://https://example.com")
+          cleaned = cleaned.replace(/^(https?:\/\/)+/i, 'https://');
+
+          // If it's already an absolute URL, return it
+          if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(cleaned)) return cleaned;
+
+          return `https://${cleaned.replace(/^\/+/, '')}`;
+        };
+
         // Update social links
         setSocialLinks([
-          { icon: Facebook, label: 'Facebook', link: settings.social_facebook || '#', color: '#1877f2' },
-          { icon: Twitter, label: 'Twitter', link: settings.social_twitter || '#', color: '#1da1f2' },
-          { icon: Instagram, label: 'Instagram', link: settings.social_instagram || '#', color: '#e4405f' },
-          { icon: Linkedin, label: 'LinkedIn', link: settings.social_linkedin || '#', color: '#0a66c2' },
-          { icon: Github, label: 'Github', link: settings.social_github || '#', color: '#ffffff' }
+          { icon: Facebook, label: 'Facebook', link: normalizeUrl(settings.social_facebook), color: '#1877f2' },
+          { icon: Twitter, label: 'Twitter', link: normalizeUrl(settings.social_twitter), color: '#1da1f2' },
+          { icon: Instagram, label: 'Instagram', link: normalizeUrl(settings.social_instagram), color: '#e4405f' },
+          { icon: Linkedin, label: 'LinkedIn', link: normalizeUrl(settings.social_linkedin), color: '#0a66c2' },
+          { icon: Github, label: 'Github', link: normalizeUrl(settings.social_github), color: '#ffffff' }
         ]);
       }
     } catch (error) {
@@ -290,8 +310,8 @@ export function ContactFooter() {
                   <a
                     key={social.label}
                     href={social.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target={/^https?:\/\//i.test(social.link) ? '_blank' : undefined}
+                    rel={/^https?:\/\//i.test(social.link) ? 'noopener noreferrer' : undefined}
                     className="group relative p-3 sm:p-3.5 md:p-4 border border-red-900/40 hover:border-red-700/80 transition-all duration-300 hover:scale-110 hover:-translate-y-1"
                     aria-label={social.label}
                     style={{

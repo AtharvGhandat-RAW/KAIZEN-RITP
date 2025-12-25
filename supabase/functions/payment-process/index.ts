@@ -97,6 +97,11 @@ serve(async (req: Request) => {
       });
 
       if (rpcError) throw rpcError;
+
+      // Defensive: if RPC returned success:false, surface as an error
+      if (result && (result as any).success === false) {
+        throw new Error((result as any).message || 'Registration RPC reported failure');
+      }
       
       // Send Email
       await supabase.functions.invoke('send-registration-email', {

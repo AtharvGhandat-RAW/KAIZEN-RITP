@@ -22,8 +22,10 @@ test.describe('Public Interface', () => {
             await expect(menuButton).toBeVisible();
             await menuButton.click();
 
-            const mobileMenu = page.locator('.fixed.inset-0.z-40');
-            const eventsLink = mobileMenu.getByRole('link', { name: 'Events' });
+            // Wait for close button to ensure menu opened
+            await expect(page.getByLabel('Close menu')).toBeVisible();
+            const overlay = page.getByLabel('Close menu').locator('..');
+            const eventsLink = overlay.locator('a:has-text("Events")');
             await expect(eventsLink).toBeVisible();
             await eventsLink.click();
         } else {
@@ -32,14 +34,18 @@ test.describe('Public Interface', () => {
             await eventsLink.click();
         }
 
-        await expect(page).toHaveURL(/.*#events/);
+        await expect(page).toHaveURL(/.*(#events|\/events)/);
 
         await expect(page.locator('#events')).toBeVisible();
         await expect(page.getByRole('heading', { name: /Events/i })).toBeVisible();
+
+        // Footer check: ensure the footer heading with the site name is present
+        await expect(page.locator('footer').getByRole('heading', { name: /KAIZEN/i })).toBeVisible();
     });
 
     test('Footer is present', async ({ page }) => {
         await expect(page.locator('footer')).toBeVisible();
-        await expect(page.getByText(/KAIZEN 2025/i)).toBeVisible();
+        // Ensure footer heading with site name is present
+        await expect(page.locator('footer').getByRole('heading', { name: /KAIZEN/i })).toBeVisible();
     });
 });

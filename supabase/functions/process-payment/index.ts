@@ -31,16 +31,31 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Initialize Razorpay
+    // Initialize Razorpay credentials (or determine test mode)
     const keyId = Deno.env.get('RAZORPAY_KEY_ID');
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
+    const envTestMode = Deno.env.get('RAZORPAY_TEST_MODE') === 'true';
 
-    if (!keyId || !keySecret) {
+    // Check settings table for enable_razorpay_test flag (fall back to env var)
+    let dbTestMode = false;
+    try {
+      const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'enable_razorpay_test').single();
+      if (settingData && settingData.value) {
+        const parsed = JSON.parse(settingData.value);
+        dbTestMode = Boolean(parsed);
+      }
+    } catch (e) {
+      console.warn('Could not read enable_razorpay_test setting:', e);
+    }
+
+    const testMode = envTestMode || dbTestMode;
+
+    if (!testMode && (!keyId || !keySecret)) {
       console.error("Missing Razorpay credentials");
       throw new Error("Server configuration error: Missing Razorpay credentials");
     }
 
-    const razorpay = new Razorpay({
+    const razorpay = testMode ? null : new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
     })
@@ -52,6 +67,20 @@ serve(async (req: Request) => {
         amount: Math.round(amount * 100), // amount in the smallest currency unit
         currency,
         receipt: `rcpt_${Date.now()}`,
+      }
+
+      if (testMode) {
+        // Return a fake order for local / test environments
+        const fakeOrder = {
+          id: `order_test_${Date.now()}`,
+          amount: options.amount,
+          currency: options.currency,
+          receipt: options.receipt,
+          status: 'created'
+        };
+        return new Response(JSON.stringify({ ...fakeOrder, key_id: 'test' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const order = await razorpay.orders.create(options)
@@ -68,17 +97,21 @@ serve(async (req: Request) => {
         registrationData
       } = data
 
-      // Verify Signature
-      const body = razorpay_order_id + "|" + razorpay_payment_id
+      // Verify Signature (skip verification if test mode)
+      if (!testMode) {
+        const body = razorpay_order_id + "|" + razorpay_payment_id
 
-      const encoder = new TextEncoder();
-      const keyData = encoder.encode(keySecret);
-      const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-      const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-      const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(keySecret);
+        const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+        const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (generated_signature !== razorpay_signature) {
-        throw new Error('Invalid payment signature')
+        if (generated_signature !== razorpay_signature) {
+          throw new Error('Invalid payment signature')
+        }
+      } else {
+        console.log('Test mode active: skipping signature verification')
       }
 
       // Check or Create Profile
@@ -124,58 +157,44 @@ serve(async (req: Request) => {
         profileId = newProfile.id;
       }
 
-      // Generate Fest ID
-      const generateFestId = () => {
-        const chars = '0123456789ABCDEF';
-        let result = 'KZN-';
-        for (let i = 0; i < 6; i++) {
-          result += chars[Math.floor(Math.random() * 16)];
-        }
-        return result;
-      };
-
-      const registrationCode = generateFestId();
-
-      // Create Fest Registration
+      // Create Fest Registration (mark as pending for admin approval)
       const { data: festReg, error: festRegError } = await supabase
         .from('fest_registrations')
         .insert({
           profile_id: profileId,
-          payment_status: 'completed',
+          payment_status: 'pending',
           payment_proof_url: 'razorpay:' + razorpay_payment_id,
-          registration_code: registrationCode
+          registration_code: null
         })
         .select()
         .single();
 
       if (festRegError) throw festRegError;
 
-      // Update Profile with Fest ID
+      // Update Profile to reflect pending payment verification
       await supabase.from('profiles').update({
-        fest_registration_id: registrationCode,
-        is_fest_registered: true,
-        fest_payment_status: 'completed'
+        is_fest_registered: false,
+        fest_payment_status: 'pending'
       }).eq('id', profileId);
 
-      // Send Email (Fire and Forget)
+      // Notify user that payment was received and is pending verification
       try {
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-registration-email', {
           body: {
             to: email,
-            type: 'fest_registration_confirmation',
+            type: 'fest_registration_received',
             data: {
-              name: registrationData.fullName,
-              fest_code: registrationCode
+              name: registrationData.fullName
             }
           }
         });
         if (emailError) console.error("Email function error:", emailError);
-        else console.log("Email sent successfully:", emailData);
+        else console.log("Payment received email sent successfully:", emailData);
       } catch (emailError) {
         console.error("Failed to invoke email function:", emailError);
       }
 
-      return new Response(JSON.stringify({ success: true, message: 'Registration successful', fest_code: registrationCode }), {
+      return new Response(JSON.stringify({ success: true, message: 'Payment received and pending admin approval' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -188,17 +207,21 @@ serve(async (req: Request) => {
         registrationData
       } = data
 
-      // Verify Signature
-      const body = razorpay_order_id + "|" + razorpay_payment_id
+      // Verify Signature (skip verification if test mode)
+      if (!testMode) {
+        const body = razorpay_order_id + "|" + razorpay_payment_id
 
-      const encoder = new TextEncoder();
-      const keyData = encoder.encode(keySecret);
-      const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-      const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-      const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(keySecret);
+        const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+        const generated_signature = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (generated_signature !== razorpay_signature) {
-        throw new Error('Invalid payment signature')
+        if (generated_signature !== razorpay_signature) {
+          throw new Error('Invalid payment signature')
+        }
+      } else {
+        console.log('Test mode active: skipping signature verification')
       }
 
       // Call RPC to register user
@@ -211,6 +234,11 @@ serve(async (req: Request) => {
       });
 
       if (rpcError) throw rpcError;
+
+      // Defensive: if RPC returned success:false, surface as an error
+      if (result && (result as any).success === false) {
+        throw new Error((result as any).message || 'Registration RPC reported failure');
+      }
 
       // Trigger Email Function (Fire and Forget)
       console.log("Triggering email for:", rpcData.p_email);

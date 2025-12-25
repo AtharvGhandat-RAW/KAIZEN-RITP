@@ -99,6 +99,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     setLoading(true);
     try {
       // Cast to any to avoid deep type instantiation issues with new columns
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase
         .from('profiles') as any)
         .select('id, full_name, email, phone, college, year, branch')
@@ -278,7 +279,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
           name: "Kaizen RITP",
           description: `Registration for ${selectedEvent.name}`,
           order_id: orderData.id,
-          handler: async function (response: any) {
+          handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
             try {
               // Verify Payment & Register
               const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
@@ -311,12 +312,13 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
               toast.success('Registration Successful!', {
                 description: 'Payment verified and registration complete.',
               });
-            } catch (err: any) {
+            } catch (err: unknown) {
               console.error('Verification error:', err);
+              const errorMessage = err instanceof Error ? err.message : 'Unknown error';
               toast.error('Payment Verification Failed', {
-                description: err.message || 'Please contact support.',
+                description: errorMessage || 'Please contact support.',
               });
-              setError(err.message);
+              setError(errorMessage);
             } finally {
               setLoading(false);
             }
@@ -337,12 +339,13 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
           }
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const paymentObject = new (window as any).Razorpay(options);
         paymentObject.open();
 
       } else {
         // Case 2: Free Event (Existing Logic)
-        // @ts-ignore - RPC function not yet in types
+        // @ts-expect-error - RPC function not yet in types
         const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
           p_full_name: formData.fullName,
           p_email: formData.email.toLowerCase().trim(),

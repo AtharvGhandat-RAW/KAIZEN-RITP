@@ -134,7 +134,7 @@ export default function Settings() {
         // Merge fest settings into the map with special keys
         if (festData) {
           settingsMap['fest_registration_live'] = festData.is_registration_live;
-          
+
           // Convert UTC to local time for input display
           const toLocalISO = (dateStr: string) => {
             if (!dateStr) return '';
@@ -164,7 +164,7 @@ export default function Settings() {
     try {
       const updateData: any = {};
       if (key === 'fest_registration_live') updateData.is_registration_live = value;
-      
+
       // Convert local time input to UTC for storage
       if (key === 'fest_start_time' || key === 'fest_end_time') {
         const date = new Date(value);
@@ -172,12 +172,12 @@ export default function Settings() {
         if (key === 'fest_start_time') updateData.registration_start_time = utcISO;
         if (key === 'fest_end_time') updateData.registration_end_time = utcISO;
       }
-      
+
       if (key === 'global_button_action') updateData.global_button_action = value;
 
       // Check if row exists, if not insert
       const { data: existing } = await (supabase.from('fest_settings' as any) as any).select('id').single();
-      
+
       let error;
       if (existing) {
         const { error: updateError } = await (supabase
@@ -247,9 +247,16 @@ export default function Settings() {
     saveSetting(key, value);
   }, [saveSetting]);
 
-  // Handler for input blur - save the value
+  // Handler for input blur - save the value (sanitize social links)
   const handleInputBlur = useCallback((key: string, value: string) => {
-    saveSetting(key, value);
+    let v = value;
+    // For social links, ensure we store a full URL (default to https)
+    if (key.startsWith('social_') && v && v !== '#') {
+      if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) {
+        v = `https://${v.replace(/^\/+/, '')}`;
+      }
+    }
+    saveSetting(key, v);
   }, [saveSetting]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,16 +278,16 @@ export default function Settings() {
       const { error: uploadError } = await supabase.storage
         .from('events')
         .upload(filePath, croppedBlob, {
-            contentType: 'image/jpeg',
-            upsert: true
+          contentType: 'image/jpeg',
+          upsert: true
         });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('events').getPublicUrl(filePath);
-      
+
       await saveSetting('fest_qr_code_url', publicUrl);
-      
+
       toast({ title: 'Success', description: 'QR code uploaded successfully' });
     } catch (error) {
       console.error('Upload error:', error);
@@ -518,18 +525,37 @@ export default function Settings() {
                   hint="This UPI ID will be displayed on the Fest Registration page."
                 />
 
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div>
+                    <Label className="text-white text-base">Enable Razorpay Test Mode</Label>
+                    <p className="text-white/50 text-sm">When enabled, payments will be simulated for testing (no real Razorpay keys required).</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {saving === 'enable_razorpay_test' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
+                    {settingsLoaded ? (
+                      <Switch
+                        checked={Boolean(settings['enable_razorpay_test'])}
+                        onCheckedChange={(checked) => handleSwitchChange('enable_razorpay_test', checked)}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    ) : (
+                      <div className="h-6 w-11 bg-white/5 animate-pulse rounded-full" />
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <Label className="text-white/80 flex items-center gap-2 mb-2">
                     QR Code Image
                     {saving === 'fest_qr_code_url' && <Loader2 className="w-3 h-3 animate-spin text-green-500" />}
                   </Label>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="w-32 h-32 bg-black/40 border border-white/20 rounded-lg flex items-center justify-center overflow-hidden relative group">
                       {settings['fest_qr_code_url'] ? (
-                        <img 
-                          src={String(settings['fest_qr_code_url'])} 
-                          alt="QR Code" 
+                        <img
+                          src={String(settings['fest_qr_code_url'])}
+                          alt="QR Code"
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -538,16 +564,16 @@ export default function Settings() {
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <label className="cursor-pointer p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
                           <Upload className="w-5 h-5 text-white" />
-                          <input 
-                            type="file" 
-                            className="hidden" 
+                          <input
+                            type="file"
+                            className="hidden"
                             accept="image/*"
                             onChange={handleFileSelect}
                           />
                         </label>
                       </div>
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Input
