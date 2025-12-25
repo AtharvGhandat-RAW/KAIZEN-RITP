@@ -227,6 +227,11 @@ serve(async (req: Request) => {
       // Call RPC to register user
       const { eventName, ...rpcData } = registrationData;
 
+      // Ensure p_payment_proof_url is null if not provided
+      if (!rpcData.p_payment_proof_url) {
+        rpcData.p_payment_proof_url = null;
+      }
+
       const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
         ...rpcData,
         p_payment_id: razorpay_payment_id,
