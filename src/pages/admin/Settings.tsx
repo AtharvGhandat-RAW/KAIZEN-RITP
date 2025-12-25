@@ -488,6 +488,25 @@ export default function Settings() {
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div>
+                    <Label className="text-white text-base">Enable Razorpay</Label>
+                    <p className="text-white/50 text-sm">Toggle between Razorpay and Manual UPI/QR payment</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {saving === 'razorpay_enabled' && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
+                    {settingsLoaded ? (
+                      <Switch
+                        checked={Boolean(settings.razorpay_enabled)}
+                        onCheckedChange={(checked) => handleSwitchChange('razorpay_enabled', checked)}
+                        className="data-[state=checked]:bg-green-600"
+                      />
+                    ) : (
+                      <div className="h-6 w-11 bg-white/5 animate-pulse rounded-full" />
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <Label className="text-white/80">Notice Banner</Label>
                   {settingsLoaded ? (
