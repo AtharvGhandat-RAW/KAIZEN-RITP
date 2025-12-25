@@ -103,8 +103,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     setLoading(true);
     try {
       // Cast to any to avoid deep type instantiation issues with new columns
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('profiles') as any)
         .select('id, full_name, email, phone, college, year, branch, education')
         .eq('fest_registration_id', formData.festRegistrationCode)
