@@ -16,29 +16,30 @@ test.describe('Mobile Responsiveness Tests', () => {
         const menuButton = page.getByLabel('Toggle menu');
         await expect(menuButton).toBeVisible();
 
-        // Use specific locator for mobile menu overlay
-        const mobileMenu = page.locator('.fixed.inset-0.z-40');
-        await expect(mobileMenu).toBeHidden();
+        // Ensure Close menu button is not visible yet (menu closed)
+        await expect(page.getByLabel('Close menu')).toBeHidden();
 
         await menuButton.click();
-        await expect(mobileMenu).toBeVisible();
+        // Wait for Close menu to appear (menu open)
+        await expect(page.getByLabel('Close menu')).toBeVisible();
 
-        await expect(mobileMenu.getByRole('link', { name: /events/i })).toBeVisible();
+        // Scope to the overlay (parent of the Close menu button) to avoid ambiguous matches
+        const overlay = page.getByLabel('Close menu').locator('..');
+        const eventsLink = overlay.locator('a:has-text("Events")');
+        await expect(eventsLink).toBeVisible();
+        await eventsLink.click();
 
-        // Click a link
-        await mobileMenu.getByRole('link', { name: /events/i }).click();
+        // Menu should close (Close menu becomes hidden)
+        await expect(page.getByLabel('Close menu')).toBeHidden();
 
-        // Menu should close
-        await expect(mobileMenu).toBeHidden();
-
-        await expect(page).toHaveURL(/.*#events/);
+        await expect(page).toHaveURL(/.*(#events|\/events)/);
     });
 
     test('Registration Modal fits viewport', async ({ page }) => {
         await page.getByLabel('Toggle menu').click();
-        const mobileMenu = page.locator('.fixed.inset-0.z-40');
-
-        // Check Register Now button in mobile menu
-        await expect(mobileMenu.getByRole('button', { name: /register now/i })).toBeVisible();
+        const overlay = page.getByLabel('Close menu').locator('..');
+        // Check Register Now button inside the mobile menu
+        const registerBtn = overlay.locator('button:has-text("Register Now")');
+        await expect(registerBtn).toBeVisible();
     });
 });

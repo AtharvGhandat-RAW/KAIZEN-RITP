@@ -78,6 +78,19 @@ export default function FestApprovals() {
 
       if (updateError) throw updateError;
 
+      // 1.b Update the corresponding fest_registrations row to mark completed and store the final registration code
+      try {
+        const { error: regError } = await (supabase
+          .from('fest_registrations') as any)
+          .update({ registration_code: festCode, payment_status: 'completed' })
+          .eq('profile_id', profile.id)
+          .eq('payment_status', 'pending');
+
+        if (regError) console.warn('Could not update fest_registrations for profile:', regError);
+      } catch (err) {
+        console.warn('Error updating fest_registrations:', err);
+      }
+
       // 2. Send Email
       const { error: emailError } = await supabase.functions.invoke('send-registration-email', {
         body: {
@@ -135,11 +148,11 @@ export default function FestApprovals() {
   };
 
   const filteredProfiles = profiles.filter(p => {
-    const matchesSearch = 
+    const matchesSearch =
       p.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.college?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || p.fest_payment_status === statusFilter;
 
     return matchesSearch && matchesStatus;
@@ -225,12 +238,12 @@ export default function FestApprovals() {
                       <Badge
                         variant={
                           profile.fest_payment_status === 'approved' ? 'default' :
-                          profile.fest_payment_status === 'rejected' ? 'destructive' : 'secondary'
+                            profile.fest_payment_status === 'rejected' ? 'destructive' : 'secondary'
                         }
                         className={
                           profile.fest_payment_status === 'approved' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' :
-                          profile.fest_payment_status === 'rejected' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' :
-                          'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                            profile.fest_payment_status === 'rejected' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' :
+                              'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                         }
                       >
                         {profile.fest_payment_status}
@@ -254,9 +267,9 @@ export default function FestApprovals() {
                               <DialogTitle>Payment Proof - {profile.full_name}</DialogTitle>
                             </DialogHeader>
                             <div className="mt-4 flex justify-center bg-black/50 p-4 rounded-lg">
-                              <img 
-                                src={profile.fest_payment_proof_url} 
-                                alt="Payment Proof" 
+                              <img
+                                src={profile.fest_payment_proof_url}
+                                alt="Payment Proof"
                                 className="max-h-[70vh] object-contain"
                               />
                             </div>
