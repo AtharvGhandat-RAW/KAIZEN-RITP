@@ -106,7 +106,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase
         .from('profiles') as any)
-        .select('id, full_name, email, phone, college, year, branch')
+        .select('id, full_name, email, phone, college, year, branch, education')
         .eq('fest_registration_id', formData.festRegistrationCode)
         .eq('is_fest_registered', true)
         .single();
@@ -125,6 +125,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         college: data.college || '',
         year: data.year || '',
         branch: data.branch || '',
+        educationType: data.education || '',
       }));
 
       toast.success("Fest Code Verified! Details auto-filled.");
@@ -745,8 +746,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 {/* Education Type Field */}
                                 <div className="space-y-2">
                                   <Label className="text-purple-300/80 text-sm font-medium">Education Type <span className="text-red-500">*</span></Label>
-                                  <Select value={formData.educationType} onValueChange={(value) => handleChange('educationType', value)}>
-                                    <SelectTrigger className="bg-black/60 border-purple-800/40 text-white h-12 hover:border-purple-600/60 transition-all">
+                                  <Select value={formData.educationType} onValueChange={(value) => handleChange('educationType', value)} disabled>
+                                    <SelectTrigger className="bg-black/60 border-purple-800/40 text-white/70 h-12 hover:border-purple-600/60 transition-all cursor-not-allowed">
                                       <SelectValue placeholder="Select Education Type" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-950 border-purple-800/50 text-white shadow-xl" position="popper" sideOffset={8}>
@@ -769,8 +770,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <Label className="text-purple-300/80 text-sm font-medium">Year of Study <span className="text-red-500">*</span></Label>
-                                    <Select value={formData.year} onValueChange={(value) => handleChange('year', value)}>
-                                      <SelectTrigger className="bg-black/60 border-purple-800/40 text-white h-12 hover:border-purple-600/60 transition-all">
+                                    <Select value={formData.year} onValueChange={(value) => handleChange('year', value)} disabled>
+                                      <SelectTrigger className="bg-black/60 border-purple-800/40 text-white/70 h-12 hover:border-purple-600/60 transition-all cursor-not-allowed">
                                         <SelectValue placeholder="Select Year" />
                                       </SelectTrigger>
                                       <SelectContent className="bg-zinc-950 border-purple-800/50 text-white shadow-xl" position="popper" sideOffset={8}>
@@ -788,7 +789,8 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                       value={formData.branch}
                                       onChange={(e) => handleChange('branch', e.target.value)}
                                       required
-                                      className="bg-black/40 border-white/10 text-white h-12 focus:border-purple-500/50 focus:ring-purple-500/20"
+                                      readOnly
+                                      className="bg-black/40 border-white/10 text-white/70 h-12 focus:border-purple-500/50 focus:ring-purple-500/20 cursor-not-allowed"
                                       placeholder="e.g. CSE, ECE"
                                     />
                                   </div>
