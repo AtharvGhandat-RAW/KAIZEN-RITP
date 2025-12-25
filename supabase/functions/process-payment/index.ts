@@ -97,7 +97,7 @@ serve(async (req: Request) => {
         // Optionally update profile details if needed
         await supabase.from('profiles').update({
           full_name: registrationData.fullName,
-          phone_number: registrationData.phone,
+          phone: registrationData.phone,
           college: registrationData.college,
           education: registrationData.education,
           year: registrationData.year,
@@ -110,7 +110,7 @@ serve(async (req: Request) => {
           .insert({
             full_name: registrationData.fullName,
             email: email,
-            phone_number: registrationData.phone,
+            phone: registrationData.phone,
             college: registrationData.college,
             education: registrationData.education,
             year: registrationData.year,
