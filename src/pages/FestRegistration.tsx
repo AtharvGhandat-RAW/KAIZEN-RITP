@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Upload, CheckCircle2, AlertCircle, Calendar, Clock, Zap } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Calendar, Clock, Zap, QrCode } from 'lucide-react';
 import { AtmosphericBackground } from '@/components/AtmosphericBackground';
-import { loadRazorpay } from '@/utils/loadRazorpay';
 
 // UUID fallback
 function generateUUID(): string {
@@ -122,155 +121,49 @@ export default function FestRegistration() {
     setLoading(true);
 
     try {
-      // 1. Create Order
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
-        body: {
-          action: 'create_order',
-          amount: 150 // Fixed amount for Fest Registration
-        }
-      });
-
-      if (orderError) throw orderError;
-
-      // If backend returned a test order, simulate payment locally without loading Razorpay SDK
-      const isTestOrder = orderData && (orderData.key_id === 'test' || String(orderData.id || '').startsWith('order_test_'));
-
-      if (isTestOrder) {
-        // Simulate a successful payment response
-        const fakeResponse = {
-          razorpay_order_id: orderData.id,
-          razorpay_payment_id: `pay_test_${Date.now()}`,
-          razorpay_signature: 'test-signature'
-        };
-
-        // Directly call verification endpoint (server accepts test-mode without signature)
-        const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
-          body: {
-            action: 'verify_fest_payment',
-            razorpay_order_id: fakeResponse.razorpay_order_id,
-            razorpay_payment_id: fakeResponse.razorpay_payment_id,
-            razorpay_signature: fakeResponse.razorpay_signature,
-            registrationData: {
-              fullName: formData.fullName,
-              email: formData.email.toLowerCase().trim(),
-              phone: formData.phone,
-              education: formData.education,
-              college: formData.college,
-              year: formData.year,
-              branch: formData.branch,
-            }
-          }
-        });
-
-        if (verifyError) throw verifyError;
-        if (result && !result.success) throw new Error(result.message || 'Registration failed');
-
-        setIsSubmitted(true);
-        toast.success("(Test) Registration Successful!", {
-          description: "Test registration completed. Check admin dashboard for the registration.",
-        });
-
-        // Reset form
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          education: '',
-          college: '',
-          year: '',
-          branch: '',
-          paymentProof: null,
-        });
-
+      // Validate form
+      if (!formData.fullName || !formData.email || !formData.phone || !formData.education || 
+          !formData.college || !formData.year || !formData.branch) {
+        toast.error('Please fill in all required fields');
         setLoading(false);
         return;
       }
 
-      // Real payment flow using Razorpay SDK
-      const res = await loadRazorpay();
-      if (!res) {
-        throw new Error('Razorpay SDK failed to load');
-      }
+      // Register user for fest
+      const { data: result, error: rpcError } = await supabase.rpc('register_fest_user', {
+        p_full_name: formData.fullName,
+        p_email: formData.email.toLowerCase().trim(),
+        p_phone: formData.phone,
+        p_education: formData.education,
+        p_college: formData.college,
+        p_year: formData.year,
+        p_branch: formData.branch,
+      });
 
-      const options = {
-        key: orderData.key_id || "rzp_test_RvPFFzj61qtFye", // Use key from backend or fallback
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Kaizen RITP",
-        description: "Fest Registration",
-        order_id: orderData.id,
-        handler: async function (response: any) {
-          try {
-            // 2. Verify Payment & Register
-            const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
-              body: {
-                action: 'verify_fest_payment',
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                registrationData: {
-                  fullName: formData.fullName,
-                  email: formData.email.toLowerCase().trim(),
-                  phone: formData.phone,
-                  education: formData.education,
-                  college: formData.college,
-                  year: formData.year,
-                  branch: formData.branch,
-                }
-              }
-            });
+      if (rpcError) throw rpcError;
+      if (result && !result.success) throw new Error(result.message || 'Registration failed');
 
-            if (verifyError) throw verifyError;
-            if (result && !result.success) throw new Error(result.message || 'Registration failed');
+      setIsSubmitted(true);
+      toast.success("Registration Submitted!", {
+        description: "Your payment is pending. Please transfer ₹150 using the UPI QR code or ID and we'll verify it shortly.",
+      });
 
-            setIsSubmitted(true);
-            toast.success("Registration Successful!", {
-              description: "Welcome to Kaizen! Check your email for your Fest Code.",
-            });
-
-            // Reset form
-            setFormData({
-              fullName: '',
-              email: '',
-              phone: '',
-              education: '',
-              college: '',
-              year: '',
-              branch: '',
-              paymentProof: null,
-            });
-
-          } catch (err: any) {
-            console.error('Verification error:', err);
-            toast.error('Payment Verification Failed', {
-              description: err.message || 'Please contact support.',
-            });
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: formData.fullName,
-          email: formData.email,
-          contact: formData.phone
-        },
-        theme: {
-          color: "#DC2626"
-        },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
-            toast('Payment Cancelled');
-          }
-        }
-      };
-
-      const paymentObject = new (window as any).Razorpay(options);
-      paymentObject.open();
+      // Reset form
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        education: '',
+        college: '',
+        year: '',
+        branch: '',
+        paymentProof: null,
+      });
 
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.message || "Registration failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -455,19 +348,55 @@ export default function FestRegistration() {
                 <span className="w-1 h-6 bg-green-500 rounded-full" /> Payment
               </h3>
 
-              <div className="bg-gradient-to-br from-green-900/20 to-black p-6 rounded-xl border border-green-500/20 text-center">
-                <div className="mb-6">
+              <div className="bg-gradient-to-br from-green-900/20 to-black p-6 rounded-xl border border-green-500/20">
+                <div className="mb-6 text-center">
                   <p className="text-zinc-300 mb-2">Registration Fee</p>
                   <div className="text-4xl font-bold text-green-500">₹150</div>
                 </div>
 
-                <div className="p-4 bg-green-950/20 border border-green-900/30 rounded-lg flex items-center gap-3 max-w-md mx-auto">
-                  <div className="p-2 bg-green-900/20 rounded-full">
-                    <Zap className="w-5 h-5 text-green-500" />
+                <div className="space-y-6">
+                  {/* QR Code Section */}
+                  {paymentSettings.qrCodeUrl && (
+                    <div className="flex flex-col items-center gap-4">
+                      <p className="text-zinc-300 font-semibold">Scan to Pay via UPI</p>
+                      <div className="bg-white p-4 rounded-lg">
+                        <img 
+                          src={paymentSettings.qrCodeUrl} 
+                          alt="UPI QR Code" 
+                          className="w-48 h-48 object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* UPI ID Section */}
+                  {paymentSettings.upiId && (
+                    <div className="text-center">
+                      <p className="text-zinc-400 text-sm mb-2">Or transfer to UPI ID</p>
+                      <div className="flex items-center justify-center gap-2 bg-green-950/30 p-3 rounded-lg border border-green-900/50">
+                        <code className="text-green-300 font-mono text-lg">{paymentSettings.upiId}</code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(paymentSettings.upiId);
+                            toast.success('UPI ID copied to clipboard!');
+                          }}
+                          className="text-green-400 hover:text-green-300 text-sm ml-2"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-green-950/20 border border-green-900/30 rounded-lg flex items-start gap-3">
+                    <div className="p-2 bg-green-900/20 rounded-full flex-shrink-0">
+                      <Zap className="w-5 h-5 text-green-500" />
+                    </div>
+                    <p className="text-sm text-green-200/80">
+                      Please complete the payment and we'll verify it to send you your unique Fest Code.
+                    </p>
                   </div>
-                  <p className="text-sm text-green-200/80 text-left">
-                    Click "Pay & Register" to complete your registration securely via Razorpay.
-                  </p>
                 </div>
               </div>
             </div>
@@ -483,7 +412,7 @@ export default function FestRegistration() {
                     <Loader2 className="w-5 h-5 animate-spin" /> Processing...
                   </span>
                 ) : (
-                  "Pay & Register"
+                  "Submit Registration"
                 )}
               </Button>
             </div>

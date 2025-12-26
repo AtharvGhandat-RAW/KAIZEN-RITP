@@ -5,8 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { loadRazorpay } from '@/utils/loadRazorpay';
-import { AlertCircle, CheckCircle2, Flame, Ghost, Loader2, QrCode, Skull, Upload, X, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Flame, Ghost, Loader2, QrCode, Skull, X, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -54,8 +53,6 @@ interface Event {
 interface RegistrationSettings {
   registration_enabled: boolean;
   registration_notice: string;
-  razorpay_enabled: boolean;
-  enable_razorpay_test: boolean;
 }
 
 export function RegistrationPage({ onClose, initialEventId }: RegistrationPageProps) {
@@ -67,9 +64,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
   const [error, setError] = useState<string | null>(null);
   const [registrationSettings, setRegistrationSettings] = useState<RegistrationSettings>({
     registration_enabled: true,
-    registration_notice: '',
-    razorpay_enabled: true,
-    enable_razorpay_test: false
+    registration_notice: ''
   });
   const [formData, setFormData] = useState({
     fullName: '',
@@ -165,7 +160,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
       const { data, error } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['registration_enabled', 'registration_notice', 'razorpay_enabled', 'enable_razorpay_test']);
+        .in('key', ['registration_enabled', 'registration_notice']);
 
       if (error) throw error;
 
@@ -180,9 +175,7 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
         });
         setRegistrationSettings({
           registration_enabled: settingsMap.registration_enabled !== false,
-          registration_notice: String(settingsMap.registration_notice || '').replace(/"/g, ''),
-          razorpay_enabled: settingsMap.razorpay_enabled !== false,
-          enable_razorpay_test: settingsMap.enable_razorpay_test === true
+          registration_notice: String(settingsMap.registration_notice || '').replace(/"/g, '')
         });
       }
     } catch (err) {
@@ -262,141 +255,51 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
     setLoading(true);
 
     try {
-      // Case 1: Paid Event
+      // Case 1: Paid Event - Always use manual UPI payment
       if (selectedEvent && selectedEvent.registration_fee > 0) {
-        
-        if (registrationSettings.razorpay_enabled) {
-          const res = await loadRazorpay();
-          if (!res) {
-            throw new Error('Razorpay SDK failed to load');
-          }
-
-          // Create Order
-          const { data: orderData, error: orderError } = await supabase.functions.invoke('process-payment', {
-            body: {
-              action: 'create_order',
-              amount: selectedEvent.registration_fee
-            }
-          });
-
-          if (orderError) throw orderError;
-
-          const options = {
-            key: orderData.key_id || "rzp_test_RvPFFzj61qtFye",
-            amount: orderData.amount,
-            currency: orderData.currency,
-            name: "Kaizen RITP",
-            description: `Registration for ${selectedEvent.name}`,
-            order_id: orderData.id,
-            handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
-              try {
-                // Verify Payment & Register
-                const { data: result, error: verifyError } = await supabase.functions.invoke('process-payment', {
-                  body: {
-                    action: 'verify_payment',
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    registrationData: {
-                      p_full_name: formData.fullName,
-                      p_email: formData.email.toLowerCase().trim(),
-                      p_phone: formData.phone,
-                      p_college: formData.college,
-                      p_year: formData.year,
-                      p_branch: formData.branch,
-                      p_education: formData.educationType,
-                      p_event_id: formData.eventId,
-                      p_team_name: formData.teamName || null,
-                      p_payment_proof_url: null, // No manual proof
-                      p_registration_fee: selectedEvent.registration_fee,
-                      eventName: selectedEvent.name
-                    }
-                  }
-                });
-
-                if (verifyError) throw verifyError;
-                if (result && !result.success) throw new Error(result.message || 'Registration failed');
-
-                setSuccess(true);
-                toast.success('Registration Successful!', {
-                  description: 'Payment verified and registration complete.',
-                });
-              } catch (err: unknown) {
-                console.error('Verification error:', err);
-                const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-                toast.error('Payment Verification Failed', {
-                  description: errorMessage || 'Please contact support.',
-                });
-                setError(errorMessage);
-              } finally {
-                setLoading(false);
-              }
-            },
-            prefill: {
-              name: formData.fullName,
-              email: formData.email,
-              contact: formData.phone
-            },
-            theme: {
-              color: "#DC2626"
-            },
-            modal: {
-              ondismiss: function () {
-                setLoading(false);
-                toast('Payment Cancelled');
-              }
-            }
-          };
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const paymentObject = new (window as any).Razorpay(options);
-          paymentObject.open();
-        } else {
-          // Manual Payment Logic
-          if (!formData.paymentProof) {
-            toast.error("Please upload payment proof");
-            setLoading(false);
-            return;
-          }
-
-          // Upload Proof
-          setUploading(true);
-          const fileExt = formData.paymentProof.name.split('.').pop();
-          const fileName = `${formData.eventId}/${Date.now()}.${fileExt}`;
-          const { error: uploadError } = await supabase.storage
-            .from('event-payments')
-            .upload(fileName, formData.paymentProof);
-
-          if (uploadError) throw uploadError;
-
-          const publicUrl = supabase.storage.from('event-payments').getPublicUrl(fileName).data.publicUrl;
-
-          // Register
-          // @ts-expect-error - RPC function not yet in types
-          const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
-            p_full_name: formData.fullName,
-            p_email: formData.email.toLowerCase().trim(),
-            p_phone: formData.phone,
-            p_college: formData.college,
-            p_year: formData.year,
-            p_branch: formData.branch,
-            p_education: formData.educationType,
-            p_event_id: formData.eventId,
-            p_team_name: formData.teamName || null,
-            p_payment_proof_url: publicUrl,
-            p_registration_fee: selectedEvent.registration_fee,
-            p_payment_status: 'pending'
-          });
-
-          if (rpcError) throw rpcError;
-          if (result && !result.success) throw new Error(result.message || 'Registration failed');
-
-          setSuccess(true);
-          toast.success('Registration Submitted!', {
-            description: 'Your payment is being verified.',
-          });
+        // Upload Proof
+        if (!formData.paymentProof) {
+          toast.error("Please upload payment proof");
           setLoading(false);
+          return;
         }
+
+        setUploading(true);
+        const fileExt = formData.paymentProof.name.split('.').pop();
+        const fileName = `${formData.eventId}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('event-payments')
+          .upload(fileName, formData.paymentProof);
+
+        if (uploadError) throw uploadError;
+
+        const publicUrl = supabase.storage.from('event-payments').getPublicUrl(fileName).data.publicUrl;
+
+        // Register
+        // @ts-expect-error - RPC function not yet in types
+        const { data: result, error: rpcError } = await supabase.rpc('register_user_for_event', {
+          p_full_name: formData.fullName,
+          p_email: formData.email.toLowerCase().trim(),
+          p_phone: formData.phone,
+          p_college: formData.college,
+          p_year: formData.year,
+          p_branch: formData.branch,
+          p_education: formData.educationType,
+          p_event_id: formData.eventId,
+          p_team_name: formData.teamName || null,
+          p_payment_proof_url: publicUrl,
+          p_registration_fee: selectedEvent.registration_fee,
+          p_payment_status: 'pending'
+        });
+
+        if (rpcError) throw rpcError;
+        if (result && !result.success) throw new Error(result.message || 'Registration failed');
+
+        setSuccess(true);
+        toast.success('Registration Submitted!', {
+          description: 'Your payment is being verified.',
+        });
+        setLoading(false);
 
       } else {
         // Case 2: Free Event (Existing Logic)
@@ -815,42 +718,30 @@ export function RegistrationPage({ onClose, initialEventId }: RegistrationPagePr
                                     </div>
                                   </div>
 
-                                  {registrationSettings.razorpay_enabled ? (
-                                    <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-3">
-                                      <div className="p-2 bg-red-900/20 rounded-full">
-                                        <Zap className="w-5 h-5 text-red-500" />
-                                      </div>
-                                      <p className="text-sm text-red-200/80">
-                                        Click "Complete Registration" to pay securely via Razorpay.
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-4">
-                                      <div className="p-4 bg-white/5 rounded-lg border border-white/10 text-center">
-                                        <p className="text-sm text-zinc-400 mb-2">Scan QR to Pay</p>
-                                        {selectedEvent.upi_qr_url ? (
-                                          <img src={selectedEvent.upi_qr_url} alt="UPI QR" className="w-48 h-48 mx-auto rounded-lg" />
-                                        ) : (
-                                          <div className="w-48 h-48 mx-auto bg-white flex items-center justify-center rounded-lg">
-                                            <QrCode className="w-24 h-24 text-black" />
-                                          </div>
-                                        )}
-                                        <p className="text-xs text-zinc-500 mt-2">UPI ID: kaizen@upi</p>
-                                      </div>
-
-                                      <div className="space-y-2">
-                                        <Label className="text-zinc-400">Upload Payment Screenshot</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            className="bg-black/40 border-white/10 text-white/70 file:bg-red-900/20 file:text-red-400 file:border-0 file:rounded-md"
-                                          />
+                                  <div className="space-y-4">
+                                    <div className="p-4 bg-white/5 rounded-lg border border-white/10 text-center">
+                                      <p className="text-sm text-zinc-400 mb-4">Scan QR to Pay via UPI</p>
+                                      {selectedEvent.upi_qr_url ? (
+                                        <img src={selectedEvent.upi_qr_url} alt="UPI QR" className="w-48 h-48 mx-auto rounded-lg" />
+                                      ) : (
+                                        <div className="w-48 h-48 mx-auto bg-white flex items-center justify-center rounded-lg">
+                                          <QrCode className="w-24 h-24 text-black" />
                                         </div>
+                                      )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label className="text-zinc-400">Upload Payment Screenshot</Label>
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={handleFileChange}
+                                          className="bg-black/40 border-white/10 text-white/70 file:bg-red-900/20 file:text-red-400 file:border-0 file:rounded-md"
+                                        />
                                       </div>
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
                               )}
 
