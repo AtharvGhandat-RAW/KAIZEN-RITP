@@ -45,11 +45,39 @@ export default function FestRegistration() {
     upiId: '',
     qrCodeUrl: ''
   });
+  const [bucketReady, setBucketReady] = useState(true);
+  const [bucketHint, setBucketHint] = useState('');
 
   useEffect(() => {
     checkRegistrationStatus();
     fetchPaymentSettings();
+    checkStorageBucket();
   }, []);
+
+  const checkStorageBucket = async () => {
+    try {
+      // Attempt to list objects to verify bucket exists
+      const { data, error } = await supabase.storage
+        .from('proof-uploads')
+        .list('', { limit: 1 });
+
+      if (error) {
+        const msg = (error as any)?.message || String(error);
+        if (msg.toLowerCase().includes('bucket not found')) {
+          setBucketReady(false);
+          setBucketHint('Storage bucket missing. Please run the Supabase migration to create proof-uploads.');
+          return;
+        }
+      }
+
+      setBucketReady(true);
+      setBucketHint('');
+    } catch (err) {
+      // Default to ready to avoid blocking if check fails for non-fatal reasons
+      setBucketReady(true);
+      setBucketHint('');
+    }
+  };
 
   const fetchPaymentSettings = async () => {
     try {
@@ -165,13 +193,17 @@ export default function FestRegistration() {
 
       let paymentProofUrl = null;
 
-      // Upload proof if provided
-      if (formData.paymentProof) {
+      // Upload proof if provided and bucket is ready
+      if (formData.paymentProof && bucketReady) {
         paymentProofUrl = await handleFileUpload(formData.paymentProof);
         if (!paymentProofUrl) {
           setLoading(false);
           return;
         }
+      } else if (formData.paymentProof && !bucketReady) {
+        toast.error('Storage bucket missing. Please remove the file or try again after running the migration.');
+        setLoading(false);
+        return;
       }
 
       // Register user for fest
@@ -186,7 +218,13 @@ export default function FestRegistration() {
         p_payment_proof_url: paymentProofUrl,
       });
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        const msg = (rpcError as any)?.message || String(rpcError);
+        if (msg.toLowerCase().includes('could not find the function') || msg.toLowerCase().includes('schema cache')) {
+          toast.error('Registration function missing. Please run the Supabase migration files to create register_fest_user.');
+        }
+        throw rpcError;
+      }
       if (result && !result.success) throw new Error(result.message || 'Registration failed');
 
       setIsSubmitted(true);
