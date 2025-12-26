@@ -35,7 +35,7 @@ const Schedule = lazy(() => import("./pages/admin/Schedule"));
 const ScheduleBuilder = lazy(() => import("./pages/admin/ScheduleBuilder"));
 const ScheduleItemForm = lazy(() => import("./pages/admin/ScheduleItemForm"));
 const Register = lazy(() => import("./pages/Register"));
-const FestRegistration = lazy(() => import("./pages/FestRegistration"));
+const FestRegistration = lazy(() => import("./pages/FestRegistrationRebuilt"));
 const Coordinators = lazy(() => import("./pages/admin/CoordinatorsList"));
 const CoordinatorForm = lazy(() => import("./pages/admin/CoordinatorForm"));
 const AdminAttendance = lazy(() => import("./pages/admin/Attendance"));
