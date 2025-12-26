@@ -121,7 +121,8 @@ export default function FestRegistration() {
       setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${generateUUID()}.${fileExt}`;
-      const filePath = `proof-uploads/${fileName}`;
+      // Store inside a folder within the bucket to avoid duplicated bucket name in object path
+      const filePath = `proofs/${fileName}`;
 
       const { data, error: uploadError } = await supabase.storage
         .from('proof-uploads')
@@ -130,7 +131,14 @@ export default function FestRegistration() {
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // Provide a clearer hint if the storage bucket is missing
+        const msg = (uploadError as any)?.message || String(uploadError);
+        if (msg.toLowerCase().includes('bucket not found')) {
+          toast.error('Storage bucket missing. Please run the Supabase migration to create proof-uploads.');
+        }
+        throw uploadError;
+      }
 
       return filePath;
     } catch (error: any) {
