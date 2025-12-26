@@ -48,6 +48,9 @@ export default function FestRegistration() {
   const [bucketReady, setBucketReady] = useState(true);
   const [bucketHint, setBucketHint] = useState('');
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
   useEffect(() => {
     checkRegistrationStatus();
     fetchPaymentSettings();
@@ -147,8 +150,18 @@ export default function FestRegistration() {
   const handleFileUpload = async (file: File): Promise<string | null> => {
     try {
       setUploading(true);
+      // Validate file before attempting upload
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error('File too large. Max size is 5MB.');
+        return null;
+      }
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error('Unsupported file type. Allowed: JPG, PNG, PDF');
+        return null;
+      }
       const fileExt = file.name.split('.').pop();
-      const fileName = `${generateUUID()}.${fileExt}`;
+      const safeBase = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '_');
+      const fileName = `${generateUUID()}_${safeBase}`;
       // Store inside a folder within the bucket to avoid duplicated bucket name in object path
       const filePath = `proofs/${fileName}`;
 
@@ -157,6 +170,7 @@ export default function FestRegistration() {
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
+          contentType: file.type,
         });
 
       if (uploadError) {
@@ -165,6 +179,8 @@ export default function FestRegistration() {
         if (msg.toLowerCase().includes('bucket not found')) {
           toast.error('Storage bucket missing. Please run the Supabase migration to create proof-uploads.');
         }
+        // Surface server message for debugging
+        console.error('Upload error details:', uploadError);
         throw uploadError;
       }
 
