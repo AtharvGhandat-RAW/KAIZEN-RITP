@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2, AlertCircle, Calendar, Clock, Zap, QrCode } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Calendar, Clock, Zap, QrCode, Upload, FileText } from 'lucide-react';
 import { AtmosphericBackground } from '@/components/AtmosphericBackground';
 
 // UUID fallback
@@ -116,6 +116,32 @@ export default function FestRegistration() {
     }
   };
 
+  const handleFileUpload = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${generateUUID()}.${fileExt}`;
+      const filePath = `proof-uploads/${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('proof-uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      return filePath;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload proof');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -129,6 +155,17 @@ export default function FestRegistration() {
         return;
       }
 
+      let paymentProofUrl = null;
+
+      // Upload proof if provided
+      if (formData.paymentProof) {
+        paymentProofUrl = await handleFileUpload(formData.paymentProof);
+        if (!paymentProofUrl) {
+          setLoading(false);
+          return;
+        }
+      }
+
       // Register user for fest
       const { data: result, error: rpcError } = await supabase.rpc('register_fest_user', {
         p_full_name: formData.fullName,
@@ -138,6 +175,7 @@ export default function FestRegistration() {
         p_college: formData.college,
         p_year: formData.year,
         p_branch: formData.branch,
+        p_payment_proof_url: paymentProofUrl,
       });
 
       if (rpcError) throw rpcError;
@@ -145,7 +183,7 @@ export default function FestRegistration() {
 
       setIsSubmitted(true);
       toast.success("Registration Submitted!", {
-        description: "Your payment is pending. Please transfer ₹150 using the UPI QR code or ID and we'll verify it shortly.",
+        description: "Your proof has been submitted for verification. You'll receive an email once verified.",
       });
 
       // Reset form
@@ -398,6 +436,65 @@ export default function FestRegistration() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Proof Upload Section */}
+              <div className="space-y-3 pt-6 border-t border-green-500/20">
+                <label className="text-zinc-300 font-semibold flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload Payment Proof <span className="text-yellow-500">*</span>
+                </label>
+                <p className="text-xs text-zinc-500">Upload a screenshot of your payment confirmation (UPI receipt, bank transfer, etc.)</p>
+                
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={e => {
+                      if (e.target.files?.[0]) {
+                        const file = e.target.files[0];
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error('File size must be less than 5MB');
+                          return;
+                        }
+                        setFormData({ ...formData, paymentProof: file });
+                      }
+                    }}
+                    className="hidden"
+                    id="proof-upload"
+                  />
+                  
+                  <label
+                    htmlFor="proof-upload"
+                    className={`flex items-center justify-center gap-3 p-4 rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
+                      formData.paymentProof
+                        ? 'border-green-500 bg-green-950/20'
+                        : 'border-white/20 bg-black/40 hover:border-green-500/50'
+                    }`}
+                  >
+                    {formData.paymentProof ? (
+                      <>
+                        <FileText className="w-5 h-5 text-green-500" />
+                        <span className="text-green-300 font-medium">{formData.paymentProof.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-zinc-400" />
+                        <span className="text-zinc-400">Click to upload or drag and drop</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                {formData.paymentProof && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, paymentProof: null })}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remove file
+                  </button>
+                )}
               </div>
             </div>
 

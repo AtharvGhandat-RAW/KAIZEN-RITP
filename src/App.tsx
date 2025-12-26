@@ -40,6 +40,7 @@ const Coordinators = lazy(() => import("./pages/admin/CoordinatorsList"));
 const CoordinatorForm = lazy(() => import("./pages/admin/CoordinatorForm"));
 const AdminAttendance = lazy(() => import("./pages/admin/Attendance"));
 const FestApprovals = lazy(() => import("./pages/admin/FestApprovals"));
+const FestManagement = lazy(() => import("./pages/admin/FestManagement"));
 
 // Coordinator pages - preload these for faster access
 const CoordinatorLogin = lazy(() => import("./pages/coordinator/Login"));
@@ -133,6 +134,7 @@ const App = () => (
                 <Route path="/admin/coordinators/:id" element={<CoordinatorForm />} />
                 <Route path="/admin/attendance" element={<AdminAttendance />} />
                 <Route path="/admin/fest-approvals" element={<FestApprovals />} />
+                <Route path="/admin/fest-management" element={<FestManagement />} />
 
                 {/* Coordinator Routes */}
                 <Route path="/coordinator/login" element={<CoordinatorLogin />} />
